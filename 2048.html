@@ -32,6 +32,10 @@
     .overlay h2 { font-size: 2.5rem; color: #776e65; margin-bottom: 20px; }
     .overlay .final-score { font-size: 1.2rem; color: #776e65; margin-bottom: 20px; }
     .instructions { color: #776e65; margin-top: 15px; font-size: 0.9rem; }
+    .how-to-play { background: #eee4da; padding: 15px; border-radius: 8px; margin-top: 20px; max-width: 340px; }
+    .how-to-play h3 { color: #776e65; font-size: 1.1rem; margin-bottom: 10px; }
+    .how-to-play ul { color: #776e65; font-size: 0.9rem; line-height: 1.8; padding-left: 20px; }
+    .how-to-play li { margin-bottom: 5px; }
   </style>
 </head>
 <body>
@@ -45,6 +49,15 @@
   </div>
   <div class="grid-container" id="grid"></div>
   <p class="instructions">スワイプまたは矢印キーで操作</p>
+  <div class="how-to-play">
+    <h3>あそびかた</h3>
+    <ul>
+      <li>ゆびでスワイプ、またはキーボードの矢印キー（↑↓←→）でブロックをうごかすよ</li>
+      <li>おなじ数字のブロックがぶつかると、くっついて2倍の数字になるよ</li>
+      <li>2→4→8→16...とどんどん大きくして、「2048」を目指そう！</li>
+      <li>うごかせなくなったらゲームオーバー。なんどでもチャレンジしてね！</li>
+    </ul>
+  </div>
   <div class="overlay" id="overlay">
     <h2 id="message">ゲームオーバー</h2>
     <p class="final-score">スコア: <span id="finalScore">0</span></p>
