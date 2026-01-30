@@ -6,7 +6,8 @@
   <title>2048</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #faf8ef; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; touch-action: none; user-select: none; -webkit-user-select: none; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #faf8ef; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; user-select: none; -webkit-user-select: none; }
+    .game-area { touch-action: none; }
     h1 { font-size: 3rem; color: #776e65; margin-bottom: 10px; }
     .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; width: 100%; max-width: 340px; justify-content: space-between; }
     .score-container { background: #bbada0; padding: 10px 20px; border-radius: 6px; text-align: center; }
@@ -32,23 +33,27 @@
     .overlay h2 { font-size: 2.5rem; color: #776e65; margin-bottom: 20px; }
     .overlay .final-score { font-size: 1.2rem; color: #776e65; margin-bottom: 20px; }
     .instructions { color: #776e65; margin-top: 15px; font-size: 0.9rem; }
-    .how-to-play { background: #eee4da; padding: 15px; border-radius: 8px; margin-bottom: 20px; max-width: 340px; }
-    .how-to-play h3 { color: #776e65; font-size: 1.1rem; margin-bottom: 10px; }
-    .how-to-play ul { color: #776e65; font-size: 0.9rem; line-height: 1.8; padding-left: 20px; }
+    .how-to-play { background: #eee4da; border-radius: 8px; margin-bottom: 20px; max-width: 340px; }
+    .how-to-play summary { color: #776e65; font-size: 1.1rem; font-weight: bold; padding: 12px 15px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    .how-to-play summary::-webkit-details-marker { display: none; }
+    .how-to-play summary::after { content: '+'; font-size: 1.3rem; }
+    .how-to-play[open] summary::after { content: '-'; }
+    .how-to-play ul { color: #776e65; font-size: 0.9rem; line-height: 1.8; padding: 0 15px 15px 35px; }
     .how-to-play li { margin-bottom: 5px; }
   </style>
 </head>
 <body>
   <h1>2048</h1>
-  <div class="how-to-play">
-    <h3>あそびかた</h3>
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
     <ul>
       <li>ゆびでスワイプ、またはキーボードの矢印キー（↑↓←→）でブロックをうごかすよ</li>
       <li>おなじ数字のブロックがぶつかると、くっついて2倍の数字になるよ</li>
       <li>2→4→8→16...とどんどん大きくして、「2048」を目指そう！</li>
       <li>うごかせなくなったらゲームオーバー。なんどでもチャレンジしてね！</li>
     </ul>
-  </div>
+  </details>
+  <div class="game-area">
   <div class="header">
     <div class="score-container">
       <div class="score-label">スコア</div>
@@ -58,6 +63,7 @@
   </div>
   <div class="grid-container" id="grid"></div>
   <p class="instructions">スワイプまたは矢印キーで操作</p>
+  </div>
   <div class="overlay" id="overlay">
     <h2 id="message">ゲームオーバー</h2>
     <p class="final-score">スコア: <span id="finalScore">0</span></p>
