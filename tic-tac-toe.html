@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>マルバツゲーム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    h1 { color: white; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .status { color: white; font-size: 1.5rem; margin-bottom: 20px; min-height: 2rem; }
+    .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(255,255,255,0.2); padding: 15px; border-radius: 15px; }
+    .cell { width: 90px; height: 90px; background: white; border: none; border-radius: 10px; font-size: 3rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .cell:active { transform: scale(0.95); }
+    .cell.x { color: #e74c3c; }
+    .cell.o { color: #3498db; }
+    .cell.winner { background: #2ecc71; color: white; }
+    .reset-btn { margin-top: 25px; padding: 15px 40px; font-size: 1.2rem; background: white; color: #764ba2; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>マルバツゲーム</h1>
+  <div class="status" id="status">Xのターン</div>
+  <div class="board" id="board"></div>
+  <button class="reset-btn" id="reset">リセット</button>
+  <script>
+    const board = document.getElementById('board'), status = document.getElementById('status');
+    let cells = ['','','','','','','','',''], currentPlayer = 'X', gameActive = true;
+    const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    function createBoard() { board.innerHTML = ''; cells.forEach((c,i) => { const d = document.createElement('div'); d.classList.add('cell'); d.dataset.index = i; d.textContent = c; if(c==='X')d.classList.add('x'); if(c==='O')d.classList.add('o'); d.addEventListener('click', handleClick); board.appendChild(d); }); }
+    function handleClick(e) { const i = e.target.dataset.index; if(cells[i]!==''||!gameActive)return; cells[i]=currentPlayer; e.target.textContent=currentPlayer; e.target.classList.add(currentPlayer.toLowerCase()); if(checkWin()){status.textContent=currentPlayer+'の勝ち!';gameActive=false;highlightWinner();return;} if(cells.every(c=>c!=='')){status.textContent='引き分け!';gameActive=false;return;} currentPlayer=currentPlayer==='X'?'O':'X'; status.textContent=currentPlayer+'のターン'; }
+    function checkWin() { return winPatterns.some(p => p.every(i => cells[i]===currentPlayer)); }
+    function highlightWinner() { winPatterns.forEach(p => { if(p.every(i=>cells[i]===currentPlayer)) p.forEach(i=>board.children[i].classList.add('winner')); }); }
+    document.getElementById('reset').addEventListener('click', () => { cells=['','','','','','','','','']; currentPlayer='X'; gameActive=true; status.textContent='Xのターン'; createBoard(); });
+    createBoard();
+  </script>
+</body>
+</html>
