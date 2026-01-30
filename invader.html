@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>インベーダーゲーム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; user-select: none; -webkit-user-select: none; }
+    h1 { font-size: 2rem; color: #00ff88; margin-bottom: 10px; text-shadow: 0 0 10px #00ff88; }
+    .header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; width: 100%; max-width: 340px; justify-content: space-between; }
+    .score-container { background: #16213e; padding: 10px 20px; border-radius: 6px; text-align: center; border: 2px solid #00ff88; }
+    .score-label { font-size: 0.7rem; color: #00ff88; text-transform: uppercase; font-weight: bold; }
+    .score-value { font-size: 1.5rem; color: #fff; font-weight: bold; }
+    .btn { background: #e94560; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .btn:active { transform: scale(0.95); }
+    .game-container { position: relative; background: #0f0f23; border: 3px solid #00ff88; border-radius: 8px; }
+    canvas { display: block; }
+    .controls { display: flex; gap: 15px; margin-top: 15px; }
+    .control-btn { width: 70px; height: 70px; background: #16213e; border: 2px solid #00ff88; border-radius: 50%; color: #00ff88; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .control-btn:active { background: #00ff88; color: #1a1a2e; }
+    .fire-btn { width: 90px; height: 90px; background: #e94560; border-color: #e94560; color: white; font-size: 1rem; font-weight: bold; }
+    .fire-btn:active { background: #ff6b6b; }
+    .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .overlay h2 { font-size: 2rem; color: #00ff88; margin-bottom: 20px; text-shadow: 0 0 20px #00ff88; }
+    .overlay .final-score { font-size: 1.2rem; color: #fff; margin-bottom: 20px; }
+    .how-to-play { background: #16213e; border-radius: 8px; margin-bottom: 15px; max-width: 340px; border: 2px solid #00ff88; }
+    .how-to-play summary { color: #00ff88; font-size: 1rem; font-weight: bold; padding: 12px 15px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    .how-to-play summary::-webkit-details-marker { display: none; }
+    .how-to-play summary::after { content: '+'; font-size: 1.3rem; }
+    .how-to-play[open] summary::after { content: '-'; }
+    .how-to-play ul { color: #ccc; font-size: 0.85rem; line-height: 1.8; padding: 0 15px 15px 35px; }
+    .how-to-play li { margin-bottom: 5px; }
+    .instructions { color: #888; margin-top: 10px; font-size: 0.85rem; }
+    .lives { display: flex; gap: 5px; }
+    .life { width: 20px; height: 20px; background: #00ff88; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+  </style>
+</head>
+<body>
+  <h1>インベーダーゲーム</h1>
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
+    <ul>
+      <li>したのボタン、またはキーボードの←→でうごくよ</li>
+      <li>「はっしゃ」ボタン、またはスペースキーでビームをうつよ</li>
+      <li>てきがおりてくるまえに、ぜんぶたおそう！</li>
+      <li>てきのこうげきにあたると、ライフがへるよ</li>
+      <li>ライフが0になったらゲームオーバー！</li>
+    </ul>
+  </details>
+  <div class="header">
+    <div class="score-container">
+      <div class="score-label">スコア</div>
+      <div class="score-value" id="score">0</div>
+    </div>
+    <div class="lives" id="lives"></div>
+    <button class="btn" id="restart">リトライ</button>
+  </div>
+  <div class="game-container">
+    <canvas id="game" width="320" height="400"></canvas>
+  </div>
+  <div class="controls">
+    <button class="control-btn" id="leftBtn">←</button>
+    <button class="control-btn fire-btn" id="fireBtn">はっしゃ</button>
+    <button class="control-btn" id="rightBtn">→</button>
+  </div>
+  <p class="instructions">ボタンまたは矢印キー＋スペースで操作</p>
+  <div class="overlay" id="overlay">
+    <h2 id="message">ゲームオーバー</h2>
+    <p class="final-score">スコア: <span id="finalScore">0</span></p>
+    <button class="btn" id="retryBtn">もう一度</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const overlay = document.getElementById('overlay');
+    const messageEl = document.getElementById('message');
+    const finalScoreEl = document.getElementById('finalScore');
+
+    const W = canvas.width, H = canvas.height;
+    let player, enemies, bullets, enemyBullets, score, lives, gameOver, direction, moveTimer, shootTimer;
+
+    function init() {
+      player = { x: W / 2 - 15, y: H - 40, w: 30, h: 20, speed: 5 };
+      enemies = [];
+      bullets = [];
+      enemyBullets = [];
+      score = 0;
+      lives = 3;
+      gameOver = false;
+      direction = 1;
+      moveTimer = 0;
+      shootTimer = 0;
+
+      // てきを5れつ×8ひきならべる
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 8; col++) {
+          enemies.push({
+            x: 20 + col * 36,
+            y: 40 + row * 30,
+            w: 28,
+            h: 20,
+            alive: true,
+            type: row < 2 ? 2 : row < 4 ? 1 : 0
+          });
+        }
+      }
+
+      scoreEl.textContent = '0';
+      updateLives();
+      overlay.classList.remove('show');
+    }
+
+    function updateLives() {
+      livesEl.innerHTML = '';
+      for (let i = 0; i < lives; i++) {
+        const life = document.createElement('div');
+        life.className = 'life';
+        livesEl.appendChild(life);
+      }
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = '#00ff88';
+      // さんかくのふね
+      ctx.beginPath();
+      ctx.moveTo(player.x + player.w / 2, player.y);
+      ctx.lineTo(player.x, player.y + player.h);
+      ctx.lineTo(player.x + player.w, player.y + player.h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawEnemy(e) {
+      const colors = ['#ff6b6b', '#ffd93d', '#ff8c42'];
+      ctx.fillStyle = colors[e.type];
+      // インベーダーの形
+      ctx.fillRect(e.x + 4, e.y, e.w - 8, 6);
+      ctx.fillRect(e.x, e.y + 6, e.w, 8);
+      ctx.fillRect(e.x + 2, e.y + 14, 6, 6);
+      ctx.fillRect(e.x + e.w - 8, e.y + 14, 6, 6);
+    }
+
+    function drawBullet(b, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      // てきのいどう
+      moveTimer++;
+      if (moveTimer > 30) {
+        moveTimer = 0;
+        let hitEdge = false;
+        enemies.forEach(e => {
+          if (e.alive) {
+            e.x += direction * 10;
+            if (e.x <= 0 || e.x + e.w >= W) hitEdge = true;
+          }
+        });
+        if (hitEdge) {
+          direction *= -1;
+          enemies.forEach(e => {
+            if (e.alive) e.y += 15;
+          });
+        }
+      }
+
+      // てきのこうげき
+      shootTimer++;
+      if (shootTimer > 60) {
+        shootTimer = 0;
+        const aliveEnemies = enemies.filter(e => e.alive);
+        if (aliveEnemies.length > 0) {
+          const shooter = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+          enemyBullets.push({ x: shooter.x + shooter.w / 2 - 2, y: shooter.y + shooter.h, w: 4, h: 10, speed: 4 });
+        }
+      }
+
+      // たまのいどう
+      bullets.forEach(b => b.y -= b.speed);
+      enemyBullets.forEach(b => b.y += b.speed);
+
+      // がめんがいのたまをけす
+      bullets = bullets.filter(b => b.y > -b.h);
+      enemyBullets = enemyBullets.filter(b => b.y < H);
+
+      // あたりはんてい（じぶんのたま→てき）
+      bullets.forEach(b => {
+        enemies.forEach(e => {
+          if (e.alive && b.x < e.x + e.w && b.x + b.w > e.x && b.y < e.y + e.h && b.y + b.h > e.y) {
+            e.alive = false;
+            b.y = -100;
+            score += (e.type + 1) * 10;
+            scoreEl.textContent = score;
+          }
+        });
+      });
+
+      // あたりはんてい（てきのたま→じぶん）
+      enemyBullets.forEach(b => {
+        if (b.x < player.x + player.w && b.x + b.w > player.x && b.y < player.y + player.h && b.y + b.h > player.y) {
+          b.y = H + 100;
+          lives--;
+          updateLives();
+          if (lives <= 0) {
+            gameOver = true;
+            showOverlay('ゲームオーバー');
+          }
+        }
+      });
+
+      // てきがしたまできたら
+      enemies.forEach(e => {
+        if (e.alive && e.y + e.h >= player.y) {
+          gameOver = true;
+          showOverlay('ゲームオーバー');
+        }
+      });
+
+      // ぜんめつしたらクリア
+      if (enemies.every(e => !e.alive)) {
+        gameOver = true;
+        showOverlay('クリア！');
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#0f0f23';
+      ctx.fillRect(0, 0, W, H);
+
+      drawPlayer();
+      enemies.forEach(e => { if (e.alive) drawEnemy(e); });
+      bullets.forEach(b => drawBullet(b, '#00ff88'));
+      enemyBullets.forEach(b => drawBullet(b, '#ff6b6b'));
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function showOverlay(msg) {
+      messageEl.textContent = msg;
+      finalScoreEl.textContent = score;
+      overlay.classList.add('show');
+    }
+
+    function shoot() {
+      if (gameOver) return;
+      if (bullets.length < 3) {
+        bullets.push({ x: player.x + player.w / 2 - 2, y: player.y, w: 4, h: 10, speed: 7 });
+      }
+    }
+
+    // キーボードそうさ
+    const keys = {};
+    document.addEventListener('keydown', e => {
+      keys[e.key] = true;
+      if (e.key === ' ') { e.preventDefault(); shoot(); }
+    });
+    document.addEventListener('keyup', e => keys[e.key] = false);
+
+    setInterval(() => {
+      if (gameOver) return;
+      if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
+      if (keys['ArrowRight'] && player.x < W - player.w) player.x += player.speed;
+    }, 16);
+
+    // タッチそうさ
+    let leftPressed = false, rightPressed = false;
+
+    document.getElementById('leftBtn').addEventListener('touchstart', e => { e.preventDefault(); leftPressed = true; });
+    document.getElementById('leftBtn').addEventListener('touchend', () => leftPressed = false);
+    document.getElementById('rightBtn').addEventListener('touchstart', e => { e.preventDefault(); rightPressed = true; });
+    document.getElementById('rightBtn').addEventListener('touchend', () => rightPressed = false);
+    document.getElementById('fireBtn').addEventListener('touchstart', e => { e.preventDefault(); shoot(); });
+
+    // マウスクリックにも対応
+    document.getElementById('leftBtn').addEventListener('mousedown', () => leftPressed = true);
+    document.getElementById('leftBtn').addEventListener('mouseup', () => leftPressed = false);
+    document.getElementById('leftBtn').addEventListener('mouseleave', () => leftPressed = false);
+    document.getElementById('rightBtn').addEventListener('mousedown', () => rightPressed = true);
+    document.getElementById('rightBtn').addEventListener('mouseup', () => rightPressed = false);
+    document.getElementById('rightBtn').addEventListener('mouseleave', () => rightPressed = false);
+    document.getElementById('fireBtn').addEventListener('click', shoot);
+
+    setInterval(() => {
+      if (gameOver) return;
+      if (leftPressed && player.x > 0) player.x -= player.speed;
+      if (rightPressed && player.x < W - player.w) player.x += player.speed;
+    }, 16);
+
+    document.getElementById('restart').addEventListener('click', init);
+    document.getElementById('retryBtn').addEventListener('click', init);
+
+    init();
+    gameLoop();
+  </script>
+</body>
+</html>
