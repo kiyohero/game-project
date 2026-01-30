@@ -21,7 +21,7 @@
     .btn:active { transform: scale(0.95); }
     .grid-container { background: #9b8ab8; padding: 10px; border-radius: 8px; position: relative; width: 340px; height: 340px; box-shadow: 0 4px 20px rgba(107, 91, 122, 0.3); }
     .grid-bg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; height: 100%; }
-    .grid-cell { background: rgba(238, 228, 218, 0.4); border-radius: 4px; }
+    .grid-cell { background: rgba(232, 224, 240, 0.5); border-radius: 4px; }
     .tile {
       position: absolute;
       width: 75px;
@@ -54,20 +54,20 @@
       40% { transform: scale(1.2); }
       100% { transform: scale(1); }
     }
-    .tile[data-value="2"] { background: #eee4da; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .tile[data-value="4"] { background: #ede0c8; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .tile[data-value="8"] { background: #f2b179; color: #f9f6f2; box-shadow: 0 2px 12px rgba(242, 177, 121, 0.4); }
-    .tile[data-value="16"] { background: #f59563; color: #f9f6f2; box-shadow: 0 2px 12px rgba(245, 149, 99, 0.4); }
-    .tile[data-value="32"] { background: #f67c5f; color: #f9f6f2; box-shadow: 0 2px 15px rgba(246, 124, 95, 0.5); }
-    .tile[data-value="64"] { background: #f65e3b; color: #f9f6f2; box-shadow: 0 2px 15px rgba(246, 94, 59, 0.5); }
-    .tile[data-value="128"] { background: #edcf72; color: #f9f6f2; font-size: 1.5rem; box-shadow: 0 0 20px 5px rgba(237, 207, 114, 0.4); }
-    .tile[data-value="256"] { background: #edcc61; color: #f9f6f2; font-size: 1.5rem; box-shadow: 0 0 20px 5px rgba(237, 204, 97, 0.5); }
-    .tile[data-value="512"] { background: #edc850; color: #f9f6f2; font-size: 1.5rem; box-shadow: 0 0 25px 8px rgba(237, 200, 80, 0.5); }
-    .tile[data-value="1024"] { background: #edc53f; color: #f9f6f2; font-size: 1.3rem; box-shadow: 0 0 30px 10px rgba(237, 197, 63, 0.6); }
-    .tile[data-value="2048"] { background: #edc22e; color: #f9f6f2; font-size: 1.3rem; box-shadow: 0 0 35px 12px rgba(237, 194, 46, 0.7); animation: winner-glow 1s ease-in-out infinite; }
+    .tile[data-value="2"] { background: #e8e0f0; color: #6b5b7a; box-shadow: 0 2px 8px rgba(107, 91, 122, 0.15); }
+    .tile[data-value="4"] { background: #d8cce5; color: #6b5b7a; box-shadow: 0 2px 8px rgba(107, 91, 122, 0.2); }
+    .tile[data-value="8"] { background: #c4b3d9; color: #fff; box-shadow: 0 2px 12px rgba(155, 138, 184, 0.4); }
+    .tile[data-value="16"] { background: #b19dcd; color: #fff; box-shadow: 0 2px 12px rgba(155, 138, 184, 0.5); }
+    .tile[data-value="32"] { background: #9b8ab8; color: #fff; box-shadow: 0 2px 15px rgba(155, 138, 184, 0.5); }
+    .tile[data-value="64"] { background: #8577a8; color: #fff; box-shadow: 0 2px 15px rgba(133, 119, 168, 0.5); }
+    .tile[data-value="128"] { background: #6f6498; color: #fff; font-size: 1.5rem; box-shadow: 0 0 20px 5px rgba(111, 100, 152, 0.5); }
+    .tile[data-value="256"] { background: #5a5188; color: #fff; font-size: 1.5rem; box-shadow: 0 0 20px 5px rgba(90, 81, 136, 0.5); }
+    .tile[data-value="512"] { background: #463f78; color: #fff; font-size: 1.5rem; box-shadow: 0 0 25px 8px rgba(70, 63, 120, 0.6); }
+    .tile[data-value="1024"] { background: linear-gradient(135deg, #6b5b7a, #9b8ab8); color: #ffd700; font-size: 1.3rem; box-shadow: 0 0 30px 10px rgba(107, 91, 122, 0.6); }
+    .tile[data-value="2048"] { background: linear-gradient(135deg, #9b8ab8, #c4b3d9); color: #ffd700; font-size: 1.3rem; box-shadow: 0 0 35px 12px rgba(155, 138, 184, 0.7); animation: winner-glow 1s ease-in-out infinite; }
     @keyframes winner-glow {
-      0%, 100% { box-shadow: 0 0 35px 12px rgba(237, 194, 46, 0.7); }
-      50% { box-shadow: 0 0 45px 18px rgba(237, 194, 46, 0.9); }
+      0%, 100% { box-shadow: 0 0 35px 12px rgba(155, 138, 184, 0.7); }
+      50% { box-shadow: 0 0 45px 18px rgba(155, 138, 184, 0.9); }
     }
     .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(250, 245, 255, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
     .overlay.show { opacity: 1; pointer-events: auto; }
