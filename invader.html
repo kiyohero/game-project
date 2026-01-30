@@ -7,23 +7,34 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; user-select: none; -webkit-user-select: none; }
-    h1 { font-size: 2rem; color: #00ff88; margin-bottom: 10px; text-shadow: 0 0 10px #00ff88; }
+    h1 { font-size: 2rem; color: #00ff88; margin-bottom: 10px; text-shadow: 0 0 10px #00ff88; animation: title-glow 2s ease-in-out infinite; }
+    @keyframes title-glow { 0%, 100% { text-shadow: 0 0 10px #00ff88; } 50% { text-shadow: 0 0 20px #00ff88, 0 0 30px #00ff88; } }
     .header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; width: 100%; max-width: 340px; justify-content: space-between; }
-    .score-container { background: #16213e; padding: 10px 20px; border-radius: 6px; text-align: center; border: 2px solid #00ff88; }
+    .score-container { background: #16213e; padding: 10px 20px; border-radius: 6px; text-align: center; border: 2px solid #00ff88; position: relative; overflow: hidden; }
+    .score-container::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0,255,136,0.2), transparent); animation: shine 3s infinite; }
+    @keyframes shine { to { left: 100%; } }
     .score-label { font-size: 0.7rem; color: #00ff88; text-transform: uppercase; font-weight: bold; }
-    .score-value { font-size: 1.5rem; color: #fff; font-weight: bold; }
-    .btn { background: #e94560; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .score-value { font-size: 1.5rem; color: #fff; font-weight: bold; transition: transform 0.1s; }
+    .score-value.pop { animation: score-pop 0.2s ease; }
+    @keyframes score-pop { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #00ff88; } 100% { transform: scale(1); } }
+    .btn { background: #e94560; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s, box-shadow 0.2s; }
+    .btn:hover { box-shadow: 0 0 15px rgba(233, 69, 96, 0.5); }
     .btn:active { transform: scale(0.95); }
-    .game-container { position: relative; background: #0f0f23; border: 3px solid #00ff88; border-radius: 8px; }
+    .game-container { position: relative; background: #0f0f23; border: 3px solid #00ff88; border-radius: 8px; box-shadow: 0 0 30px rgba(0, 255, 136, 0.3); overflow: hidden; }
+    .game-container.shake { animation: shake 0.3s ease; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    .game-container.damage { animation: damage-flash 0.1s ease 3; }
+    @keyframes damage-flash { 0%, 100% { border-color: #00ff88; } 50% { border-color: #ff0000; box-shadow: 0 0 30px rgba(255, 0, 0, 0.5); } }
     canvas { display: block; }
     .controls { display: flex; gap: 15px; margin-top: 15px; }
-    .control-btn { width: 70px; height: 70px; background: #16213e; border: 2px solid #00ff88; border-radius: 50%; color: #00ff88; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .control-btn:active { background: #00ff88; color: #1a1a2e; }
+    .control-btn { width: 70px; height: 70px; background: #16213e; border: 2px solid #00ff88; border-radius: 50%; color: #00ff88; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all 0.1s; }
+    .control-btn:active { background: #00ff88; color: #1a1a2e; box-shadow: 0 0 20px #00ff88; }
     .fire-btn { width: 90px; height: 90px; background: #e94560; border-color: #e94560; color: white; font-size: 1rem; font-weight: bold; }
-    .fire-btn:active { background: #ff6b6b; }
+    .fire-btn:active { background: #ff6b6b; box-shadow: 0 0 25px #ff6b6b; }
     .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .overlay.show { opacity: 1; pointer-events: auto; }
     .overlay h2 { font-size: 2rem; color: #00ff88; margin-bottom: 20px; text-shadow: 0 0 20px #00ff88; }
+    .overlay.game-over h2 { color: #ff6b6b; text-shadow: 0 0 20px #ff6b6b; }
     .overlay .final-score { font-size: 1.2rem; color: #fff; margin-bottom: 20px; }
     .how-to-play { background: #16213e; border-radius: 8px; margin-bottom: 15px; max-width: 340px; border: 2px solid #00ff88; }
     .how-to-play summary { color: #00ff88; font-size: 1rem; font-weight: bold; padding: 12px 15px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
@@ -34,7 +45,11 @@
     .how-to-play li { margin-bottom: 5px; }
     .instructions { color: #888; margin-top: 10px; font-size: 0.85rem; }
     .lives { display: flex; gap: 5px; }
-    .life { width: 20px; height: 20px; background: #00ff88; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+    .life { width: 20px; height: 20px; background: #00ff88; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); transition: all 0.3s; }
+    .life.lost { animation: life-lost 0.5s ease forwards; }
+    @keyframes life-lost { to { transform: scale(0) rotate(180deg); opacity: 0; } }
+    .score-popup { position: absolute; color: #ffd93d; font-weight: bold; font-size: 14px; pointer-events: none; animation: popup 0.8s ease forwards; text-shadow: 0 0 5px #ffd93d; }
+    @keyframes popup { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-30px) scale(1.5); } }
   </style>
 </head>
 <body>
@@ -57,7 +72,7 @@
     <div class="lives" id="lives"></div>
     <button class="btn" id="restart">リトライ</button>
   </div>
-  <div class="game-container">
+  <div class="game-container" id="gameContainer">
     <canvas id="game" width="320" height="400"></canvas>
   </div>
   <div class="controls">
@@ -80,23 +95,41 @@
     const overlay = document.getElementById('overlay');
     const messageEl = document.getElementById('message');
     const finalScoreEl = document.getElementById('finalScore');
+    const gameContainer = document.getElementById('gameContainer');
 
     const W = canvas.width, H = canvas.height;
-    let player, enemies, bullets, enemyBullets, score, lives, gameOver, direction, moveTimer, shootTimer;
+    let player, enemies, bullets, enemyBullets, particles, stars, score, lives, gameOver, direction, moveTimer, shootTimer, playerFlash;
+
+    // 星の背景を作成
+    function createStars() {
+      stars = [];
+      for (let i = 0; i < 50; i++) {
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          size: Math.random() * 2 + 0.5,
+          speed: Math.random() * 0.5 + 0.2,
+          brightness: Math.random()
+        });
+      }
+    }
 
     function init() {
       player = { x: W / 2 - 15, y: H - 40, w: 30, h: 20, speed: 5 };
       enemies = [];
       bullets = [];
       enemyBullets = [];
+      particles = [];
       score = 0;
       lives = 3;
       gameOver = false;
       direction = 1;
       moveTimer = 0;
       shootTimer = 0;
+      playerFlash = 0;
 
-      // てきを5れつ×8ひきならべる
+      createStars();
+
       for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 8; col++) {
           enemies.push({
@@ -105,7 +138,8 @@
             w: 28,
             h: 20,
             alive: true,
-            type: row < 2 ? 2 : row < 4 ? 1 : 0
+            type: row < 2 ? 2 : row < 4 ? 1 : 0,
+            frame: 0
           });
         }
       }
@@ -113,45 +147,158 @@
       scoreEl.textContent = '0';
       updateLives();
       overlay.classList.remove('show');
+      overlay.classList.remove('game-over');
+      gameContainer.classList.remove('shake', 'damage');
     }
 
     function updateLives() {
       livesEl.innerHTML = '';
-      for (let i = 0; i < lives; i++) {
+      for (let i = 0; i < 3; i++) {
         const life = document.createElement('div');
-        life.className = 'life';
+        life.className = 'life' + (i >= lives ? ' lost' : '');
         livesEl.appendChild(life);
       }
     }
 
+    function createExplosion(x, y, color) {
+      for (let i = 0; i < 12; i++) {
+        const angle = (Math.PI * 2 / 12) * i;
+        const speed = Math.random() * 3 + 2;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          color: color,
+          size: Math.random() * 4 + 2
+        });
+      }
+    }
+
+    function showScorePopup(x, y, points) {
+      const popup = document.createElement('div');
+      popup.className = 'score-popup';
+      popup.textContent = '+' + points;
+      popup.style.left = (canvas.offsetLeft + x) + 'px';
+      popup.style.top = (canvas.offsetTop + y) + 'px';
+      gameContainer.appendChild(popup);
+      setTimeout(() => popup.remove(), 800);
+    }
+
+    function drawStars() {
+      stars.forEach(star => {
+        const brightness = 0.3 + star.brightness * 0.7 * (0.5 + 0.5 * Math.sin(Date.now() * 0.003 + star.x));
+        ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function updateStars() {
+      stars.forEach(star => {
+        star.y += star.speed;
+        if (star.y > H) {
+          star.y = 0;
+          star.x = Math.random() * W;
+        }
+      });
+    }
+
     function drawPlayer() {
+      if (playerFlash > 0) {
+        playerFlash--;
+        if (Math.floor(playerFlash / 3) % 2 === 0) return;
+      }
+
+      // グロー効果
+      ctx.shadowColor = '#00ff88';
+      ctx.shadowBlur = 15;
       ctx.fillStyle = '#00ff88';
-      // さんかくのふね
       ctx.beginPath();
       ctx.moveTo(player.x + player.w / 2, player.y);
       ctx.lineTo(player.x, player.y + player.h);
       ctx.lineTo(player.x + player.w, player.y + player.h);
       ctx.closePath();
       ctx.fill();
+
+      // エンジンの炎
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#ff6b6b';
+      const flameHeight = 5 + Math.random() * 5;
+      ctx.beginPath();
+      ctx.moveTo(player.x + player.w / 2 - 5, player.y + player.h);
+      ctx.lineTo(player.x + player.w / 2, player.y + player.h + flameHeight);
+      ctx.lineTo(player.x + player.w / 2 + 5, player.y + player.h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
     }
 
     function drawEnemy(e) {
       const colors = ['#ff6b6b', '#ffd93d', '#ff8c42'];
       ctx.fillStyle = colors[e.type];
-      // インベーダーの形
-      ctx.fillRect(e.x + 4, e.y, e.w - 8, 6);
-      ctx.fillRect(e.x, e.y + 6, e.w, 8);
-      ctx.fillRect(e.x + 2, e.y + 14, 6, 6);
-      ctx.fillRect(e.x + e.w - 8, e.y + 14, 6, 6);
+
+      // 敵の形（アニメーション付き）
+      const wobble = Math.sin(Date.now() * 0.005 + e.x * 0.1) * 2;
+      ctx.fillRect(e.x + 4, e.y + wobble, e.w - 8, 6);
+      ctx.fillRect(e.x, e.y + 6 + wobble, e.w, 8);
+      ctx.fillRect(e.x + 2, e.y + 14 + wobble, 6, 6);
+      ctx.fillRect(e.x + e.w - 8, e.y + 14 + wobble, 6, 6);
+
+      // 目
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(e.x + 6, e.y + 8 + wobble, 4, 4);
+      ctx.fillRect(e.x + e.w - 10, e.y + 8 + wobble, 4, 4);
     }
 
-    function drawBullet(b, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(b.x, b.y, b.w, b.h);
+    function drawBullet(b, isPlayer) {
+      if (isPlayer) {
+        // プレイヤーの弾（グロー付き）
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#00ff88';
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        // トレイル
+        ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
+        ctx.fillRect(b.x, b.y + b.h, b.w, 15);
+      } else {
+        // 敵の弾
+        ctx.shadowColor = '#ff6b6b';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = '#ff6b6b';
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function updateParticles() {
+      particles = particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+        p.vy += 0.1; // 重力
+        return p.life > 0;
+      });
     }
 
     function update() {
       if (gameOver) return;
+
+      updateStars();
+      updateParticles();
 
       // てきのいどう
       moveTimer++;
@@ -174,7 +321,7 @@
 
       // てきのこうげき
       shootTimer++;
-      if (shootTimer > 60) {
+      if (shootTimer > 50) {
         shootTimer = 0;
         const aliveEnemies = enemies.filter(e => e.alive);
         if (aliveEnemies.length > 0) {
@@ -183,11 +330,9 @@
         }
       }
 
-      // たまのいどう
       bullets.forEach(b => b.y -= b.speed);
       enemyBullets.forEach(b => b.y += b.speed);
 
-      // がめんがいのたまをけす
       bullets = bullets.filter(b => b.y > -b.h);
       enemyBullets = enemyBullets.filter(b => b.y < H);
 
@@ -197,8 +342,16 @@
           if (e.alive && b.x < e.x + e.w && b.x + b.w > e.x && b.y < e.y + e.h && b.y + b.h > e.y) {
             e.alive = false;
             b.y = -100;
-            score += (e.type + 1) * 10;
+            const points = (e.type + 1) * 10;
+            score += points;
             scoreEl.textContent = score;
+            scoreEl.classList.add('pop');
+            setTimeout(() => scoreEl.classList.remove('pop'), 200);
+
+            // 爆発とスコアポップアップ
+            const colors = ['#ff6b6b', '#ffd93d', '#ff8c42'];
+            createExplosion(e.x + e.w / 2, e.y + e.h / 2, colors[e.type]);
+            showScorePopup(e.x + e.w / 2, e.y, points);
           }
         });
       });
@@ -208,26 +361,28 @@
         if (b.x < player.x + player.w && b.x + b.w > player.x && b.y < player.y + player.h && b.y + b.h > player.y) {
           b.y = H + 100;
           lives--;
+          playerFlash = 30;
+          gameContainer.classList.add('damage');
+          setTimeout(() => gameContainer.classList.remove('damage'), 300);
           updateLives();
           if (lives <= 0) {
             gameOver = true;
-            showOverlay('ゲームオーバー');
+            createExplosion(player.x + player.w / 2, player.y + player.h / 2, '#00ff88');
+            showOverlay('ゲームオーバー', true);
           }
         }
       });
 
-      // てきがしたまできたら
       enemies.forEach(e => {
         if (e.alive && e.y + e.h >= player.y) {
           gameOver = true;
-          showOverlay('ゲームオーバー');
+          showOverlay('ゲームオーバー', true);
         }
       });
 
-      // ぜんめつしたらクリア
       if (enemies.every(e => !e.alive)) {
         gameOver = true;
-        showOverlay('クリア！');
+        showOverlay('クリア！', false);
       }
     }
 
@@ -235,10 +390,12 @@
       ctx.fillStyle = '#0f0f23';
       ctx.fillRect(0, 0, W, H);
 
+      drawStars();
+      drawParticles();
       drawPlayer();
       enemies.forEach(e => { if (e.alive) drawEnemy(e); });
-      bullets.forEach(b => drawBullet(b, '#00ff88'));
-      enemyBullets.forEach(b => drawBullet(b, '#ff6b6b'));
+      bullets.forEach(b => drawBullet(b, true));
+      enemyBullets.forEach(b => drawBullet(b, false));
     }
 
     function gameLoop() {
@@ -247,9 +404,12 @@
       requestAnimationFrame(gameLoop);
     }
 
-    function showOverlay(msg) {
+    function showOverlay(msg, isGameOver) {
       messageEl.textContent = msg;
       finalScoreEl.textContent = score;
+      if (isGameOver) {
+        overlay.classList.add('game-over');
+      }
       overlay.classList.add('show');
     }
 
@@ -260,7 +420,6 @@
       }
     }
 
-    // キーボードそうさ
     const keys = {};
     document.addEventListener('keydown', e => {
       keys[e.key] = true;
@@ -274,7 +433,6 @@
       if (keys['ArrowRight'] && player.x < W - player.w) player.x += player.speed;
     }, 16);
 
-    // タッチそうさ
     let leftPressed = false, rightPressed = false;
 
     document.getElementById('leftBtn').addEventListener('touchstart', e => { e.preventDefault(); leftPressed = true; });
@@ -283,7 +441,6 @@
     document.getElementById('rightBtn').addEventListener('touchend', () => rightPressed = false);
     document.getElementById('fireBtn').addEventListener('touchstart', e => { e.preventDefault(); shoot(); });
 
-    // マウスクリックにも対応
     document.getElementById('leftBtn').addEventListener('mousedown', () => leftPressed = true);
     document.getElementById('leftBtn').addEventListener('mouseup', () => leftPressed = false);
     document.getElementById('leftBtn').addEventListener('mouseleave', () => leftPressed = false);
