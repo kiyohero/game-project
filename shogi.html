@@ -88,6 +88,26 @@
 <body>
   <a href="index.html" class="back-link">← ゲーム一覧</a>
   <h1>将棋</h1>
+  <div class="turn-indicator" id="turnIndicator">▲ あなたのばん</div>
+  <div class="game-area">
+    <div>
+      <div class="hand-label">相手の持ち駒</div>
+      <div class="hand" id="enemyHand"></div>
+    </div>
+    <div class="board" id="board"></div>
+    <div>
+      <div class="hand-label">あなたの持ち駒</div>
+      <div class="hand" id="playerHand"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn mode-btn active" id="vsPlayer">2人で対戦</button>
+    <button class="btn mode-btn" id="vsCPU">CPUと対戦</button>
+    <button class="btn small" id="helpBtn">駒の動き</button>
+    <button class="btn small" id="tipsBtn">上達のコツ</button>
+    <button class="btn small" id="restart">リスタート</button>
+  </div>
+  <div class="hint-bar" id="hintBar"></div>
   <details class="how-to-play">
     <summary>あそびかた</summary>
     <div class="content">
@@ -102,26 +122,6 @@
       <p style="margin-top: 10px;"><strong>「駒の動き」</strong>ボタンで各駒の動きかたを見てね！</p>
     </div>
   </details>
-  <div class="controls">
-    <button class="btn mode-btn active" id="vsPlayer">2人で対戦</button>
-    <button class="btn mode-btn" id="vsCPU">CPUと対戦</button>
-    <button class="btn small" id="helpBtn">駒の動き</button>
-    <button class="btn small" id="tipsBtn">上達のコツ</button>
-    <button class="btn small" id="restart">リスタート</button>
-  </div>
-  <div class="hint-bar" id="hintBar"></div>
-  <div class="turn-indicator" id="turnIndicator">▲ あなたのばん</div>
-  <div class="game-area">
-    <div>
-      <div class="hand-label">相手の持ち駒</div>
-      <div class="hand" id="enemyHand"></div>
-    </div>
-    <div class="board" id="board"></div>
-    <div>
-      <div class="hand-label">あなたの持ち駒</div>
-      <div class="hand" id="playerHand"></div>
-    </div>
-  </div>
   <div class="overlay" id="overlay">
     <h2 id="winner">勝ち！</h2>
     <p id="resultMsg"></p>
