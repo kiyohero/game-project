@@ -1,0 +1,141 @@
+/* 共通スタイル - Game Project */
+
+/* リセット */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 基本スタイル */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f5f0fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 見出し */
+h1 {
+  font-size: 2.5rem;
+  color: #6b5b7a;
+  margin-bottom: 15px;
+}
+
+/* ナビゲーション */
+.back-link {
+  color: #9b8ab8;
+  text-decoration: none;
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+
+.back-link:hover {
+  color: #6b5b7a;
+}
+
+/* ボタン */
+.btn {
+  background: #7a6b8a;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.btn:hover {
+  background: #6b5b7a;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+/* あそびかた */
+.how-to-play {
+  background: #e8e0f0;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  max-width: 340px;
+  width: 100%;
+}
+
+.how-to-play summary {
+  color: #6b5b7a;
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 12px 15px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.how-to-play summary::-webkit-details-marker {
+  display: none;
+}
+
+.how-to-play summary::after {
+  content: '+';
+  font-size: 1.3rem;
+}
+
+.how-to-play[open] summary::after {
+  content: '-';
+}
+
+.how-to-play .content,
+.how-to-play ul {
+  color: #6b5b7a;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  padding: 0 15px 15px 15px;
+}
+
+.how-to-play ul {
+  padding-left: 35px;
+}
+
+.how-to-play li {
+  margin-bottom: 5px;
+}
+
+/* オーバーレイ（ゲーム終了画面など） */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(250, 245, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.overlay h2 {
+  font-size: 2rem;
+  color: #6b5b7a;
+  margin-bottom: 20px;
+}
