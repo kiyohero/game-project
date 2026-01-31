@@ -50,19 +50,6 @@
 <body>
   <a href="index.html" class="back-link">← ゲーム一覧</a>
   <h1>オセロ</h1>
-  <details class="how-to-play">
-    <summary>あそびかた</summary>
-    <ul>
-      <li>黒と白の石をつかって、たくさん自分の色にしよう！</li>
-      <li>相手の石をはさむと、自分の色にひっくり返せるよ</li>
-      <li>おける場所は光っているマスだけ。光るマスがないときはパス！</li>
-      <li>最後にたくさん石があるほうが勝ちだよ</li>
-    </ul>
-  </details>
-  <div class="mode-select">
-    <button class="mode-btn active" id="vsPlayer">2人で対戦</button>
-    <button class="mode-btn" id="vsCPU">CPUと対戦</button>
-  </div>
   <div class="header">
     <div class="score-container">
       <div class="score-item">
@@ -78,7 +65,20 @@
   </div>
   <div class="turn-indicator" id="turnIndicator">黒のばん</div>
   <div class="board" id="board"></div>
+  <div class="mode-select">
+    <button class="mode-btn active" id="vsPlayer">2人で対戦</button>
+    <button class="mode-btn" id="vsCPU">CPUと対戦</button>
+  </div>
   <p class="instructions">光っているマスをタップ！</p>
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
+    <ul>
+      <li>黒と白の石をつかって、たくさん自分の色にしよう！</li>
+      <li>相手の石をはさむと、自分の色にひっくり返せるよ</li>
+      <li>おける場所は光っているマスだけ。光るマスがないときはパス！</li>
+      <li>最後にたくさん石があるほうが勝ちだよ</li>
+    </ul>
+  </details>
   <div class="overlay" id="overlay">
     <h2 id="winner">黒の勝ち！</h2>
     <p class="result" id="result">黒: 32 - 白: 32</p>
