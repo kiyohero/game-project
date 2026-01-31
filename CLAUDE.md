@@ -31,11 +31,24 @@
 ```
 game-project/
 ├── index.html         # ゲーム選択ポータル
+├── common.css         # 共通スタイル
+├── common.js          # 共通スクリプト（ナビ自動挿入）
 ├── 2048.html          # 2048パズル
 ├── tic-tac-toe.html   # マルバツゲーム
 ├── invader.html       # インベーダーゲーム
 ├── othello.html       # オセロ（CPU AI搭載）
 └── shogi.html         # 将棋（初心者向け）
+```
+
+### 共通ファイルについて
+
+- **common.css**: 背景色、ボタン、ナビゲーション等の共通スタイル
+- **common.js**: 各ゲームページに「← ゲーム一覧」リンクを自動挿入
+
+新しいゲームを追加する際は、以下を`<head>`内に追加：
+```html
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
 ```
 
 ## デザイン
