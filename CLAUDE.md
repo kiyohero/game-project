@@ -16,6 +16,7 @@
 | マルバツ | `tic-tac-toe.html` | 3目並べ対戦ゲーム |
 | インベーダー | `invader.html` | 敵を撃ち落とすシューティング |
 | オセロ | `othello.html` | CPU対戦も可能なボードゲーム |
+| 将棋 | `shogi.html` | 動ける場所が光る初心者向け将棋 |
 
 ## 技術スタック
 
@@ -33,7 +34,8 @@ game-project/
 ├── 2048.html          # 2048パズル
 ├── tic-tac-toe.html   # マルバツゲーム
 ├── invader.html       # インベーダーゲーム
-└── othello.html       # オセロ（CPU AI搭載）
+├── othello.html       # オセロ（CPU AI搭載）
+└── shogi.html         # 将棋（初心者向け）
 ```
 
 ## デザイン
