@@ -17,6 +17,7 @@
 | インベーダー | `invader.html` | 敵を撃ち落とすシューティング |
 | オセロ | `othello.html` | CPU対戦も可能なボードゲーム |
 | 将棋 | `shogi.html` | 動ける場所が光る初心者向け将棋 |
+| ポケモンしりとり | `pokemon-shiritori.html` | ポケモンの名前でしりとり対決 |
 
 ## 技術スタック
 
@@ -37,7 +38,8 @@ game-project/
 ├── tic-tac-toe.html   # マルバツゲーム
 ├── invader.html       # インベーダーゲーム
 ├── othello.html       # オセロ（CPU AI搭載）
-└── shogi.html         # 将棋（初心者向け）
+├── shogi.html         # 将棋（初心者向け）
+└── pokemon-shiritori.html  # ポケモンしりとり
 ```
 
 ### 共通ファイルについて

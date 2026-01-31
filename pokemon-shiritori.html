@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ポケモンしりとり</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    body { padding: 15px; }
+    h1 { font-size: 1.8rem; margin-bottom: 10px; }
+    .game-container { max-width: 400px; width: 100%; }
+    .score-area { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
+    .score-box { background: #9b8ab8; padding: 8px 16px; border-radius: 6px; text-align: center; }
+    .score-box .label { font-size: 0.7rem; color: #e8e0f0; }
+    .score-box .value { font-size: 1.2rem; color: white; font-weight: bold; }
+    .chain-display { background: #e8e0f0; padding: 12px; border-radius: 8px; margin-bottom: 10px; min-height: 60px; }
+    .chain-display .current-char { font-size: 2rem; color: #6b5b7a; font-weight: bold; text-align: center; }
+    .chain-display .hint { font-size: 0.85rem; color: #9b8ab8; text-align: center; margin-top: 5px; }
+    .history { background: #f5f0fa; border-radius: 8px; padding: 10px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }
+    .history-item { padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9rem; }
+    .history-item.player { background: #d4f4d4; color: #2d5a2d; }
+    .history-item.cpu { background: #d4d4f4; color: #2d2d5a; }
+    .history-item .name { font-weight: bold; }
+    .history-item .char { color: #888; font-size: 0.8rem; }
+    .input-area { display: flex; gap: 8px; margin-bottom: 10px; }
+    .input-area input { flex: 1; padding: 12px; border: 2px solid #c5b8d8; border-radius: 6px; font-size: 1rem; outline: none; }
+    .input-area input:focus { border-color: #7a6b8a; }
+    .input-area input:disabled { background: #eee; }
+    .message { background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 10px; color: #856404; font-size: 0.9rem; text-align: center; display: none; }
+    .message.show { display: block; }
+    .message.error { background: #f8d7da; color: #721c24; }
+    .message.success { background: #d4edda; color: #155724; }
+    .controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .btn.send { background: #5a9; }
+    .btn.send:hover { background: #4a8; }
+    .overlay { background: rgba(255,255,255,0.95); }
+    .overlay h2 { animation: pop 0.5s ease; }
+    @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+    .stats { color: #6b5b7a; margin-bottom: 15px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>ポケモンしりとり</h1>
+  <div class="game-container">
+    <div class="score-area">
+      <div class="score-box">
+        <div class="label">つづいた数</div>
+        <div class="value" id="chainCount">0</div>
+      </div>
+      <div class="score-box">
+        <div class="label">ベスト</div>
+        <div class="value" id="bestCount">0</div>
+      </div>
+    </div>
+    <div class="chain-display">
+      <div class="current-char" id="currentChar">好きなポケモンから始めよう！</div>
+      <div class="hint" id="hint"></div>
+    </div>
+    <div class="history" id="history"></div>
+    <div class="message" id="message"></div>
+    <div class="input-area">
+      <input type="text" id="input" placeholder="ポケモンの名前を入力" autocomplete="off">
+      <button class="btn send" id="sendBtn">送信</button>
+    </div>
+    <div class="controls">
+      <button class="btn small" id="hintBtn">ヒント</button>
+      <button class="btn small" id="giveupBtn">ギブアップ</button>
+      <button class="btn small" id="restartBtn">リスタート</button>
+    </div>
+  </div>
+  <details class="how-to-play" style="margin-top: 15px;">
+    <summary>あそびかた</summary>
+    <div class="content">
+      <ul>
+        <li>ポケモンの名前でしりとりをしよう！</li>
+        <li>前のポケモンの<strong>最後の文字</strong>から始まる名前を答えてね</li>
+        <li>「<strong>ン</strong>」で終わるポケモンを言ったら負け！</li>
+        <li>同じポケモンは使えないよ</li>
+        <li>わからなかったら「ヒント」ボタンを押してね</li>
+      </ul>
+    </div>
+  </details>
+  <div class="overlay" id="overlay">
+    <h2 id="resultTitle">ゲームオーバー</h2>
+    <p class="stats" id="resultStats"></p>
+    <button class="btn" id="retryBtn">もう一度</button>
+  </div>
+
+  <script>
+    // ポケモンリスト（カタカナ）
+    const POKEMON = [
+      'フシギダネ','フシギソウ','フシギバナ','ヒトカゲ','リザード','リザードン','ゼニガメ','カメール','カメックス',
+      'キャタピー','トランセル','バタフリー','ビードル','コクーン','スピアー','ポッポ','ピジョン','ピジョット',
+      'コラッタ','ラッタ','オニスズメ','オニドリル','アーボ','アーボック','ピカチュウ','ライチュウ','サンド',
+      'サンドパン','ニドラン','ニドリーナ','ニドクイン','ニドリーノ','ニドキング','ピッピ','ピクシー','ロコン',
+      'キュウコン','プリン','プクリン','ズバット','ゴルバット','ナゾノクサ','クサイハナ','ラフレシア','パラス',
+      'パラセクト','コンパン','モルフォン','ディグダ','ダグトリオ','ニャース','ペルシアン','コダック','ゴルダック',
+      'マンキー','オコリザル','ガーディ','ウインディ','ニョロモ','ニョロゾ','ニョロボン','ケーシィ','ユンゲラー',
+      'フーディン','ワンリキー','ゴーリキー','カイリキー','マダツボミ','ウツドン','ウツボット','メノクラゲ',
+      'ドククラゲ','イシツブテ','ゴローン','ゴローニャ','ポニータ','ギャロップ','ヤドン','ヤドラン','コイル',
+      'レアコイル','カモネギ','ドードー','ドードリオ','パウワウ','ジュゴン','ベトベター','ベトベトン','シェルダー',
+      'パルシェン','ゴース','ゴースト','ゲンガー','イワーク','スリープ','スリーパー','クラブ','キングラー',
+      'ビリリダマ','マルマイン','タマタマ','ナッシー','カラカラ','ガラガラ','サワムラー','エビワラー','ベロリンガ',
+      'ドガース','マタドガス','サイホーン','サイドン','ラッキー','モンジャラ','ガルーラ','タッツー','シードラ',
+      'トサキント','アズマオウ','ヒトデマン','スターミー','バリヤード','ストライク','ルージュラ','エレブー',
+      'ブーバー','カイロス','ケンタロス','コイキング','ギャラドス','ラプラス','メタモン','イーブイ','シャワーズ',
+      'サンダース','ブースター','ポリゴン','オムナイト','オムスター','カブト','カブトプス','プテラ','カビゴン',
+      'フリーザー','サンダー','ファイヤー','ミニリュウ','ハクリュー','カイリュー','ミュウツー','ミュウ',
+      'チコリータ','ベイリーフ','メガニウム','ヒノアラシ','マグマラシ','バクフーン','ワニノコ','アリゲイツ',
+      'オーダイル','オタチ','オオタチ','ホーホー','ヨルノズク','レディバ','レディアン','イトマル','アリアドス',
+      'クロバット','チョンチー','ランターン','ピチュー','ピィ','ププリン','トゲピー','トゲチック','ネイティ',
+      'ネイティオ','メリープ','モココ','デンリュウ','キレイハナ','マリル','マリルリ','ウソッキー','ニョロトノ',
+      'エイパム','ヒマナッツ','キマワリ','ヤンヤンマ','ウパー','ヌオー','エーフィ','ブラッキー','ヤミカラス',
+      'ヤドキング','ムウマ','アンノーン','ソーナンス','キリンリキ','クヌギダマ','フォレトス','ノコッチ','グライガー',
+      'ハガネール','ブルー','グランブル','ハリーセン','ハッサム','ツボツボ','ヘラクロス','ニューラ','ヒメグマ',
+      'リングマ','マグマッグ','マグカルゴ','ウリムー','イノムー','サニーゴ','テッポウオ','オクタン','デリバード',
+      'マンタイン','エアームド','デルビル','ヘルガー','キングドラ','ゴマゾウ','ドンファン','ポリゴン2','オドシシ',
+      'ドーブル','バルキー','カポエラー','ムチュール','エレキッド','ブビィ','ミルタンク','ハピナス','ライコウ',
+      'エンテイ','スイクン','ヨーギラス','サナギラス','バンギラス','ルギア','ホウオウ','セレビィ',
+      'キモリ','ジュプトル','ジュカイン','アチャモ','ワカシャモ','バシャーモ','ミズゴロウ','ヌマクロー','ラグラージ',
+      'ポチエナ','グラエナ','ジグザグマ','マッスグマ','ケムッソ','カラサリス','アゲハント','マユルド','ドクケイル',
+      'ハスボー','ハスブレロ','ルンパッパ','タネボー','コノハナ','ダーテング','スバメ','オオスバメ','キャモメ',
+      'ペリッパー','ラルトス','キルリア','サーナイト','アメタマ','アメモース','キノココ','キノガッサ','ナマケロ',
+      'ヤルキモノ','ケッキング','ツチニン','テッカニン','ヌケニン','ゴニョニョ','ドゴーム','バクオング','マクノシタ',
+      'ハリテヤマ','ルリリ','ノズパス','エネコ','エネコロロ','ヤミラミ','クチート','ココドラ','コドラ','ボスゴドラ',
+      'アサナン','チャーレム','ラクライ','ライボルト','プラスル','マイナン','バルビート','イルミーゼ','ロゼリア',
+      'ゴクリン','マルノーム','キバニア','サメハダー','ホエルコ','ホエルオー','ドンメル','バクーダ','コータス',
+      'バネブー','ブーピッグ','パッチール','ナックラー','ビブラーバ','フライゴン','サボネア','ノクタス','チルット',
+      'チルタリス','ザングース','ハブネーク','ルナトーン','ソルロック','ドジョッチ','ナマズン','ヘイガニ','シザリガー',
+      'ヤジロン','ネンドール','リリーラ','ユレイドル','アノプス','アーマルド','ヒンバス','ミロカロス','ポワルン',
+      'カクレオン','カゲボウズ','ジュペッタ','ヨマワル','サマヨール','トロピウス','チリーン','アブソル','ソーナノ',
+      'ユキワラシ','オニゴーリ','タマザラシ','トドグラー','トドゼルガ','パールル','ハンテール','サクラビス',
+      'ジーランス','ラブカス','タツベイ','コモルー','ボーマンダ','ダンバル','メタング','メタグロス','レジロック',
+      'レジアイス','レジスチル','ラティアス','ラティオス','カイオーガ','グラードン','レックウザ','ジラーチ','デオキシス'
+    ];
+
+    // ひらがな変換用
+    const KATAKANA_TO_HIRAGANA = str => str.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+    const HIRAGANA_TO_KATAKANA = str => str.replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+    const normalize = str => HIRAGANA_TO_KATAKANA(str.trim().toUpperCase());
+
+    // 小文字を大文字に変換（ァ→ア、ッ→ツなど）
+    const toBigChar = c => {
+      const small = 'ァィゥェォャュョッ';
+      const big = 'アイウエオヤユヨツ';
+      const idx = small.indexOf(c);
+      return idx >= 0 ? big[idx] : c;
+    };
+
+    // 最後の文字を取得（ー は無視）
+    const getLastChar = name => {
+      let last = name[name.length - 1];
+      if (last === 'ー' && name.length > 1) {
+        last = name[name.length - 2];
+      }
+      return toBigChar(last);
+    };
+
+    let usedPokemon = new Set();
+    let currentChar = '';
+    let chainCount = 0;
+    let bestCount = parseInt(localStorage.getItem('pokemonShiritoriBest') || '0');
+    let gameOver = false;
+    let isFirstTurn = true;
+
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    const historyEl = document.getElementById('history');
+    const currentCharEl = document.getElementById('currentChar');
+    const hintEl = document.getElementById('hint');
+    const messageEl = document.getElementById('message');
+    const chainCountEl = document.getElementById('chainCount');
+    const bestCountEl = document.getElementById('bestCount');
+    const overlay = document.getElementById('overlay');
+    const resultTitleEl = document.getElementById('resultTitle');
+    const resultStatsEl = document.getElementById('resultStats');
+
+    bestCountEl.textContent = bestCount;
+
+    function showMessage(text, type = '') {
+      messageEl.textContent = text;
+      messageEl.className = 'message show ' + type;
+      setTimeout(() => messageEl.classList.remove('show'), 3000);
+    }
+
+    function addHistory(name, isPlayer) {
+      const div = document.createElement('div');
+      div.className = 'history-item ' + (isPlayer ? 'player' : 'cpu');
+      const lastChar = getLastChar(name);
+      div.innerHTML = `<span class="name">${isPlayer ? 'あなた' : 'CPU'}: ${name}</span> <span class="char">→${lastChar}</span>`;
+      historyEl.appendChild(div);
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+    function updateDisplay() {
+      chainCountEl.textContent = chainCount;
+      if (currentChar) {
+        currentCharEl.textContent = `「${currentChar}」から始まるポケモン！`;
+        // ヒントを表示
+        const available = getAvailablePokemon(currentChar);
+        hintEl.textContent = `残り ${available.length} 匹`;
+      }
+    }
+
+    function getAvailablePokemon(startChar) {
+      return POKEMON.filter(p => p[0] === startChar && !usedPokemon.has(p));
+    }
+
+    function findPokemon(name) {
+      const normalized = normalize(name);
+      return POKEMON.find(p => p === normalized);
+    }
+
+    function cpuTurn() {
+      const available = getAvailablePokemon(currentChar);
+      if (available.length === 0) {
+        // CPUが答えられない
+        endGame(true, 'CPUが答えられなかった！');
+        return;
+      }
+
+      // ンで終わらないポケモンを優先
+      const safe = available.filter(p => !p.endsWith('ン'));
+      const choice = safe.length > 0 ? safe[Math.floor(Math.random() * safe.length)] : available[Math.floor(Math.random() * available.length)];
+
+      setTimeout(() => {
+        usedPokemon.add(choice);
+        addHistory(choice, false);
+        chainCount++;
+
+        if (choice.endsWith('ン')) {
+          endGame(true, 'CPUが「ン」で終わるポケモンを言った！');
+          return;
+        }
+
+        currentChar = getLastChar(choice);
+        updateDisplay();
+        inputEl.disabled = false;
+        inputEl.focus();
+      }, 800);
+    }
+
+    function playerTurn(name) {
+      const pokemon = findPokemon(name);
+
+      if (!pokemon) {
+        showMessage('そのポケモンは見つからないよ', 'error');
+        return false;
+      }
+
+      if (usedPokemon.has(pokemon)) {
+        showMessage('そのポケモンはもう使ったよ', 'error');
+        return false;
+      }
+
+      if (!isFirstTurn && pokemon[0] !== currentChar) {
+        showMessage(`「${currentChar}」から始まるポケモンを言ってね`, 'error');
+        return false;
+      }
+
+      usedPokemon.add(pokemon);
+      addHistory(pokemon, true);
+      chainCount++;
+      isFirstTurn = false;
+
+      if (pokemon.endsWith('ン')) {
+        endGame(false, '「ン」で終わっちゃった...');
+        return true;
+      }
+
+      currentChar = getLastChar(pokemon);
+      updateDisplay();
+      inputEl.value = '';
+      inputEl.disabled = true;
+
+      // CPUのターン
+      cpuTurn();
+      return true;
+    }
+
+    function endGame(playerWin, reason) {
+      gameOver = true;
+      inputEl.disabled = true;
+
+      if (chainCount > bestCount) {
+        bestCount = chainCount;
+        localStorage.setItem('pokemonShiritoriBest', bestCount);
+        bestCountEl.textContent = bestCount;
+      }
+
+      resultTitleEl.textContent = playerWin ? 'やったね！' : 'ざんねん...';
+      resultStatsEl.textContent = `${reason}\nつづいた数: ${chainCount}`;
+      overlay.classList.add('show');
+    }
+
+    function showHint() {
+      if (gameOver || isFirstTurn) {
+        showMessage('好きなポケモンから始めてね！', 'success');
+        return;
+      }
+
+      const available = getAvailablePokemon(currentChar);
+      if (available.length > 0) {
+        const hint = available[Math.floor(Math.random() * available.length)];
+        showMessage(`ヒント: ${hint.substring(0, 2)}...`, 'success');
+      } else {
+        showMessage('答えられるポケモンがいない！ギブアップしよう', 'error');
+      }
+    }
+
+    function restart() {
+      usedPokemon.clear();
+      currentChar = '';
+      chainCount = 0;
+      gameOver = false;
+      isFirstTurn = true;
+      historyEl.innerHTML = '';
+      inputEl.value = '';
+      inputEl.disabled = false;
+      currentCharEl.textContent = '好きなポケモンから始めよう！';
+      hintEl.textContent = '';
+      overlay.classList.remove('show');
+      updateDisplay();
+      inputEl.focus();
+    }
+
+    // イベント
+    sendBtn.addEventListener('click', () => {
+      if (!gameOver && inputEl.value.trim()) {
+        playerTurn(inputEl.value);
+      }
+    });
+
+    inputEl.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !gameOver && inputEl.value.trim()) {
+        playerTurn(inputEl.value);
+      }
+    });
+
+    document.getElementById('hintBtn').addEventListener('click', showHint);
+    document.getElementById('giveupBtn').addEventListener('click', () => {
+      if (!gameOver) {
+        endGame(false, 'ギブアップ');
+      }
+    });
+    document.getElementById('restartBtn').addEventListener('click', restart);
+    document.getElementById('retryBtn').addEventListener('click', restart);
+
+    // 初期化
+    inputEl.focus();
+  </script>
+</body>
+</html>
