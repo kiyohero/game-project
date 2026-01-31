@@ -66,6 +66,16 @@
     .move-cell.center { background: #7a6b8a; color: white; }
     .move-cell.can { background: #90EE90; }
     .move-cell.far { background: #66cc66; font-size: 0.5rem; }
+    .tips-content { background: white; border-radius: 10px; padding: 20px; max-width: 360px; max-height: 80vh; overflow-y: auto; }
+    .tips-content h3 { color: #6b5b7a; margin-bottom: 15px; text-align: center; }
+    .tips-content h4 { color: #7a6b8a; margin: 15px 0 8px 0; font-size: 1rem; border-bottom: 2px solid #e8e0f0; padding-bottom: 5px; }
+    .tips-content p, .tips-content li { color: #6b5b7a; font-size: 0.85rem; line-height: 1.6; }
+    .tips-content ul { padding-left: 20px; margin-bottom: 10px; }
+    .tips-content li { margin-bottom: 5px; }
+    .tips-content .tip-box { background: #f5f0fa; padding: 10px; border-radius: 6px; margin: 10px 0; }
+    .tips-content .tip-box.important { background: #fff3cd; border-left: 4px solid #ffc107; }
+    .hint-bar { background: #fff3cd; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; color: #856404; font-size: 0.85rem; max-width: 360px; text-align: center; display: none; }
+    .hint-bar.show { display: block; }
     .back-link { color: #9b8ab8; text-decoration: none; font-size: 0.95rem; margin-bottom: 10px; display: inline-block; }
     .back-link:hover { color: #6b5b7a; }
     @media (max-width: 400px) {
@@ -96,8 +106,10 @@
     <button class="btn mode-btn active" id="vsPlayer">2人で対戦</button>
     <button class="btn mode-btn" id="vsCPU">CPUと対戦</button>
     <button class="btn small" id="helpBtn">駒の動き</button>
+    <button class="btn small" id="tipsBtn">上達のコツ</button>
     <button class="btn small" id="restart">リスタート</button>
   </div>
+  <div class="hint-bar" id="hintBar"></div>
   <div class="turn-indicator" id="turnIndicator">▲ あなたのばん</div>
   <div class="game-area">
     <div>
@@ -128,6 +140,52 @@
       <p style="font-size: 0.8rem; color: #666; text-align: center; margin-bottom: 10px;">緑のマスに動けるよ！</p>
       <div class="piece-help" id="pieceHelp"></div>
       <button class="btn" id="closeHelp" style="width: 100%;">とじる</button>
+    </div>
+  </div>
+
+  <div class="help-modal" id="tipsModal">
+    <div class="tips-content">
+      <h3>上達のコツ</h3>
+
+      <h4>まずはこれだけ覚えよう！</h4>
+      <div class="tip-box important">
+        <strong>王さまを守ろう！</strong><br>
+        王さまを取られたら負けだよ。いつも王さまの安全を考えよう！
+      </div>
+
+      <h4>初心者レベル</h4>
+      <ul>
+        <li><strong>歩を前に進めよう</strong> - まずは歩を動かして道を作ろう</li>
+        <li><strong>飛車と角を使おう</strong> - たくさん動ける強い駒だよ</li>
+        <li><strong>取った駒を使おう</strong> - 持ち駒は好きな場所に置けるよ</li>
+      </ul>
+
+      <h4>中級者レベル</h4>
+      <ul>
+        <li><strong>駒を連携させよう</strong> - 1つの駒だけじゃなく、仲間と協力！</li>
+        <li><strong>相手の王を攻めよう</strong> - 王の周りに駒を集めよう</li>
+        <li><strong>成れるときは成ろう</strong> - 敵陣に入ったら「成る」と強くなるよ</li>
+      </ul>
+
+      <h4>上級者レベル</h4>
+      <ul>
+        <li><strong>囲いを作ろう</strong> - 王さまを金銀で囲って守る陣形</li>
+        <li><strong>相手の駒の利きを見よう</strong> - 取られない場所に駒を置こう</li>
+        <li><strong>先を読もう</strong> - 「こう動かしたら相手はどうする？」を考えよう</li>
+      </ul>
+
+      <h4>強い駒の使い方</h4>
+      <div class="tip-box">
+        <strong>飛車（ひしゃ）</strong>：縦横にどこまでも動ける最強クラスの駒。序盤は大事に使おう。
+      </div>
+      <div class="tip-box">
+        <strong>角（かく）</strong>：斜めにどこまでも動ける。飛車と合わせて使うと強力！
+      </div>
+      <div class="tip-box">
+        <strong>金・銀</strong>：王さまを守る大切な駒。王の近くに置いておこう。
+      </div>
+
+      <button class="btn" id="closeTips" style="width: 100%; margin-top: 15px;">とじる</button>
     </div>
   </div>
 
@@ -797,6 +855,65 @@
     helpModal.addEventListener('click', (e) => {
       if (e.target === helpModal) helpModal.classList.remove('show');
     });
+
+    // 上達のコツモーダル
+    const tipsModal = document.getElementById('tipsModal');
+    document.getElementById('tipsBtn').addEventListener('click', () => {
+      tipsModal.classList.add('show');
+    });
+
+    document.getElementById('closeTips').addEventListener('click', () => {
+      tipsModal.classList.remove('show');
+    });
+
+    tipsModal.addEventListener('click', (e) => {
+      if (e.target === tipsModal) tipsModal.classList.remove('show');
+    });
+
+    // ヒント表示機能
+    const hintBar = document.getElementById('hintBar');
+    const hints = [
+      '光っている駒が動かせるよ！タップしてみよう',
+      '飛車と角は遠くまで動けるよ。大切に使おう！',
+      '持ち駒は好きな空いているマスに置けるよ',
+      '敵陣（上3段）に入ったら「成る」と強くなるよ',
+      '王さまを守りながら攻めよう',
+      '相手の駒を取ると、自分の持ち駒になるよ',
+      '金と銀で王さまの周りを固めると安全だよ',
+    ];
+    let hintIndex = 0;
+    let moveCount = 0;
+
+    function showHint(text) {
+      hintBar.textContent = text;
+      hintBar.classList.add('show');
+    }
+
+    function hideHint() {
+      hintBar.classList.remove('show');
+    }
+
+    function showRandomHint() {
+      if (moveCount < 10 && moveCount % 3 === 0) {
+        showHint(hints[hintIndex % hints.length]);
+        hintIndex++;
+      } else if (moveCount >= 10) {
+        hideHint();
+      }
+    }
+
+    // 元のnextTurn関数を拡張してヒントを表示
+    const originalNextTurn = nextTurn;
+    nextTurn = function() {
+      moveCount++;
+      originalNextTurn();
+      if (currentPlayer === 0 && !gameOver) {
+        showRandomHint();
+      }
+    };
+
+    // 初期ヒントを表示
+    showHint('光っている駒をタップして動かしてみよう！');
 
     function renderHelp() {
       const helpEl = document.getElementById('pieceHelp');
