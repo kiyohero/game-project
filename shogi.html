@@ -40,7 +40,9 @@
     .piece { width: 34px; height: 38px; background: #f5e6c8; border: 1px solid #c9a96e; border-radius: 4px 4px 8px 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; color: #333; position: relative; clip-path: polygon(10% 0%, 90% 0%, 100% 15%, 100% 100%, 0% 100%, 0% 15%); transition: transform 0.1s; }
     .piece.enemy { transform: rotate(180deg); }
     .piece.promoted { color: #c41e3a; }
+    .piece.movable { box-shadow: 0 0 8px 3px rgba(100, 200, 100, 0.8); }
     .piece:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .piece.movable:hover { box-shadow: 0 0 12px 5px rgba(100, 200, 100, 0.9); }
     .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
     .overlay.show { opacity: 1; pointer-events: auto; }
     .overlay h2 { font-size: 2rem; color: #6b5b7a; margin-bottom: 15px; }
@@ -64,6 +66,8 @@
     .move-cell.center { background: #7a6b8a; color: white; }
     .move-cell.can { background: #90EE90; }
     .move-cell.far { background: #66cc66; font-size: 0.5rem; }
+    .back-link { color: #9b8ab8; text-decoration: none; font-size: 0.95rem; margin-bottom: 10px; display: inline-block; }
+    .back-link:hover { color: #6b5b7a; }
     @media (max-width: 400px) {
       .cell { width: 34px; height: 38px; }
       .piece { width: 30px; height: 34px; font-size: 0.85rem; }
@@ -72,12 +76,14 @@
   </style>
 </head>
 <body>
+  <a href="index.html" class="back-link">← ゲーム一覧</a>
   <h1>将棋</h1>
   <details class="how-to-play">
     <summary>あそびかた</summary>
     <div class="content">
       <ul>
-        <li><strong>駒をタップ</strong>すると、動ける場所が<span style="color: green;">緑色</span>に光るよ！</li>
+        <li><strong>光っている駒</strong>が動かせるよ！タップしてみよう</li>
+        <li>駒をタップすると、動ける場所が<span style="color: green;">緑色</span>に光るよ！</li>
         <li>緑のマスをタップすると、そこに動けるよ</li>
         <li>相手の駒を取ったら、<strong>持ち駒</strong>として使えるよ</li>
         <li>敵の陣地（上から3段）に入ると<strong>「成る」</strong>ことができるよ</li>
@@ -322,6 +328,25 @@
       return moves;
     }
 
+    // 動かせる駒の位置を取得
+    function getMovablePieces() {
+      const movable = [];
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const piece = board[r][c];
+          if (piece === PIECES.EMPTY) continue;
+          const isMyPiece = (currentPlayer === 0 && !isEnemy(piece)) || (currentPlayer === 1 && isEnemy(piece));
+          if (isMyPiece) {
+            const moves = getMoves(piece, r, c);
+            if (moves.length > 0) {
+              movable.push([r, c]);
+            }
+          }
+        }
+      }
+      return movable;
+    }
+
     // 持ち駒を置ける場所を取得
     function getDropMoves(pieceName, isEnemySide) {
       const moves = [];
@@ -405,6 +430,9 @@
     // 描画
     function render() {
       boardEl.innerHTML = '';
+      // 駒が選択されていない時だけ、動かせる駒をハイライト
+      const movablePieces = (!selectedCell && !selectedHandPiece) ? getMovablePieces() : [];
+
       for (let r = 0; r < 9; r++) {
         for (let c = 0; c < 9; c++) {
           const cell = document.createElement('div');
@@ -428,6 +456,10 @@
             pieceEl.className = 'piece';
             if (isEnemy(piece)) pieceEl.classList.add('enemy');
             if (isPromoted(piece)) pieceEl.classList.add('promoted');
+            // 動かせる駒をハイライト
+            if (movablePieces.some(m => m[0] === r && m[1] === c)) {
+              pieceEl.classList.add('movable');
+            }
             pieceEl.textContent = PIECE_NAMES[piece];
             cell.appendChild(pieceEl);
           }
