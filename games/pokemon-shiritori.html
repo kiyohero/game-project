@@ -17,14 +17,14 @@
     .chain-display { background: #e8e0f0; padding: 12px; border-radius: 8px; margin-bottom: 10px; min-height: 60px; }
     .chain-display .current-char { font-size: 2rem; color: #6b5b7a; font-weight: bold; text-align: center; }
     .chain-display .hint { font-size: 0.85rem; color: #9b8ab8; text-align: center; margin-top: 5px; }
-    .history { background: #f5f0fa; border-radius: 8px; padding: 10px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }
-    .history-item { padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+    .history { background: #f5f0fa; border-radius: 8px; padding: 10px; margin-bottom: 10px; max-height: 300px; overflow-y: auto; }
+    .history-item { padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 0.95rem; display: flex; align-items: center; gap: 12px; }
     .history-item.player { background: #d4f4d4; color: #2d5a2d; }
     .history-item.cpu { background: #d4d4f4; color: #2d2d5a; }
-    .history-item .sprite { width: 40px; height: 40px; image-rendering: pixelated; flex-shrink: 0; }
+    .history-item .sprite { width: 80px; height: 80px; image-rendering: pixelated; flex-shrink: 0; background: rgba(255,255,255,0.5); border-radius: 8px; }
     .history-item .info { flex: 1; }
-    .history-item .name { font-weight: bold; }
-    .history-item .char { color: #888; font-size: 0.8rem; }
+    .history-item .name { font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 4px; }
+    .history-item .char { color: #888; font-size: 0.9rem; }
     .input-area { display: flex; gap: 8px; margin-bottom: 10px; }
     .input-area input { flex: 1; padding: 12px; border: 2px solid #c5b8d8; border-radius: 6px; font-size: 1rem; outline: none; }
     .input-area input:focus { border-color: #7a6b8a; }
