@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>マルバツゲーム</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f0fa; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
@@ -37,13 +39,36 @@
     .player-icon.active { opacity: 1; transform: scale(1.2); box-shadow: 0 0 20px rgba(155,138,184,0.5); }
     .player-icon.x-icon { background: #e74c3c; color: white; }
     .player-icon.o-icon { background: #3498db; color: white; }
-    .back-link { color: #9b8ab8; text-decoration: none; font-size: 0.95rem; margin-bottom: 10px; display: inline-block; }
-    .back-link:hover { color: #6b5b7a; }
+    .mode-select { display: flex; gap: 10px; margin-bottom: 15px; }
+    .mode-btn { padding: 10px 20px; border: 2px solid #9b8ab8; background: white; border-radius: 20px; color: #6b5b7a; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+    .mode-btn.active { background: #9b8ab8; color: white; }
+    .mode-btn:hover { transform: scale(1.05); }
+    .header-row { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+    .wins-box { background: #9b8ab8; padding: 8px 16px; border-radius: 6px; text-align: center; }
+    .wins-box .label { font-size: 0.7rem; color: #e8e0f0; }
+    .wins-box .value { font-size: 1.2rem; color: white; font-weight: bold; }
   </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <!-- ランキング機能 -->
+  <link rel="stylesheet" href="ranking.css">
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
 </head>
 <body>
-  <a href="index.html" class="back-link">← ゲーム一覧</a>
   <h1>マルバツゲーム</h1>
+  <div class="mode-select">
+    <button class="mode-btn" id="pvpBtn">ふたりで</button>
+    <button class="mode-btn active" id="cpuBtn">CPUと</button>
+  </div>
+  <div class="header-row">
+    <div class="wins-box">
+      <div class="label">勝利数</div>
+      <div class="value" id="wins">0</div>
+    </div>
+    <button class="btn ranking-btn" id="rankingBtn">🏆</button>
+  </div>
   <div class="turn-indicator">
     <div class="player-icon x-icon active" id="xIcon">X</div>
     <div class="player-icon o-icon" id="oIcon">O</div>
