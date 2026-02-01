@@ -109,6 +109,157 @@
     const startOverlay = document.getElementById('startOverlay');
     let player, enemies, bullets, enemyBullets, particles, stars, score, lives, gameOver, gameStarted, direction, moveTimer, shootTimer, playerFlash;
 
+    // ===== オーディオ関連 =====
+    let audioCtx = null;
+    let bgmOscillator = null;
+    let bgmGain = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // 発射音（高音のピュー）
+    function playShootSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    // 爆発音（ノイズ系）
+    function playExplosionSound() {
+      if (!audioCtx) return;
+      const bufferSize = audioCtx.sampleRate * 0.15;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      }
+      const noise = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      noise.buffer = buffer;
+      noise.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      noise.start();
+    }
+
+    // ダメージ音（低音のブザー）
+    function playDamageSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    // ゲームオーバー音（下降音階）
+    function playGameOverSound() {
+      if (!audioCtx) return;
+      const notes = [440, 392, 349, 294];
+      notes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.14);
+        osc.start(audioCtx.currentTime + i * 0.15);
+        osc.stop(audioCtx.currentTime + i * 0.15 + 0.15);
+      });
+    }
+
+    // クリア音（上昇音階）
+    function playClearSound() {
+      if (!audioCtx) return;
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.12 + 0.11);
+        osc.start(audioCtx.currentTime + i * 0.12);
+        osc.stop(audioCtx.currentTime + i * 0.12 + 0.12);
+      });
+    }
+
+    // BGM（レトロ風ループ）
+    function startBGM() {
+      if (!audioCtx || bgmOscillator) return;
+      bgmGain = audioCtx.createGain();
+      bgmGain.connect(audioCtx.destination);
+      bgmGain.gain.value = 0.03; // 控えめな音量
+
+      const playNote = (freq, startTime, duration) => {
+        const osc = audioCtx.createOscillator();
+        const noteGain = audioCtx.createGain();
+        osc.connect(noteGain);
+        noteGain.connect(bgmGain);
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        noteGain.gain.setValueAtTime(0.5, startTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.1, startTime + duration * 0.8);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+        return osc;
+      };
+
+      // シンプルなベースライン（ループ用のメロディー）
+      const melody = [131, 165, 196, 165, 147, 165, 196, 220]; // レトロなベース音
+      const noteDuration = 0.25;
+      const loopDuration = melody.length * noteDuration;
+
+      let currentLoop = 0;
+      const scheduleLoop = () => {
+        if (!bgmGain) return;
+        const startTime = audioCtx.currentTime + currentLoop * loopDuration;
+        melody.forEach((freq, i) => {
+          playNote(freq, startTime + i * noteDuration, noteDuration * 0.9);
+        });
+        currentLoop++;
+        if (bgmGain) {
+          setTimeout(scheduleLoop, loopDuration * 900); // 少し早めにスケジュール
+        }
+      };
+
+      bgmOscillator = true; // フラグとして使用
+      scheduleLoop();
+    }
+
+    function stopBGM() {
+      if (bgmGain) {
+        bgmGain.disconnect();
+        bgmGain = null;
+      }
+      bgmOscillator = null;
+    }
+
     // 星の背景を作成
     function createStars() {
       stars = [];
@@ -362,6 +513,7 @@
             const colors = ['#ff6b6b', '#ffd93d', '#ff8c42'];
             createExplosion(e.x + e.w / 2, e.y + e.h / 2, colors[e.type]);
             showScorePopup(e.x + e.w / 2, e.y, points);
+            playExplosionSound();
           }
         });
       });
@@ -372,11 +524,14 @@
           b.y = H + 100;
           lives--;
           playerFlash = 30;
+          playDamageSound();
           gameContainer.classList.add('damage');
           setTimeout(() => gameContainer.classList.remove('damage'), 300);
           updateLives();
           if (lives <= 0) {
             gameOver = true;
+            stopBGM();
+            playGameOverSound();
             createExplosion(player.x + player.w / 2, player.y + player.h / 2, '#00ff88');
             showOverlay('ゲームオーバー', true);
           }
@@ -386,12 +541,16 @@
       enemies.forEach(e => {
         if (e.alive && e.y + e.h >= player.y) {
           gameOver = true;
+          stopBGM();
+          playGameOverSound();
           showOverlay('ゲームオーバー', true);
         }
       });
 
       if (enemies.every(e => !e.alive)) {
         gameOver = true;
+        stopBGM();
+        playClearSound();
         showOverlay('クリア！', false);
       }
     }
@@ -427,6 +586,7 @@
       if (gameOver || !gameStarted) return;
       if (bullets.length < 3) {
         bullets.push({ x: player.x + player.w / 2 - 2, y: player.y, w: 4, h: 10, speed: 7 });
+        playShootSound();
       }
     }
 
@@ -466,17 +626,25 @@
     }, 16);
 
     document.getElementById('restart').addEventListener('click', () => {
+      stopBGM();
       init();
       gameStarted = true;
+      initAudio();
+      startBGM();
       startOverlay.classList.remove('show');
     });
     document.getElementById('retryBtn').addEventListener('click', () => {
+      stopBGM();
       init();
       gameStarted = true;
+      initAudio();
+      startBGM();
       startOverlay.classList.remove('show');
     });
     document.getElementById('startBtn').addEventListener('click', () => {
       gameStarted = true;
+      initAudio();
+      startBGM();
       startOverlay.classList.remove('show');
     });
 
