@@ -22,9 +22,11 @@
     .history-item.player { background: #d4f4d4; color: #2d5a2d; }
     .history-item.cpu { background: #d4d4f4; color: #2d2d5a; }
     .history-item .sprite { width: 80px; height: 80px; image-rendering: pixelated; flex-shrink: 0; background: rgba(255,255,255,0.5); border-radius: 8px; }
-    .history-item .info { flex: 1; }
-    .history-item .name { font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 4px; }
-    .history-item .char { color: #888; font-size: 0.9rem; }
+    .history-item .info { flex: 1; min-width: 0; }
+    .history-item .name { font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 2px; }
+    .history-item .region { font-size: 0.75rem; color: #9b8ab8; background: #e8e0f0; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+    .history-item .desc { font-size: 0.8rem; color: #666; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .history-item .char { color: #888; font-size: 0.9rem; display: block; margin-top: 4px; }
     .input-area { display: flex; gap: 8px; margin-bottom: 10px; }
     .input-area input { flex: 1; padding: 12px; border: 2px solid #c5b8d8; border-radius: 6px; font-size: 1rem; outline: none; }
     .input-area input:focus { border-color: #7a6b8a; }
@@ -246,10 +248,14 @@
       div.className = 'history-item ' + (isPlayer ? 'player' : 'cpu');
       const lastChar = getLastChar(pokemon.name);
       const spriteUrl = SPRITE_URL.replace('{id}', pokemon.id);
+      const regionHtml = pokemon.region ? `<span class="region">${pokemon.region}地方</span>` : '';
+      const descHtml = pokemon.description ? `<p class="desc">${pokemon.description}</p>` : '';
       div.innerHTML = `
         <img class="sprite" src="${spriteUrl}" alt="${pokemon.name}" onerror="this.style.display='none'">
         <div class="info">
           <span class="name">${isPlayer ? 'あなた' : 'CPU'}: ${pokemon.name}</span>
+          ${regionHtml}
+          ${descHtml}
           <span class="char">→${lastChar}</span>
         </div>`;
       historyEl.appendChild(div);

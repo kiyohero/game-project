@@ -12,20 +12,58 @@ import sys
 
 BASE_URL = 'https://raw.githubusercontent.com/PokeAPI/api-data/master/data/api/v2'
 
+# 世代から地方名へのマッピング
+GENERATION_TO_REGION = {
+    'generation-i': 'カントー',
+    'generation-ii': 'ジョウト',
+    'generation-iii': 'ホウエン',
+    'generation-iv': 'シンオウ',
+    'generation-v': 'イッシュ',
+    'generation-vi': 'カロス',
+    'generation-vii': 'アローラ',
+    'generation-viii': 'ガラル',
+    'generation-ix': 'パルデア',
+}
+
 def fetch_json(url):
     """URLからJSONを取得"""
     with urllib.request.urlopen(url, timeout=30) as response:
         return json.loads(response.read().decode('utf-8'))
 
 def get_pokemon_info(species_id):
-    """指定IDのポケモンの日本語名とIDを取得"""
+    """指定IDのポケモンの情報を取得"""
     url = f'{BASE_URL}/pokemon-species/{species_id}/index.json'
     try:
         data = fetch_json(url)
-        # 日本語名を探す（ja が標準日本語、カタカナ表記）
+
+        # 日本語名を取得
+        name = None
         for name_entry in data.get('names', []):
             if name_entry.get('language', {}).get('name') == 'ja':
-                return {'id': species_id, 'name': name_entry.get('name')}
+                name = name_entry.get('name')
+                break
+
+        if not name:
+            return None
+
+        # 世代と地方を取得
+        gen_name = data.get('generation', {}).get('name', '')
+        region = GENERATION_TO_REGION.get(gen_name, '')
+
+        # 日本語の説明文を取得（最初に見つかったもの）
+        description = ''
+        for entry in data.get('flavor_text_entries', []):
+            if entry.get('language', {}).get('name') == 'ja':
+                # 改行を削除して整形
+                description = entry.get('flavor_text', '').replace('\n', ' ').replace('　', ' ')
+                break
+
+        return {
+            'id': species_id,
+            'name': name,
+            'region': region,
+            'description': description
+        }
     except Exception as e:
         print(f'  警告: ID {species_id} の取得に失敗: {e}', file=sys.stderr)
     return None
@@ -64,10 +102,13 @@ def main():
         'pokemon': pokemon_list
     }
 
-    with open('pokemon-data.json', 'w', encoding='utf-8') as f:
+    # scriptsフォルダから実行される想定で、games/に出力
+    import os
+    output_path = os.path.join(os.path.dirname(__file__), '..', 'games', 'pokemon-data.json')
+    with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
-    print('pokemon-data.json に保存しました')
+    print(f'{output_path} に保存しました')
 
 if __name__ == '__main__':
     main()
