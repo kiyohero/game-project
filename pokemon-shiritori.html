@@ -18,9 +18,11 @@
     .chain-display .current-char { font-size: 2rem; color: #6b5b7a; font-weight: bold; text-align: center; }
     .chain-display .hint { font-size: 0.85rem; color: #9b8ab8; text-align: center; margin-top: 5px; }
     .history { background: #f5f0fa; border-radius: 8px; padding: 10px; margin-bottom: 10px; max-height: 200px; overflow-y: auto; }
-    .history-item { padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9rem; }
+    .history-item { padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
     .history-item.player { background: #d4f4d4; color: #2d5a2d; }
     .history-item.cpu { background: #d4d4f4; color: #2d2d5a; }
+    .history-item .sprite { width: 40px; height: 40px; image-rendering: pixelated; flex-shrink: 0; }
+    .history-item .info { flex: 1; }
     .history-item .name { font-weight: bold; }
     .history-item .char { color: #888; font-size: 0.8rem; }
     .input-area { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -90,7 +92,8 @@
   <script>
     // ポケモンリスト（JSONファイルから読み込み）
     // データソース: PokeAPI (https://github.com/PokeAPI/api-data)
-    let POKEMON = [];
+    let POKEMON = [];  // [{id, name}, ...]
+    let SPRITE_URL = '';  // スプライト画像のURLテンプレート
 
     // ひらがな変換用
     const KATAKANA_TO_HIRAGANA = str => str.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
@@ -141,11 +144,17 @@
       setTimeout(() => messageEl.classList.remove('show'), 3000);
     }
 
-    function addHistory(name, isPlayer) {
+    function addHistory(pokemon, isPlayer) {
       const div = document.createElement('div');
       div.className = 'history-item ' + (isPlayer ? 'player' : 'cpu');
-      const lastChar = getLastChar(name);
-      div.innerHTML = `<span class="name">${isPlayer ? 'あなた' : 'CPU'}: ${name}</span> <span class="char">→${lastChar}</span>`;
+      const lastChar = getLastChar(pokemon.name);
+      const spriteUrl = SPRITE_URL.replace('{id}', pokemon.id);
+      div.innerHTML = `
+        <img class="sprite" src="${spriteUrl}" alt="${pokemon.name}" onerror="this.style.display='none'">
+        <div class="info">
+          <span class="name">${isPlayer ? 'あなた' : 'CPU'}: ${pokemon.name}</span>
+          <span class="char">→${lastChar}</span>
+        </div>`;
       historyEl.appendChild(div);
       historyEl.scrollTop = historyEl.scrollHeight;
     }
@@ -161,12 +170,12 @@
     }
 
     function getAvailablePokemon(startChar) {
-      return POKEMON.filter(p => p[0] === startChar && !usedPokemon.has(p));
+      return POKEMON.filter(p => p.name[0] === startChar && !usedPokemon.has(p.name));
     }
 
     function findPokemon(name) {
       const normalized = normalize(name);
-      return POKEMON.find(p => p === normalized);
+      return POKEMON.find(p => p.name === normalized);
     }
 
     function cpuTurn() {
@@ -178,20 +187,20 @@
       }
 
       // ンで終わらないポケモンを優先
-      const safe = available.filter(p => !p.endsWith('ン'));
+      const safe = available.filter(p => !p.name.endsWith('ン'));
       const choice = safe.length > 0 ? safe[Math.floor(Math.random() * safe.length)] : available[Math.floor(Math.random() * available.length)];
 
       setTimeout(() => {
-        usedPokemon.add(choice);
+        usedPokemon.add(choice.name);
         addHistory(choice, false);
         chainCount++;
 
-        if (choice.endsWith('ン')) {
+        if (choice.name.endsWith('ン')) {
           endGame(true, 'CPUが「ン」で終わるポケモンを言った！');
           return;
         }
 
-        currentChar = getLastChar(choice);
+        currentChar = getLastChar(choice.name);
         updateDisplay();
         inputEl.disabled = false;
         inputEl.focus();
@@ -206,27 +215,27 @@
         return false;
       }
 
-      if (usedPokemon.has(pokemon)) {
+      if (usedPokemon.has(pokemon.name)) {
         showMessage('そのポケモンはもう使ったよ', 'error');
         return false;
       }
 
-      if (!isFirstTurn && pokemon[0] !== currentChar) {
+      if (!isFirstTurn && pokemon.name[0] !== currentChar) {
         showMessage(`「${currentChar}」から始まるポケモンを言ってね`, 'error');
         return false;
       }
 
-      usedPokemon.add(pokemon);
+      usedPokemon.add(pokemon.name);
       addHistory(pokemon, true);
       chainCount++;
       isFirstTurn = false;
 
-      if (pokemon.endsWith('ン')) {
+      if (pokemon.name.endsWith('ン')) {
         endGame(false, '「ン」で終わっちゃった...');
         return true;
       }
 
-      currentChar = getLastChar(pokemon);
+      currentChar = getLastChar(pokemon.name);
       updateDisplay();
       inputEl.value = '';
       inputEl.disabled = true;
@@ -260,7 +269,7 @@
       const available = getAvailablePokemon(currentChar);
       if (available.length > 0) {
         const hint = available[Math.floor(Math.random() * available.length)];
-        showMessage(`ヒント: ${hint.substring(0, 2)}...`, 'success');
+        showMessage(`ヒント: ${hint.name.substring(0, 2)}...`, 'success');
       } else {
         showMessage('答えられるポケモンがいない！ギブアップしよう', 'error');
       }
@@ -313,6 +322,7 @@
         const response = await fetch('pokemon-data.json');
         const data = await response.json();
         POKEMON = data.pokemon;
+        SPRITE_URL = data.spriteUrl;
 
         currentCharEl.textContent = '好きなポケモンから始めよう！';
         hintEl.textContent = `全${POKEMON.length}匹のポケモンが登録されています`;
