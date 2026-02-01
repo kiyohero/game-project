@@ -1,6 +1,22 @@
 // ランキング機能 - Game Project
 
 const Ranking = {
+  // ニックネーム用の形容詞リスト
+  adjectives: [
+    'きままな', 'のんびり', 'せっかち', 'おだやかな', 'ひょうきんな',
+    'まじめな', 'ゆかいな', 'おっとり', 'げんきな', 'しずかな',
+    'あわてんぼうの', 'のんきな', 'おちゃめな', 'やさしい', 'くいしんぼうの',
+    'ねぼすけ', 'わんぱく', 'おしゃれな', 'ふしぎな', 'すばやい'
+  ],
+
+  // ニックネーム用の動物リスト（水族館の生き物中心）
+  animals: [
+    'イルカ', 'ペンギン', 'アザラシ', 'ラッコ', 'クラゲ',
+    'マンボウ', 'サメ', 'カメ', 'タコ', 'イカ',
+    'クマノミ', 'エイ', 'チンアナゴ', 'カワウソ', 'オットセイ',
+    'クジラ', 'シャチ', 'フグ', 'タツノオトシゴ', 'カニ'
+  ],
+
   // ランキングを取得（Top 10）
   async getTop10(gameId) {
     try {
@@ -115,6 +131,10 @@ const Ranking = {
       existingModal.remove();
     }
 
+    // ドロップダウンのオプションを生成
+    const adjOptions = this.adjectives.map(a => `<option value="${a}">${a}</option>`).join('');
+    const animalOptions = this.animals.map(a => `<option value="${a}">${a}</option>`).join('');
+
     const modal = document.createElement('div');
     modal.className = 'ranking-modal';
     modal.id = 'submitModal';
@@ -123,7 +143,12 @@ const Ranking = {
         <h3>🎉 スコア: ${score.toLocaleString()}</h3>
         <div class="submit-area">
           <p>ランキングに登録する？</p>
-          <input type="text" id="submitNickname" placeholder="ニックネーム（なくてもOK）" maxlength="10">
+          <p class="nickname-label">ニックネームを選んでね</p>
+          <div class="nickname-selects">
+            <select id="adjSelect" class="nickname-select">${adjOptions}</select>
+            <select id="animalSelect" class="nickname-select">${animalOptions}</select>
+          </div>
+          <p class="nickname-preview" id="nicknamePreview"></p>
           <div class="submit-buttons">
             <button class="btn" id="submitBtn">登録する</button>
             <button class="btn secondary" id="skipBtn">スキップ</button>
@@ -134,17 +159,27 @@ const Ranking = {
 
     document.body.appendChild(modal);
 
-    const nicknameInput = modal.querySelector('#submitNickname');
+    const adjSelect = modal.querySelector('#adjSelect');
+    const animalSelect = modal.querySelector('#animalSelect');
+    const previewEl = modal.querySelector('#nicknamePreview');
     const submitBtn = modal.querySelector('#submitBtn');
     const skipBtn = modal.querySelector('#skipBtn');
     const submitArea = modal.querySelector('.submit-area');
+
+    // プレビュー更新
+    const updatePreview = () => {
+      previewEl.textContent = `→ ${adjSelect.value}${animalSelect.value}`;
+    };
+    adjSelect.addEventListener('change', updatePreview);
+    animalSelect.addEventListener('change', updatePreview);
+    updatePreview();
 
     // 登録ボタン
     submitBtn.addEventListener('click', async () => {
       submitBtn.disabled = true;
       submitBtn.textContent = '登録中...';
 
-      const nickname = nicknameInput.value;
+      const nickname = adjSelect.value + animalSelect.value;
       const success = await this.submitScore(gameId, score, nickname);
 
       if (success) {
@@ -175,7 +210,6 @@ const Ranking = {
     // 表示アニメーション
     requestAnimationFrame(() => {
       modal.classList.add('show');
-      nicknameInput.focus();
     });
   },
 
