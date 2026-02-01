@@ -59,7 +59,6 @@
     .voice-toggle .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
     .voice-toggle input:checked + .slider { background: #9b8ab8; }
     .voice-toggle input:checked + .slider:before { transform: translateX(24px); }
-    .voice-select { flex: 1; padding: 8px; border: 2px solid #c5b8d8; border-radius: 6px; font-size: 0.9rem; background: white; }
   </style>
 </head>
 <body>
@@ -108,17 +107,11 @@
     <summary>音声設定</summary>
     <div class="content">
       <div class="voice-row">
-        <label>読み上げ</label>
+        <label>鳴き声</label>
         <label class="voice-toggle">
-          <input type="checkbox" id="voiceEnabled">
+          <input type="checkbox" id="cryEnabled">
           <span class="slider"></span>
         </label>
-      </div>
-      <div class="voice-row">
-        <label>声</label>
-        <select id="voiceSelect" class="voice-select">
-          <option value="">読み込み中...</option>
-        </select>
       </div>
     </div>
   </details>
@@ -134,70 +127,31 @@
     let POKEMON = [];  // [{id, name}, ...]
     let SPRITE_URL = '';  // スプライト画像のURLテンプレート
 
-    // 音声設定
-    let voiceEnabled = localStorage.getItem('pokemonVoiceEnabled') === 'true';
-    let selectedVoiceName = localStorage.getItem('pokemonVoiceName') || '';
-    let selectedVoice = null;
-    let availableVoices = [];
+    // 鳴き声設定
+    const CRY_URL = 'https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/{id}.ogg';
+    let cryEnabled = localStorage.getItem('pokemonCryEnabled') === 'true';
+    let cryAudio = null;
 
-    // 音声読み上げ関数
-    function speakPokemonName(name) {
-      if (!voiceEnabled || !('speechSynthesis' in window)) return;
-      speechSynthesis.cancel(); // 前の音声をキャンセル
-      const uttr = new SpeechSynthesisUtterance(name);
-      uttr.lang = 'ja-JP';
-      if (selectedVoice) {
-        uttr.voice = selectedVoice;
+    // 鳴き声再生関数
+    function playPokemonCry(pokemonId) {
+      if (!cryEnabled) return;
+      if (cryAudio) {
+        cryAudio.pause();
       }
-      speechSynthesis.speak(uttr);
+      const url = CRY_URL.replace('{id}', pokemonId);
+      cryAudio = new Audio(url);
+      cryAudio.volume = 0.5;
+      cryAudio.play().catch(() => {}); // エラーは無視
     }
 
-    // 利用可能な日本語音声を取得
-    function loadVoices() {
-      availableVoices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
-      const select = document.getElementById('voiceSelect');
-      select.innerHTML = '';
+    // 鳴き声設定の初期化
+    function initCrySettings() {
+      const enabledCheckbox = document.getElementById('cryEnabled');
+      enabledCheckbox.checked = cryEnabled;
 
-      if (availableVoices.length === 0) {
-        select.innerHTML = '<option value="">日本語音声がありません</option>';
-        return;
-      }
-
-      availableVoices.forEach((voice, i) => {
-        const option = document.createElement('option');
-        option.value = voice.name;
-        option.textContent = voice.name.replace('Microsoft ', '').replace(' - Japanese (Japan)', '');
-        if (voice.name === selectedVoiceName || (!selectedVoiceName && i === 0)) {
-          option.selected = true;
-          selectedVoice = voice;
-        }
-        select.appendChild(option);
-      });
-    }
-
-    // 音声設定の初期化
-    function initVoiceSettings() {
-      const enabledCheckbox = document.getElementById('voiceEnabled');
-      const voiceSelect = document.getElementById('voiceSelect');
-
-      enabledCheckbox.checked = voiceEnabled;
-
-      // 音声リストの読み込み
-      if ('speechSynthesis' in window) {
-        loadVoices();
-        speechSynthesis.onvoiceschanged = loadVoices;
-      }
-
-      // イベントリスナー
       enabledCheckbox.addEventListener('change', () => {
-        voiceEnabled = enabledCheckbox.checked;
-        localStorage.setItem('pokemonVoiceEnabled', voiceEnabled);
-      });
-
-      voiceSelect.addEventListener('change', () => {
-        selectedVoiceName = voiceSelect.value;
-        selectedVoice = availableVoices.find(v => v.name === selectedVoiceName) || null;
-        localStorage.setItem('pokemonVoiceName', selectedVoiceName);
+        cryEnabled = enabledCheckbox.checked;
+        localStorage.setItem('pokemonCryEnabled', cryEnabled);
       });
     }
 
@@ -303,7 +257,7 @@
       setTimeout(() => {
         usedPokemon.add(choice.name);
         addHistory(choice, false);
-        speakPokemonName(choice.name);  // 音声読み上げ
+        playPokemonCry(choice.id);  // 鳴き声再生
         chainCount++;
 
         if (choice.name.endsWith('ン')) {
@@ -460,7 +414,7 @@
 
     // 初期化
     initGame();
-    initVoiceSettings();
+    initCrySettings();
   </script>
 </body>
 </html>
