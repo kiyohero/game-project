@@ -84,6 +84,27 @@
     .how-to-play li { margin-bottom: 5px; }
     .back-link { color: #9b8ab8; text-decoration: none; font-size: 0.95rem; margin-bottom: 10px; display: inline-block; }
     .back-link:hover { color: #6b5b7a; }
+
+    /* お祝いエフェクト */
+    .win-overlay { background: rgba(155, 138, 184, 0.95); }
+    .win-overlay h2 { color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); font-size: 3rem; }
+    .win-buttons { display: flex; gap: 15px; margin-top: 10px; }
+    .btn-continue { background: #ffd700; color: #6b5b7a; }
+    .btn-continue:hover { background: #ffed4a; }
+
+    /* 紙吹雪 */
+    .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; overflow: hidden; }
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      top: -10px;
+      animation: confetti-fall 3s linear forwards;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -125,6 +146,16 @@
     <p class="final-score">スコア: <span id="finalScore">0</span></p>
     <button class="btn" id="retryBtn">もう一度</button>
   </div>
+  <div class="overlay win-overlay" id="winOverlay">
+    <h2>🎉 おめでとう！</h2>
+    <p class="final-score" style="color: #fff;">2048達成！</p>
+    <p class="final-score" style="color: #e8e0f0;">スコア: <span id="winScore">0</span></p>
+    <div class="win-buttons">
+      <button class="btn btn-continue" id="continueBtn">つづける</button>
+      <button class="btn" id="endBtn">やめる</button>
+    </div>
+  </div>
+  <div class="confetti-container" id="confetti"></div>
   <script>
     const gridEl = document.getElementById('grid');
     const scoreEl = document.getElementById('score');
@@ -132,6 +163,9 @@
     const overlay = document.getElementById('overlay');
     const messageEl = document.getElementById('message');
     const finalScoreEl = document.getElementById('finalScore');
+    const winOverlay = document.getElementById('winOverlay');
+    const winScoreEl = document.getElementById('winScore');
+    const confettiContainer = document.getElementById('confetti');
 
     const CELL_SIZE = 75;
     const GAP = 10;
@@ -143,8 +177,34 @@
     let score = 0;
     let best = parseInt(localStorage.getItem('2048-best') || '0');
     let isAnimating = false;
+    let won2048 = false; // 2048達成済みフラグ
 
     bestEl.textContent = best;
+
+    // 紙吹雪を生成
+    function createConfetti() {
+      const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dfe6e9', '#a29bfe'];
+      for (let i = 0; i < 100; i++) {
+        setTimeout(() => {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = Math.random() * 100 + '%';
+          confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+          confetti.style.animationDelay = Math.random() * 0.5 + 's';
+          confettiContainer.appendChild(confetti);
+          setTimeout(() => confetti.remove(), 4000);
+        }, i * 30);
+      }
+    }
+
+    // 2048達成時のお祝い表示
+    function showWinCelebration() {
+      won2048 = true;
+      winScoreEl.textContent = score;
+      winOverlay.classList.add('show');
+      createConfetti();
+    }
 
     function getPos(row, col) {
       return {
@@ -194,7 +254,9 @@
       score = 0;
       scoreEl.textContent = '0';
       overlay.classList.remove('show');
+      winOverlay.classList.remove('show');
       isAnimating = false;
+      won2048 = false;
 
       addRandomTile(false);
       addRandomTile(false);
@@ -333,11 +395,13 @@
             isAnimating = false;
 
             // 勝利・敗北チェック
-            for (let r = 0; r < 4; r++) {
-              for (let c = 0; c < 4; c++) {
-                if (grid[r][c] && grid[r][c].value === 2048) {
-                  setTimeout(() => showOverlay('2048達成！'), 300);
-                  return;
+            if (!won2048) {
+              for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                  if (grid[r][c] && grid[r][c].value >= 2048) {
+                    setTimeout(() => showWinCelebration(), 300);
+                    return;
+                  }
                 }
               }
             }
@@ -396,6 +460,13 @@
 
     document.getElementById('restart').addEventListener('click', init);
     document.getElementById('retryBtn').addEventListener('click', init);
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      winOverlay.classList.remove('show');
+    });
+    document.getElementById('endBtn').addEventListener('click', () => {
+      winOverlay.classList.remove('show');
+      showOverlay('2048達成！🎉');
+    });
 
     init();
   </script>
