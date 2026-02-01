@@ -89,6 +89,11 @@
     <p class="final-score">スコア: <span id="finalScore">0</span></p>
     <button class="btn" id="retryBtn">もう一度</button>
   </div>
+  <div class="overlay show" id="startOverlay">
+    <h2>🚀 インベーダーゲーム</h2>
+    <p style="color: #6b5b7a; margin-bottom: 20px;">てきをぜんぶたおそう！</p>
+    <button class="btn" id="startBtn" style="font-size: 1.3rem; padding: 15px 40px;">スタート</button>
+  </div>
 
   <script>
     const canvas = document.getElementById('game');
@@ -101,7 +106,8 @@
     const gameContainer = document.getElementById('gameContainer');
 
     const W = canvas.width, H = canvas.height;
-    let player, enemies, bullets, enemyBullets, particles, stars, score, lives, gameOver, direction, moveTimer, shootTimer, playerFlash;
+    const startOverlay = document.getElementById('startOverlay');
+    let player, enemies, bullets, enemyBullets, particles, stars, score, lives, gameOver, gameStarted, direction, moveTimer, shootTimer, playerFlash;
 
     // 星の背景を作成
     function createStars() {
@@ -126,6 +132,7 @@
       score = 0;
       lives = 3;
       gameOver = false;
+      gameStarted = false;
       direction = 1;
       moveTimer = 0;
       shootTimer = 0;
@@ -298,7 +305,7 @@
     }
 
     function update() {
-      if (gameOver) return;
+      if (gameOver || !gameStarted) return;
 
       updateStars();
       updateParticles();
@@ -417,7 +424,7 @@
     }
 
     function shoot() {
-      if (gameOver) return;
+      if (gameOver || !gameStarted) return;
       if (bullets.length < 3) {
         bullets.push({ x: player.x + player.w / 2 - 2, y: player.y, w: 4, h: 10, speed: 7 });
       }
@@ -431,7 +438,7 @@
     document.addEventListener('keyup', e => keys[e.key] = false);
 
     setInterval(() => {
-      if (gameOver) return;
+      if (gameOver || !gameStarted) return;
       if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
       if (keys['ArrowRight'] && player.x < W - player.w) player.x += player.speed;
     }, 16);
@@ -453,13 +460,25 @@
     document.getElementById('fireBtn').addEventListener('click', shoot);
 
     setInterval(() => {
-      if (gameOver) return;
+      if (gameOver || !gameStarted) return;
       if (leftPressed && player.x > 0) player.x -= player.speed;
       if (rightPressed && player.x < W - player.w) player.x += player.speed;
     }, 16);
 
-    document.getElementById('restart').addEventListener('click', init);
-    document.getElementById('retryBtn').addEventListener('click', init);
+    document.getElementById('restart').addEventListener('click', () => {
+      init();
+      gameStarted = true;
+      startOverlay.classList.remove('show');
+    });
+    document.getElementById('retryBtn').addEventListener('click', () => {
+      init();
+      gameStarted = true;
+      startOverlay.classList.remove('show');
+    });
+    document.getElementById('startBtn').addEventListener('click', () => {
+      gameStarted = true;
+      startOverlay.classList.remove('show');
+    });
 
     init();
     gameLoop();
