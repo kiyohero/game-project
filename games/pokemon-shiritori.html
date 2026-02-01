@@ -40,6 +40,18 @@
     .overlay h2 { animation: pop 0.5s ease; }
     @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
     .stats { color: #6b5b7a; margin-bottom: 15px; font-size: 0.95rem; }
+    .voice-settings { background: #e8e0f0; border-radius: 8px; padding: 12px; margin-top: 10px; }
+    .voice-settings summary { cursor: pointer; color: #6b5b7a; font-weight: bold; }
+    .voice-settings .content { margin-top: 10px; }
+    .voice-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .voice-row label { color: #6b5b7a; font-size: 0.9rem; }
+    .voice-toggle { position: relative; width: 50px; height: 26px; }
+    .voice-toggle input { opacity: 0; width: 0; height: 0; }
+    .voice-toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 26px; transition: 0.3s; }
+    .voice-toggle .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+    .voice-toggle input:checked + .slider { background: #9b8ab8; }
+    .voice-toggle input:checked + .slider:before { transform: translateX(24px); }
+    .voice-select { flex: 1; padding: 8px; border: 2px solid #c5b8d8; border-radius: 6px; font-size: 0.9rem; background: white; }
   </style>
 </head>
 <body>
@@ -83,6 +95,24 @@
       </ul>
     </div>
   </details>
+  <details class="voice-settings">
+    <summary>音声設定</summary>
+    <div class="content">
+      <div class="voice-row">
+        <label>読み上げ</label>
+        <label class="voice-toggle">
+          <input type="checkbox" id="voiceEnabled">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="voice-row">
+        <label>声</label>
+        <select id="voiceSelect" class="voice-select">
+          <option value="">読み込み中...</option>
+        </select>
+      </div>
+    </div>
+  </details>
   <div class="overlay" id="overlay">
     <h2 id="resultTitle">ゲームオーバー</h2>
     <p class="stats" id="resultStats"></p>
@@ -94,6 +124,73 @@
     // データソース: PokeAPI (https://github.com/PokeAPI/api-data)
     let POKEMON = [];  // [{id, name}, ...]
     let SPRITE_URL = '';  // スプライト画像のURLテンプレート
+
+    // 音声設定
+    let voiceEnabled = localStorage.getItem('pokemonVoiceEnabled') === 'true';
+    let selectedVoiceName = localStorage.getItem('pokemonVoiceName') || '';
+    let selectedVoice = null;
+    let availableVoices = [];
+
+    // 音声読み上げ関数
+    function speakPokemonName(name) {
+      if (!voiceEnabled || !('speechSynthesis' in window)) return;
+      speechSynthesis.cancel(); // 前の音声をキャンセル
+      const uttr = new SpeechSynthesisUtterance(name);
+      uttr.lang = 'ja-JP';
+      if (selectedVoice) {
+        uttr.voice = selectedVoice;
+      }
+      speechSynthesis.speak(uttr);
+    }
+
+    // 利用可能な日本語音声を取得
+    function loadVoices() {
+      availableVoices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
+      const select = document.getElementById('voiceSelect');
+      select.innerHTML = '';
+
+      if (availableVoices.length === 0) {
+        select.innerHTML = '<option value="">日本語音声がありません</option>';
+        return;
+      }
+
+      availableVoices.forEach((voice, i) => {
+        const option = document.createElement('option');
+        option.value = voice.name;
+        option.textContent = voice.name.replace('Microsoft ', '').replace(' - Japanese (Japan)', '');
+        if (voice.name === selectedVoiceName || (!selectedVoiceName && i === 0)) {
+          option.selected = true;
+          selectedVoice = voice;
+        }
+        select.appendChild(option);
+      });
+    }
+
+    // 音声設定の初期化
+    function initVoiceSettings() {
+      const enabledCheckbox = document.getElementById('voiceEnabled');
+      const voiceSelect = document.getElementById('voiceSelect');
+
+      enabledCheckbox.checked = voiceEnabled;
+
+      // 音声リストの読み込み
+      if ('speechSynthesis' in window) {
+        loadVoices();
+        speechSynthesis.onvoiceschanged = loadVoices;
+      }
+
+      // イベントリスナー
+      enabledCheckbox.addEventListener('change', () => {
+        voiceEnabled = enabledCheckbox.checked;
+        localStorage.setItem('pokemonVoiceEnabled', voiceEnabled);
+      });
+
+      voiceSelect.addEventListener('change', () => {
+        selectedVoiceName = voiceSelect.value;
+        selectedVoice = availableVoices.find(v => v.name === selectedVoiceName) || null;
+        localStorage.setItem('pokemonVoiceName', selectedVoiceName);
+      });
+    }
 
     // ひらがな変換用
     const KATAKANA_TO_HIRAGANA = str => str.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
@@ -193,6 +290,7 @@
       setTimeout(() => {
         usedPokemon.add(choice.name);
         addHistory(choice, false);
+        speakPokemonName(choice.name);  // 音声読み上げ
         chainCount++;
 
         if (choice.name.endsWith('ン')) {
@@ -336,6 +434,7 @@
 
     // 初期化
     initGame();
+    initVoiceSettings();
   </script>
 </body>
 </html>
