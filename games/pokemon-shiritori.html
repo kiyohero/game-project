@@ -324,13 +324,14 @@
       resultTitleEl.textContent = playerWin ? 'やったね！' : 'ざんねん...';
       resultStatsEl.textContent = `${reason}\nつづいた数: ${chainCount}`;
 
-      // スコアが1以上ならランキング登録モーダルを表示
+      // ゲームオーバー画面を表示
+      overlay.classList.add('show');
+
+      // スコアが1以上ならランキング登録モーダルも表示
       if (chainCount > 0) {
-        Ranking.showSubmitModal('pokemon-shiritori', chainCount, () => {
-          overlay.classList.add('show');
-        });
-      } else {
-        overlay.classList.add('show');
+        setTimeout(() => {
+          Ranking.showSubmitModal('pokemon-shiritori', chainCount, () => {});
+        }, 300);
       }
     }
 
