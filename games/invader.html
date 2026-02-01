@@ -53,6 +53,13 @@
     .back-link { color: #9b8ab8; text-decoration: none; font-size: 0.95rem; margin-bottom: 10px; display: inline-block; }
     .back-link:hover { color: #6b5b7a; }
   </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <!-- ランキング機能 -->
+  <link rel="stylesheet" href="ranking.css">
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
 </head>
 <body>
   <a href="index.html" class="back-link">← ゲーム一覧</a>
@@ -63,6 +70,7 @@
       <div class="score-value" id="score">0</div>
     </div>
     <div class="lives" id="lives"></div>
+    <button class="btn ranking-btn" id="rankingBtn">🏆</button>
     <button class="btn" id="restart">リトライ</button>
   </div>
   <div class="game-container" id="gameContainer">
@@ -579,7 +587,15 @@
       if (isGameOver) {
         overlay.classList.add('game-over');
       }
-      overlay.classList.add('show');
+
+      // スコアが1以上ならランキング登録モーダルを表示
+      if (score > 0) {
+        Ranking.showSubmitModal('invader', score, () => {
+          overlay.classList.add('show');
+        });
+      } else {
+        overlay.classList.add('show');
+      }
     }
 
     function shoot() {
@@ -646,6 +662,11 @@
       initAudio();
       startBGM();
       startOverlay.classList.remove('show');
+    });
+
+    // ランキングボタン
+    document.getElementById('rankingBtn').addEventListener('click', () => {
+      Ranking.showRankingModal('invader');
     });
 
     init();
