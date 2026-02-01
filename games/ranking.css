@@ -1,0 +1,223 @@
+/* ランキング機能スタイル - Game Project */
+
+/* ランキングボタン */
+.ranking-btn {
+  background: linear-gradient(135deg, #ffd700, #ffb347);
+  color: #5a4a2a;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.ranking-btn:hover {
+  background: linear-gradient(135deg, #ffb347, #ffd700);
+}
+
+/* モーダル背景 */
+.ranking-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.ranking-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* モーダル本体 */
+.ranking-content {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 360px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.ranking-modal.show .ranking-content {
+  transform: scale(1);
+}
+
+.ranking-content h3 {
+  text-align: center;
+  color: #6b5b7a;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+/* ランキングリスト */
+.ranking-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #f8f5fc;
+}
+
+.ranking-item:nth-child(1) {
+  background: linear-gradient(135deg, #fff9e6, #fff3cc);
+}
+
+.ranking-item:nth-child(2) {
+  background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+}
+
+.ranking-item:nth-child(3) {
+  background: linear-gradient(135deg, #fdf0e6, #fbe4d5);
+}
+
+.ranking-position {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-right: 12px;
+  background: #e8e0f0;
+  color: #6b5b7a;
+}
+
+.ranking-item:nth-child(1) .ranking-position {
+  background: #ffd700;
+  color: #5a4a2a;
+}
+
+.ranking-item:nth-child(2) .ranking-position {
+  background: #c0c0c0;
+  color: #444;
+}
+
+.ranking-item:nth-child(3) .ranking-position {
+  background: #cd7f32;
+  color: white;
+}
+
+.ranking-name {
+  flex: 1;
+  color: #6b5b7a;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-score {
+  font-weight: bold;
+  color: #9b8ab8;
+  font-size: 1.1rem;
+}
+
+.ranking-empty {
+  text-align: center;
+  color: #9b8ab8;
+  padding: 30px;
+  font-size: 0.95rem;
+}
+
+.ranking-loading {
+  text-align: center;
+  color: #9b8ab8;
+  padding: 30px;
+}
+
+/* 閉じるボタン */
+.ranking-close-btn {
+  width: 100%;
+  background: #7a6b8a;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.ranking-close-btn:hover {
+  background: #6b5b7a;
+}
+
+/* スコア登録エリア */
+.submit-area {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e8e0f0;
+}
+
+.submit-area p {
+  color: #6b5b7a;
+  text-align: center;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.submit-area input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e8e0f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.submit-area input:focus {
+  outline: none;
+  border-color: #9b8ab8;
+}
+
+.submit-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.submit-buttons .btn {
+  flex: 1;
+  padding: 12px;
+}
+
+.submit-buttons .btn.secondary {
+  background: #ccc;
+  color: #666;
+}
+
+.submit-buttons .btn.secondary:hover {
+  background: #bbb;
+}
+
+/* 登録完了メッセージ */
+.submit-done {
+  text-align: center;
+  color: #6b5b7a;
+  padding: 15px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  margin-top: 15px;
+}

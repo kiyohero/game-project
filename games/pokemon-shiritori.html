@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>ポケモンしりとり</title>
   <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="ranking.css">
   <script src="common.js" defer></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
   <style>
     body { padding: 15px; }
     h1 { font-size: 1.8rem; margin-bottom: 10px; }
@@ -68,6 +74,7 @@
         <div class="label">ベスト</div>
         <div class="value" id="bestCount">0</div>
       </div>
+      <button class="btn ranking-btn" id="rankingBtn">🏆</button>
     </div>
     <div class="chain-display">
       <div class="current-char" id="currentChar">好きなポケモンから始めよう！</div>
@@ -361,7 +368,15 @@
 
       resultTitleEl.textContent = playerWin ? 'やったね！' : 'ざんねん...';
       resultStatsEl.textContent = `${reason}\nつづいた数: ${chainCount}`;
-      overlay.classList.add('show');
+
+      // スコアが1以上ならランキング登録モーダルを表示
+      if (chainCount > 0) {
+        Ranking.showSubmitModal('pokemon-shiritori', chainCount, () => {
+          overlay.classList.add('show');
+        });
+      } else {
+        overlay.classList.add('show');
+      }
     }
 
     function showHint() {
@@ -437,6 +452,11 @@
         console.error('ポケモンデータの読み込みエラー:', error);
       }
     }
+
+    // ランキングボタン
+    document.getElementById('rankingBtn').addEventListener('click', () => {
+      Ranking.showRankingModal('pokemon-shiritori');
+    });
 
     // 初期化
     initGame();

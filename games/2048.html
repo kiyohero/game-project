@@ -106,6 +106,13 @@
       100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
     }
   </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <!-- ランキング機能 -->
+  <link rel="stylesheet" href="ranking.css">
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
 </head>
 <body>
   <a href="index.html" class="back-link">← ゲーム一覧</a>
@@ -120,6 +127,7 @@
         <div class="score-label">ベスト</div>
         <div class="score-value" id="best">0</div>
       </div>
+      <button class="btn ranking-btn" id="rankingBtn">🏆</button>
       <button class="btn" id="restart">リトライ</button>
     </div>
     <div class="grid-container" id="grid">
@@ -406,7 +414,7 @@
               }
             }
             if (isGameOver()) {
-              setTimeout(() => showOverlay('ゲームオーバー'), 300);
+              setTimeout(() => showOverlay('ゲームオーバー', true), 300);
             }
           }, 50);
         }, MOVE_DURATION);
@@ -424,10 +432,18 @@
       return true;
     }
 
-    function showOverlay(msg) {
+    function showOverlay(msg, showSubmit = false) {
       messageEl.textContent = msg;
       finalScoreEl.textContent = score;
-      overlay.classList.add('show');
+
+      if (showSubmit && score > 0) {
+        // スコア登録モーダルを表示
+        Ranking.showSubmitModal('2048', score, () => {
+          overlay.classList.add('show');
+        });
+      } else {
+        overlay.classList.add('show');
+      }
     }
 
     // キーボード操作
@@ -465,7 +481,12 @@
     });
     document.getElementById('endBtn').addEventListener('click', () => {
       winOverlay.classList.remove('show');
-      showOverlay('2048達成！🎉');
+      showOverlay('2048達成！🎉', true);
+    });
+
+    // ランキングボタン
+    document.getElementById('rankingBtn').addEventListener('click', () => {
+      Ranking.showRankingModal('2048');
     });
 
     init();
