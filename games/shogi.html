@@ -6,6 +6,13 @@
   <title>将棋</title>
   <link rel="stylesheet" href="common.css">
   <script src="common.js" defer></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <!-- ランキング機能 -->
+  <link rel="stylesheet" href="ranking.css">
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f0fa; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 15px; user-select: none; -webkit-user-select: none; }
@@ -76,6 +83,10 @@
     .tips-content li { margin-bottom: 5px; }
     .tips-content .tip-box { background: #f5f0fa; padding: 10px; border-radius: 6px; margin: 10px 0; }
     .tips-content .tip-box.important { background: #fff3cd; border-left: 4px solid #ffc107; }
+    .header-row { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+    .wins-box { background: #9b8ab8; padding: 8px 16px; border-radius: 6px; text-align: center; }
+    .wins-box .label { font-size: 0.7rem; color: #e8e0f0; }
+    .wins-box .value { font-size: 1.2rem; color: white; font-weight: bold; }
     .hint-bar { background: #fff3cd; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; color: #856404; font-size: 0.85rem; max-width: 360px; text-align: center; display: none; }
     .hint-bar.show { display: block; }
     @media (max-width: 400px) {
@@ -87,6 +98,13 @@
 </head>
 <body>
   <h1>将棋</h1>
+  <div class="header-row">
+    <div class="wins-box">
+      <div class="label">勝利数</div>
+      <div class="value" id="wins">0</div>
+    </div>
+    <button class="btn ranking-btn" id="rankingBtn">🏆</button>
+  </div>
   <div class="turn-indicator" id="turnIndicator">▲ あなたのばん</div>
   <div class="game-area">
     <div>
@@ -250,6 +268,9 @@
     let playerHand = { HI: 0, KAKU: 0, KIN: 0, GIN: 0, KEI: 0, KYOU: 0, FU: 0 };
     let enemyHand = { HI: 0, KAKU: 0, KIN: 0, GIN: 0, KEI: 0, KYOU: 0, FU: 0 };
     let pendingPromotion = null;
+    let wins = parseInt(localStorage.getItem('shogi-wins') || '0');
+    const winsEl = document.getElementById('wins');
+    winsEl.textContent = wins;
 
     const boardEl = document.getElementById('board');
     const playerHandEl = document.getElementById('playerHand');
@@ -820,7 +841,21 @@
 
     function showGameOver(winner) {
       winnerEl.textContent = winner + 'の勝ち！';
-      overlay.classList.add('show');
+
+      // CPUモードでプレイヤーが勝った場合、勝利数をカウント
+      if (isCPUMode && winner === 'あなた') {
+        wins++;
+        localStorage.setItem('shogi-wins', wins);
+        winsEl.textContent = wins;
+        // ランキング登録モーダル表示
+        setTimeout(() => {
+          Ranking.showSubmitModal('shogi', wins, () => {
+            overlay.classList.add('show');
+          });
+        }, 500);
+      } else {
+        overlay.classList.add('show');
+      }
     }
 
     // イベントリスナー
@@ -867,6 +902,11 @@
 
     tipsModal.addEventListener('click', (e) => {
       if (e.target === tipsModal) tipsModal.classList.remove('show');
+    });
+
+    // ランキングボタン
+    document.getElementById('rankingBtn').addEventListener('click', () => {
+      Ranking.showRankingModal('shogi');
     });
 
     // ヒント表示機能

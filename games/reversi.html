@@ -45,7 +45,17 @@
     .overlay h2 { font-size: 2.5rem; color: #6b5b7a; margin-bottom: 15px; }
     .overlay .result { font-size: 1.2rem; color: #6b5b7a; margin-bottom: 20px; }
     .instructions { color: #6b5b7a; margin-top: 15px; font-size: 0.9rem; }
+    .wins-box { background: #9b8ab8; padding: 8px 16px; border-radius: 6px; text-align: center; }
+    .wins-box .label { font-size: 0.7rem; color: #e8e0f0; }
+    .wins-box .value { font-size: 1.2rem; color: white; font-weight: bold; }
   </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <!-- ランキング機能 -->
+  <link rel="stylesheet" href="ranking.css">
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
 </head>
 <body>
   <h1>リバーシ</h1>
@@ -60,6 +70,11 @@
         <span class="score-value" id="whiteScore">2</span>
       </div>
     </div>
+    <div class="wins-box">
+      <div class="label">勝利数</div>
+      <div class="value" id="wins">0</div>
+    </div>
+    <button class="btn ranking-btn" id="rankingBtn">🏆</button>
     <button class="btn" id="restart">リスタート</button>
   </div>
   <div class="turn-indicator" id="turnIndicator">黒のばん</div>
@@ -94,8 +109,16 @@
     const resultEl = document.getElementById('result');
     const vsPlayerBtn = document.getElementById('vsPlayer');
     const vsCPUBtn = document.getElementById('vsCPU');
+    const winsEl = document.getElementById('wins');
 
     const EMPTY = 0, BLACK = 1, WHITE = 2;
+    let wins = parseInt(localStorage.getItem('reversi-wins') || '0');
+    winsEl.textContent = wins;
+
+    // ランキングボタン
+    document.getElementById('rankingBtn').addEventListener('click', () => {
+      Ranking.showRankingModal('reversi');
+    });
     const DIRECTIONS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
 
     let board = [];
@@ -313,8 +336,10 @@
       }
 
       let winner;
+      let playerWon = false;
       if (black > white) {
         winner = vsCPU ? 'あなたの勝ち！' : '黒の勝ち！';
+        if (vsCPU) playerWon = true;
       } else if (white > black) {
         winner = vsCPU ? 'CPUの勝ち！' : '白の勝ち！';
       } else {
@@ -323,7 +348,19 @@
 
       winnerEl.textContent = winner;
       resultEl.textContent = `黒: ${black} - 白: ${white}`;
-      overlay.classList.add('show');
+
+      // CPUモードでプレイヤーが勝った場合、勝利数をカウント
+      if (playerWon) {
+        wins++;
+        localStorage.setItem('reversi-wins', wins);
+        winsEl.textContent = wins;
+        // ランキング登録モーダル表示
+        Ranking.showSubmitModal('reversi', wins, () => {
+          overlay.classList.add('show');
+        });
+      } else {
+        overlay.classList.add('show');
+      }
     }
 
     // モード切り替え

@@ -81,10 +81,34 @@
     const status = document.getElementById('status');
     const xIcon = document.getElementById('xIcon');
     const oIcon = document.getElementById('oIcon');
+    const winsEl = document.getElementById('wins');
     let cells = ['','','','','','','','',''];
     let currentPlayer = 'X';
     let gameActive = true;
+    let cpuMode = true; // CPU対戦モード
+    let wins = parseInt(localStorage.getItem('tictactoe-wins') || '0');
     const winPatterns = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+    winsEl.textContent = wins;
+
+    // モード切り替え
+    document.getElementById('pvpBtn').addEventListener('click', () => {
+      cpuMode = false;
+      document.getElementById('pvpBtn').classList.add('active');
+      document.getElementById('cpuBtn').classList.remove('active');
+      resetGame();
+    });
+    document.getElementById('cpuBtn').addEventListener('click', () => {
+      cpuMode = true;
+      document.getElementById('cpuBtn').classList.add('active');
+      document.getElementById('pvpBtn').classList.remove('active');
+      resetGame();
+    });
+
+    // ランキングボタン
+    document.getElementById('rankingBtn').addEventListener('click', () => {
+      Ranking.showRankingModal('tictactoe');
+    });
 
     function createBoard() {
       board.innerHTML = '';
@@ -115,11 +139,17 @@
     function handleClick(e) {
       const i = e.target.dataset.index;
       if (cells[i] !== '' || !gameActive) return;
+      if (cpuMode && currentPlayer === 'O') return; // CPUのターン中はクリック無効
 
+      makeMove(parseInt(i));
+    }
+
+    function makeMove(i) {
       cells[i] = currentPlayer;
-      e.target.textContent = currentPlayer;
-      e.target.classList.add(currentPlayer.toLowerCase());
-      e.target.classList.add('placed');
+      const cell = board.children[i];
+      cell.textContent = currentPlayer;
+      cell.classList.add(currentPlayer.toLowerCase());
+      cell.classList.add('placed');
 
       if (checkWin()) {
         status.textContent = currentPlayer + 'の勝ち!';
@@ -127,6 +157,17 @@
         gameActive = false;
         highlightWinner();
         createConfetti();
+
+        // CPUモードでプレイヤー(X)が勝った場合、勝利数をカウント
+        if (cpuMode && currentPlayer === 'X') {
+          wins++;
+          localStorage.setItem('tictactoe-wins', wins);
+          winsEl.textContent = wins;
+          // ランキング登録モーダル表示
+          setTimeout(() => {
+            Ranking.showSubmitModal('tictactoe', wins, () => {});
+          }, 1000);
+        }
         return;
       }
 
@@ -142,6 +183,52 @@
       status.classList.add('bounce');
       setTimeout(() => status.classList.remove('bounce'), 500);
       updateTurnIndicator();
+
+      // CPUのターン
+      if (cpuMode && currentPlayer === 'O' && gameActive) {
+        setTimeout(cpuMove, 500);
+      }
+    }
+
+    // CPUの手を決定
+    function cpuMove() {
+      if (!gameActive) return;
+
+      // 1. 勝てる手があれば打つ
+      let move = findWinningMove('O');
+      if (move !== -1) { makeMove(move); return; }
+
+      // 2. 相手が勝ちそうなら防ぐ
+      move = findWinningMove('X');
+      if (move !== -1) { makeMove(move); return; }
+
+      // 3. 中央を取る
+      if (cells[4] === '') { makeMove(4); return; }
+
+      // 4. 角を取る
+      const corners = [0, 2, 6, 8].filter(i => cells[i] === '');
+      if (corners.length > 0) {
+        makeMove(corners[Math.floor(Math.random() * corners.length)]);
+        return;
+      }
+
+      // 5. その他空いているところ
+      const empty = cells.map((c, i) => c === '' ? i : -1).filter(i => i !== -1);
+      if (empty.length > 0) {
+        makeMove(empty[Math.floor(Math.random() * empty.length)]);
+      }
+    }
+
+    function findWinningMove(player) {
+      for (const pattern of winPatterns) {
+        const values = pattern.map(i => cells[i]);
+        const playerCount = values.filter(v => v === player).length;
+        const emptyCount = values.filter(v => v === '').length;
+        if (playerCount === 2 && emptyCount === 1) {
+          return pattern.find(i => cells[i] === '');
+        }
+      }
+      return -1;
     }
 
     function checkWin() {
@@ -203,14 +290,16 @@
       }
     }
 
-    document.getElementById('reset').addEventListener('click', () => {
+    function resetGame() {
       cells = ['','','','','','','','',''];
       currentPlayer = 'X';
       gameActive = true;
       status.textContent = 'Xのターン';
       status.classList.remove('winner-text', 'bounce');
       createBoard();
-    });
+    }
+
+    document.getElementById('reset').addEventListener('click', resetGame);
 
     createBoard();
   </script>
