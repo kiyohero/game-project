@@ -44,5 +44,27 @@
       <p>ポケモンの名前でしりとり！「ン」で終わったら負けだよ</p>
     </a>
   </div>
+  <script>
+    // 最近プレイしたゲームを上に表示
+    (function() {
+      try {
+        const history = JSON.parse(localStorage.getItem('gameHistory') || '{}');
+        const gameList = document.querySelector('.game-list');
+        const cards = Array.from(gameList.querySelectorAll('.game-card'));
+
+        // アクセス履歴でソート（新しい順）
+        cards.sort((a, b) => {
+          const fileA = a.href.split('/').pop();
+          const fileB = b.href.split('/').pop();
+          const timeA = history[fileA] || 0;
+          const timeB = history[fileB] || 0;
+          return timeB - timeA;
+        });
+
+        // 並び替えたカードを再挿入
+        cards.forEach(card => gameList.appendChild(card));
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>
