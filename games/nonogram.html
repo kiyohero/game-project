@@ -652,7 +652,10 @@
       }
     }
 
+    let boardEventsSetup = false;
     function setupBoardEvents() {
+      if (boardEventsSetup) return;
+      boardEventsSetup = true;
       const table = document.getElementById('nonogram-table');
 
       table.addEventListener('pointerdown', (e) => {
