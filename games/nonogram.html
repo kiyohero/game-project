@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>お絵かきロジック</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    h1 { color: #6b5b7a; font-size: 1.8rem; margin: 10px 0; }
+    .screen { display: none; max-width: 500px; margin: 0 auto; padding: 0 10px; }
+    .screen.active { display: block; }
+
+    /* Nickname Screen */
+    .nickname-area { text-align: center; margin-top: 30px; }
+    .nickname-area p { color: #6b5b7a; margin: 10px 0; }
+    .nickname-selects { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+    .nickname-select {
+      padding: 10px; border-radius: 8px; border: 2px solid #e8e0f0;
+      font-size: 1rem; background: #fff; color: #6b5b7a;
+    }
+    .nickname-preview {
+      font-size: 1.3rem; font-weight: bold; color: #9b8ab8; margin: 12px 0;
+    }
+
+    /* Select Screen */
+    .player-info {
+      text-align: center; color: #9b8ab8; font-size: 0.9rem; margin-bottom: 8px;
+    }
+    .difficulty-tabs {
+      display: flex; justify-content: center; gap: 6px; margin-bottom: 16px;
+    }
+    .diff-tab {
+      padding: 8px 16px; border-radius: 20px; border: 2px solid #e8e0f0;
+      background: #fff; color: #6b5b7a; font-size: 0.95rem; cursor: pointer;
+      font-weight: bold; transition: all 0.2s;
+    }
+    .diff-tab.active { background: #9b8ab8; color: #fff; border-color: #9b8ab8; }
+    .puzzle-grid {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    }
+    .puzzle-card {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 12px 8px; border-radius: 12px; background: #fff;
+      border: 2px solid #e8e0f0; cursor: pointer; width: 85px;
+      transition: transform 0.2s, box-shadow 0.2s; position: relative;
+    }
+    .puzzle-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .puzzle-card .emoji { font-size: 1.8rem; }
+    .puzzle-card .name { font-size: 0.85rem; color: #6b5b7a; font-weight: bold; margin-top: 4px; }
+    .puzzle-card .clear-badge {
+      position: absolute; top: -6px; right: -6px;
+      background: #2ecc71; color: #fff; border-radius: 50%;
+      width: 22px; height: 22px; font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .puzzle-card .best-time {
+      font-size: 0.7rem; color: #aaa; margin-top: 2px;
+    }
+    .diff-progress {
+      text-align: center; color: #9b8ab8; font-size: 0.85rem; margin-bottom: 12px;
+    }
+
+    /* Play Screen */
+    .play-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .back-btn {
+      background: none; border: none; color: #9b8ab8; font-size: 1rem;
+      cursor: pointer; padding: 4px 8px;
+    }
+    .puzzle-title { font-size: 1.1rem; color: #6b5b7a; font-weight: bold; }
+    .timer { font-size: 1rem; color: #9b8ab8; font-weight: bold; }
+
+    /* Board */
+    .board-wrapper {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      display: flex; justify-content: center; margin: 8px 0;
+    }
+    #nonogram-table {
+      border-collapse: collapse; user-select: none; touch-action: none;
+    }
+    #nonogram-table td { text-align: center; vertical-align: middle; }
+    #nonogram-table .corner { background: transparent; }
+    #nonogram-table .col-hint {
+      color: #6b5b7a; font-weight: bold; padding: 1px 2px;
+      vertical-align: bottom; font-size: var(--hint-font, 13px);
+    }
+    #nonogram-table .row-hint {
+      color: #6b5b7a; font-weight: bold; padding: 1px 6px 1px 2px;
+      text-align: right; white-space: nowrap; font-size: var(--hint-font, 13px);
+    }
+    #nonogram-table .hint-done { color: #ccc; text-decoration: line-through; }
+    #nonogram-table .cell {
+      border: 1px solid #ccc; background: #fff; cursor: pointer;
+      position: relative; transition: background-color 0.15s;
+    }
+    #nonogram-table .cell:hover { background: #f5f0fa; }
+    #nonogram-table .cell.filled { background: #6b5b7a; }
+    #nonogram-table .cell.crossed::after {
+      content: '×'; color: #aaa; font-weight: bold;
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: calc(var(--cell-size, 30px) * 0.55);
+    }
+    #nonogram-table .cell.revealed { transition: background-color 0.6s; }
+    #nonogram-table .cell.error-flash {
+      background: #ff6b6b !important; transition: none;
+    }
+    #nonogram-table .cell.border-r { border-right: 2px solid #9b8ab8; }
+    #nonogram-table .cell.border-b { border-bottom: 2px solid #9b8ab8; }
+
+    /* Controls */
+    .controls {
+      display: flex; justify-content: center; align-items: center;
+      gap: 10px; margin: 12px 0; flex-wrap: wrap;
+    }
+    .mode-btn {
+      padding: 8px 18px; border-radius: 20px; border: 2px solid #9b8ab8;
+      font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s;
+    }
+    .mode-btn.fill-mode { background: #6b5b7a; color: #fff; }
+    .mode-btn.cross-mode { background: #fff; color: #9b8ab8; }
+    .ctrl-btn {
+      padding: 8px 14px; border-radius: 20px; border: 2px solid #e8e0f0;
+      background: #fff; color: #6b5b7a; font-size: 0.9rem; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ctrl-btn:hover { background: #f5f0fa; }
+    .ctrl-btn:disabled { opacity: 0.4; cursor: default; }
+    .easy-toggle {
+      display: flex; align-items: center; gap: 6px; justify-content: center;
+      margin: 8px 0; font-size: 0.85rem; color: #9b8ab8;
+    }
+    .toggle-switch {
+      width: 44px; height: 24px; border-radius: 12px; background: #ccc;
+      position: relative; cursor: pointer; transition: background 0.3s;
+    }
+    .toggle-switch.on { background: #2ecc71; }
+    .toggle-switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 20px; height: 20px; border-radius: 50%; background: #fff;
+      transition: left 0.3s;
+    }
+    .toggle-switch.on::after { left: 22px; }
+
+    /* Clear Overlay */
+    .clear-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); display: none; align-items: center;
+      justify-content: center; z-index: 1000;
+    }
+    .clear-overlay.show { display: flex; }
+    .clear-content {
+      background: #fff; border-radius: 20px; padding: 30px; text-align: center;
+      max-width: 320px; width: 90%; animation: popIn 0.4s ease;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .clear-content h2 { color: #6b5b7a; margin: 0 0 10px; font-size: 1.5rem; }
+    .clear-emoji { font-size: 3rem; margin: 10px 0; }
+    .clear-stats { color: #9b8ab8; margin: 10px 0; font-size: 0.95rem; }
+    .clear-stats span { font-weight: bold; }
+    .clear-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+    .clear-buttons .btn { font-size: 0.95rem; padding: 10px 20px; }
+
+    /* Confetti */
+    .confetti {
+      position: fixed; width: 10px; height: 10px; z-index: 1001;
+      animation: confettiFall 2s ease-in forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+
+    /* How to Play */
+    .how-to-play { max-width: 500px; margin: 20px auto; }
+  </style>
+</head>
+<body>
+  <h1>🎨 お絵かきロジック</h1>
+
+  <!-- Nickname Screen -->
+  <div id="nickname-screen" class="screen">
+    <div class="nickname-area">
+      <p style="font-size:1.1rem;">ニックネームをえらんでね！</p>
+      <div class="nickname-selects">
+        <select id="adj-select" class="nickname-select"></select>
+        <select id="animal-select" class="nickname-select"></select>
+      </div>
+      <p class="nickname-preview" id="nickname-preview"></p>
+      <button class="btn" id="start-btn" style="font-size:1.1rem; padding:12px 40px;">はじめる</button>
+    </div>
+  </div>
+
+  <!-- Puzzle Select Screen -->
+  <div id="select-screen" class="screen">
+    <div class="player-info" id="player-info"></div>
+    <div class="difficulty-tabs" id="diff-tabs"></div>
+    <div class="diff-progress" id="diff-progress"></div>
+    <div class="puzzle-grid" id="puzzle-grid"></div>
+  </div>
+
+  <!-- Play Screen -->
+  <div id="play-screen" class="screen">
+    <div class="play-header">
+      <button class="back-btn" id="back-btn">← もどる</button>
+      <span class="puzzle-title" id="puzzle-title"></span>
+      <span class="timer" id="timer">00:00</span>
+    </div>
+    <div class="board-wrapper">
+      <table id="nonogram-table"></table>
+    </div>
+    <div class="controls">
+      <button class="mode-btn fill-mode" id="mode-btn">🖊 ぬる</button>
+      <button class="ctrl-btn" id="hint-btn">💡 ヒント</button>
+      <button class="ctrl-btn" id="reset-btn">🔄 リセット</button>
+    </div>
+    <div class="easy-toggle">
+      <span>やさしいモード</span>
+      <div class="toggle-switch on" id="easy-toggle"></div>
+    </div>
+  </div>
+
+  <!-- Clear Overlay -->
+  <div class="clear-overlay" id="clear-overlay">
+    <div class="clear-content">
+      <h2>🎉 クリア！</h2>
+      <div class="clear-emoji" id="clear-emoji"></div>
+      <div class="clear-stats" id="clear-stats"></div>
+      <div class="clear-buttons">
+        <button class="btn" id="next-btn">つぎのパズル →</button>
+        <button class="btn secondary" id="select-btn">パズルをえらぶ</button>
+      </div>
+    </div>
+  </div>
+
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
+    <div style="padding: 12px; font-size: 0.95rem; color: #6b5b7a;">
+      <p><strong>ルール</strong></p>
+      <p>数字のヒントをたよりに、マスをぬりつぶして絵を完成させよう！</p>
+      <ul>
+        <li>左と上の<strong>数字</strong>は、その行・列で連続してぬるマスの数</li>
+        <li>数字が「3」なら、3つ連続でぬるマスがある</li>
+        <li>数字が「1 2」なら、1つぬって間をあけて2つぬる</li>
+        <li>「0」はその行・列にぬるマスがないという意味</li>
+      </ul>
+      <p><strong>そうさ</strong></p>
+      <ul>
+        <li>🖊 <strong>ぬるモード</strong>：タップでマスをぬる・消す</li>
+        <li>✕ <strong>けすモード</strong>：「ぬらないマス」に×をつける</li>
+        <li>💡 <strong>ヒント</strong>：こまったときに1行・1列のこたえが見れるよ</li>
+        <li>🔄 <strong>リセット</strong>：最初からやりなおす</li>
+      </ul>
+      <p><strong>やさしいモード</strong>をONにすると、まちがったマスをぬったとき教えてくれるよ！</p>
+    </div>
+  </details>
+
+  <script>
+  (function() {
+    'use strict';
+
+    // ===== Puzzle Data =====
+    const PUZZLES = [
+      // --- 5x5 Easy ---
+      { id:'heart5', name:'ハート', emoji:'❤️', difficulty:'easy', color:'#ff6b8a',
+        data:['01010','11111','11111','01110','00100'] },
+      { id:'diamond5', name:'ダイヤ', emoji:'💎', difficulty:'easy', color:'#64b5f6',
+        data:['00100','01110','11111','01110','00100'] },
+      { id:'plus5', name:'プラス', emoji:'➕', difficulty:'easy', color:'#81c784',
+        data:['00100','00100','11111','00100','00100'] },
+      { id:'ribbon5', name:'リボン', emoji:'🎀', difficulty:'easy', color:'#f48fb1',
+        data:['11011','01110','00100','01110','11011'] },
+      { id:'fish5', name:'さかな', emoji:'🐟', difficulty:'easy', color:'#4fc3f7',
+        data:['01000','11110','11111','11110','01000'] },
+      { id:'mushroom5', name:'きのこ', emoji:'🍄', difficulty:'easy', color:'#a1887f',
+        data:['01110','11111','00100','01110','01110'] },
+      { id:'house5', name:'おうち', emoji:'🏠', difficulty:'easy', color:'#ffb74d',
+        data:['00100','01110','11111','01010','01110'] },
+      { id:'yacht5', name:'ヨット', emoji:'⛵', difficulty:'easy', color:'#4dd0e1',
+        data:['00010','00110','01110','11111','01110'] },
+      // --- 10x10 Medium ---
+      { id:'butterfly10', name:'ちょうちょ', emoji:'🦋', difficulty:'medium', color:'#ba68c8',
+        data:['1000000001','1100000011','0110000110','0011111100','0001111000',
+              '0001111000','0011111100','0110000110','1100000011','1000000001'] },
+      { id:'rocket10', name:'ロケット', emoji:'🚀', difficulty:'medium', color:'#ef5350',
+        data:['0000110000','0001111000','0001111000','0011111100','0011111100',
+              '0111111110','0111111110','1101111011','0001111000','0000110000'] },
+      { id:'tree10', name:'木', emoji:'🌳', difficulty:'medium', color:'#66bb6a',
+        data:['0000110000','0001111000','0011111100','0111111110','1111111111',
+              '0011111100','0111111110','0000110000','0000110000','0000110000'] },
+      { id:'house10', name:'おうち', emoji:'🏠', difficulty:'medium', color:'#ffb74d',
+        data:['0000110000','0001111000','0011111100','0111111110','1111111111',
+              '1111111111','1100110011','1100110011','1100110011','1111111111'] },
+      // --- 15x15 Hard ---
+      { id:'heart15', name:'ハート', emoji:'❤️', difficulty:'hard', color:'#e91e63',
+        data:['001110000011100','011111000111110','111111101111111','111111111111111','111111111111111',
+              '111111111111111','111111111111111','011111111111110','001111111111100','000111111111000',
+              '000011111110000','000001111100000','000000111000000','000000010000000','000000010000000'] },
+      { id:'diamond15', name:'ダイヤ', emoji:'💎', difficulty:'hard', color:'#42a5f5',
+        data:['000000010000000','000000111000000','000001111100000','000011111110000','000111111111000',
+              '001111111111100','011111111111110','111111111111111','011111111111110','001111111111100',
+              '000111111111000','000011111110000','000001111100000','000000111000000','000000010000000'] },
+    ];
+
+    // ===== Nickname Data =====
+    const ADJECTIVES = [
+      'きままな','のんびり','せっかち','おだやかな','ひょうきんな',
+      'まじめな','ゆかいな','おっとり','げんきな','しずかな',
+      'あわてんぼうの','のんきな','おちゃめな','やさしい','くいしんぼうの',
+      'ねぼすけ','わんぱく','おしゃれな','ふしぎな','すばやい'
+    ];
+    const ANIMALS = [
+      'カバ','イルカ','ペンギン','アザラシ','ラッコ','クラゲ',
+      'マンボウ','サメ','カメ','タコ','イカ',
+      'クマノミ','エイ','チンアナゴ','カワウソ','オットセイ',
+      'クジラ','シャチ','フグ','タツノオトシゴ','カニ'
+    ];
+
+    // ===== State =====
+    const state = {
+      playerId: null,
+      nickname: '',
+      progress: {},
+      currentPuzzle: null,
+      board: [],
+      mode: 'fill',
+      timer: 0,
+      timerInterval: null,
+      timerStarted: false,
+      hintsUsed: 0,
+      easyMode: true,
+      selectedDifficulty: 'easy',
+      isDragging: false,
+      dragAction: null,
+      lastDragCell: null
+    };
+
+    // ===== Utility =====
+    function parseData(rows) {
+      return rows.map(r => r.split('').map(Number));
+    }
+
+    function computeRowClues(data) {
+      return data.map(row => {
+        const clues = [];
+        let count = 0;
+        for (const cell of row) {
+          if (cell === 1) { count++; }
+          else if (count > 0) { clues.push(count); count = 0; }
+        }
+        if (count > 0) clues.push(count);
+        return clues.length > 0 ? clues : [0];
+      });
+    }
+
+    function computeColClues(data) {
+      const cols = data[0].length;
+      const clues = [];
+      for (let c = 0; c < cols; c++) {
+        const colClue = [];
+        let count = 0;
+        for (let r = 0; r < data.length; r++) {
+          if (data[r][c] === 1) { count++; }
+          else if (count > 0) { colClue.push(count); count = 0; }
+        }
+        if (count > 0) colClue.push(count);
+        clues.push(colClue.length > 0 ? colClue : [0]);
+      }
+      return clues;
+    }
+
+    function maxHintsForDifficulty(diff) {
+      return diff === 'easy' ? 3 : diff === 'medium' ? 5 : 7;
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function generatePlayerId() {
+      return 'p_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    }
+
+    // ===== Firebase =====
+    async function loadPlayerData() {
+      try {
+        const doc = await db.collection('nonogram_players').doc(state.playerId).get();
+        if (doc.exists) {
+          const d = doc.data();
+          state.nickname = d.nickname || '';
+          state.progress = d.progress || {};
+          return true;
+        }
+        return false;
+      } catch (e) {
+        console.error('データ読み込みエラー:', e);
+        return false;
+      }
+    }
+
+    async function registerPlayer(nickname) {
+      state.nickname = nickname;
+      try {
+        await db.collection('nonogram_players').doc(state.playerId).set({
+          nickname: nickname,
+          progress: {},
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return true;
+      } catch (e) {
+        console.error('登録エラー:', e);
+        return false;
+      }
+    }
+
+    async function savePuzzleProgress(puzzleId, time, hintsUsed) {
+      const existing = state.progress[puzzleId];
+      const isNewBest = !existing || time < existing.bestTime;
+      const progressData = {
+        cleared: true,
+        bestTime: isNewBest ? time : existing.bestTime,
+        hintsUsed: isNewBest ? hintsUsed : existing.hintsUsed
+      };
+      state.progress[puzzleId] = progressData;
+      try {
+        await db.collection('nonogram_players').doc(state.playerId).update({
+          ['progress.' + puzzleId]: progressData,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch (e) {
+        console.error('保存エラー:', e);
+        try {
+          await db.collection('nonogram_players').doc(state.playerId).set({
+            nickname: state.nickname,
+            progress: state.progress,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+        } catch (e2) { console.error('保存リトライエラー:', e2); }
+      }
+    }
+
+    // ===== Screen Management =====
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const el = document.getElementById(name + '-screen');
+      if (el) el.classList.add('active');
+    }
+
+    // ===== Nickname Screen =====
+    function initNicknameScreen() {
+      const adjSel = document.getElementById('adj-select');
+      const animalSel = document.getElementById('animal-select');
+      const preview = document.getElementById('nickname-preview');
+
+      adjSel.innerHTML = ADJECTIVES.map(a => '<option value="'+a+'">'+a+'</option>').join('');
+      animalSel.innerHTML = ANIMALS.map(a => '<option value="'+a+'">'+a+'</option>').join('');
+
+      // Random initial selection
+      adjSel.selectedIndex = Math.floor(Math.random() * ADJECTIVES.length);
+      animalSel.selectedIndex = Math.floor(Math.random() * ANIMALS.length);
+
+      function updatePreview() {
+        preview.textContent = '→ ' + adjSel.value + animalSel.value;
+      }
+      adjSel.addEventListener('change', updatePreview);
+      animalSel.addEventListener('change', updatePreview);
+      updatePreview();
+
+      document.getElementById('start-btn').addEventListener('click', async () => {
+        const nickname = adjSel.value + animalSel.value;
+        const btn = document.getElementById('start-btn');
+        btn.disabled = true;
+        btn.textContent = 'とうろく中...';
+        await registerPlayer(nickname);
+        btn.disabled = false;
+        btn.textContent = 'はじめる';
+        renderSelectScreen();
+        showScreen('select');
+      });
+    }
+
+    // ===== Puzzle Select Screen =====
+    function renderSelectScreen() {
+      document.getElementById('player-info').textContent = '🎮 ' + state.nickname;
+
+      const difficulties = [
+        { key: 'easy', label: 'かんたん' },
+        { key: 'medium', label: 'ふつう' },
+        { key: 'hard', label: 'むずかしい' }
+      ];
+
+      // Tabs
+      const tabsEl = document.getElementById('diff-tabs');
+      tabsEl.innerHTML = difficulties.map(d =>
+        '<button class="diff-tab' + (d.key === state.selectedDifficulty ? ' active' : '') +
+        '" data-diff="' + d.key + '">' + d.label + '</button>'
+      ).join('');
+      tabsEl.querySelectorAll('.diff-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          state.selectedDifficulty = tab.dataset.diff;
+          renderSelectScreen();
+        });
+      });
+
+      // Puzzles for selected difficulty
+      const puzzles = PUZZLES.filter(p => p.difficulty === state.selectedDifficulty);
+      const cleared = puzzles.filter(p => state.progress[p.id] && state.progress[p.id].cleared).length;
+
+      document.getElementById('diff-progress').textContent =
+        cleared + ' / ' + puzzles.length + ' クリア';
+
+      const gridEl = document.getElementById('puzzle-grid');
+      gridEl.innerHTML = puzzles.map(p => {
+        const prog = state.progress[p.id];
+        const isClear = prog && prog.cleared;
+        return '<div class="puzzle-card" data-id="' + p.id + '">' +
+          (isClear ? '<div class="clear-badge">✓</div>' : '') +
+          '<div class="emoji">' + p.emoji + '</div>' +
+          '<div class="name">' + p.name + '</div>' +
+          (isClear ? '<div class="best-time">' + formatTime(prog.bestTime) + '</div>' : '') +
+          '</div>';
+      }).join('');
+
+      gridEl.querySelectorAll('.puzzle-card').forEach(card => {
+        card.addEventListener('click', () => startPuzzle(card.dataset.id));
+      });
+    }
+
+    // ===== Puzzle Play =====
+    function startPuzzle(puzzleId) {
+      const puzzle = PUZZLES.find(p => p.id === puzzleId);
+      if (!puzzle) return;
+
+      state.currentPuzzle = { ...puzzle, parsedData: parseData(puzzle.data) };
+      const size = state.currentPuzzle.parsedData.length;
+      const cols = state.currentPuzzle.parsedData[0].length;
+      state.board = Array.from({ length: size }, () => Array(cols).fill(0));
+      state.mode = 'fill';
+      state.timer = 0;
+      state.timerStarted = false;
+      state.hintsUsed = 0;
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      state.timerInterval = null;
+
+      document.getElementById('timer').textContent = '00:00';
+      document.getElementById('puzzle-title').textContent = state.currentPuzzle.emoji + ' ' + state.currentPuzzle.name;
+      updateModeButton();
+      updateHintButton();
+
+      renderBoard();
+      showScreen('play');
+    }
+
+    function renderBoard() {
+      const data = state.currentPuzzle.parsedData;
+      const rows = data.length;
+      const cols = data[0].length;
+      const rowClues = computeRowClues(data);
+      const colClues = computeColClues(data);
+      const maxRCLen = Math.max(...rowClues.map(r => r.length));
+      const maxCCLen = Math.max(...colClues.map(c => c.length));
+
+      // Calculate cell size
+      const screenW = Math.min(window.innerWidth - 20, 520);
+      const hintColW = maxRCLen;
+      const totalCols = hintColW + cols;
+      let cellSize = Math.floor(screenW / totalCols);
+      cellSize = Math.max(20, Math.min(45, cellSize));
+
+      document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
+      document.documentElement.style.setProperty('--hint-font', Math.max(10, cellSize * 0.4) + 'px');
+
+      let html = '';
+
+      // Column hint rows
+      for (let i = 0; i < maxCCLen; i++) {
+        html += '<tr>';
+        for (let j = 0; j < maxRCLen; j++) {
+          html += '<td class="corner"></td>';
+        }
+        for (let c = 0; c < cols; c++) {
+          const clue = colClues[c];
+          const idx = i - (maxCCLen - clue.length);
+          if (idx >= 0) {
+            html += '<td class="col-hint" data-col="' + c + '" style="width:' + cellSize + 'px">' + clue[idx] + '</td>';
+          } else {
+            html += '<td class="col-hint" style="width:' + cellSize + 'px"></td>';
+          }
+        }
+        html += '</tr>';
+      }
+
+      // Grid rows
+      for (let r = 0; r < rows; r++) {
+        html += '<tr>';
+        const clue = rowClues[r];
+        const offset = maxRCLen - clue.length;
+        for (let j = 0; j < maxRCLen; j++) {
+          const idx = j - offset;
+          if (idx >= 0) {
+            html += '<td class="row-hint" data-row="' + r + '" style="height:' + cellSize + 'px">' + clue[idx] + '</td>';
+          } else {
+            html += '<td class="row-hint" style="height:' + cellSize + 'px"></td>';
+          }
+        }
+        for (let c = 0; c < cols; c++) {
+          const cls = [];
+          if (cols >= 10 && (c + 1) % 5 === 0 && c < cols - 1) cls.push('border-r');
+          if (rows >= 10 && (r + 1) % 5 === 0 && r < rows - 1) cls.push('border-b');
+          html += '<td class="cell ' + cls.join(' ') + '" data-r="' + r + '" data-c="' + c +
+            '" style="width:' + cellSize + 'px;height:' + cellSize + 'px"></td>';
+        }
+        html += '</tr>';
+      }
+
+      document.getElementById('nonogram-table').innerHTML = html;
+      setupBoardEvents();
+    }
+
+    function updateBoard() {
+      const data = state.currentPuzzle.parsedData;
+
+      document.querySelectorAll('#nonogram-table .cell').forEach(cell => {
+        const r = +cell.dataset.r;
+        const c = +cell.dataset.c;
+        const v = state.board[r][c];
+        cell.classList.toggle('filled', v === 1);
+        cell.classList.toggle('crossed', v === 2);
+      });
+
+      // Update hint completion
+      for (let r = 0; r < data.length; r++) {
+        const done = isRowSatisfied(r);
+        document.querySelectorAll('#nonogram-table .row-hint[data-row="' + r + '"]')
+          .forEach(el => el.classList.toggle('hint-done', done));
+      }
+      for (let c = 0; c < data[0].length; c++) {
+        const done = isColSatisfied(c);
+        document.querySelectorAll('#nonogram-table .col-hint[data-col="' + c + '"]')
+          .forEach(el => el.classList.toggle('hint-done', done));
+      }
+    }
+
+    function setupBoardEvents() {
+      const table = document.getElementById('nonogram-table');
+
+      table.addEventListener('pointerdown', (e) => {
+        const cell = e.target.closest('.cell');
+        if (!cell) return;
+        e.preventDefault();
+        startTimer();
+        state.isDragging = true;
+        const r = +cell.dataset.r, c = +cell.dataset.c;
+        state.dragAction = determineDragAction(r, c);
+        state.lastDragCell = r + ',' + c;
+        applyAction(r, c);
+      });
+
+      document.addEventListener('pointermove', (e) => {
+        if (!state.isDragging) return;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (!el) return;
+        const cell = el.closest ? el.closest('.cell') : null;
+        if (!cell) return;
+        const key = cell.dataset.r + ',' + cell.dataset.c;
+        if (key === state.lastDragCell) return;
+        state.lastDragCell = key;
+        applyAction(+cell.dataset.r, +cell.dataset.c);
+      });
+
+      document.addEventListener('pointerup', () => {
+        state.isDragging = false;
+        state.dragAction = null;
+        state.lastDragCell = null;
+      });
+    }
+
+    function determineDragAction(r, c) {
+      const v = state.board[r][c];
+      if (state.mode === 'fill') {
+        return v === 1 ? 'unfill' : 'fill';
+      } else {
+        return v === 2 ? 'uncross' : 'cross';
+      }
+    }
+
+    function applyAction(r, c) {
+      const data = state.currentPuzzle.parsedData;
+      const action = state.dragAction;
+
+      if (action === 'fill') {
+        if (state.board[r][c] === 1) return;
+        // Easy mode check
+        if (state.easyMode && data[r][c] !== 1) {
+          flashError(r, c);
+          return;
+        }
+        state.board[r][c] = 1;
+      } else if (action === 'unfill') {
+        if (state.board[r][c] !== 1) return;
+        state.board[r][c] = 0;
+      } else if (action === 'cross') {
+        if (state.board[r][c] === 2) return;
+        if (state.board[r][c] === 1) return; // Don't cross over filled
+        state.board[r][c] = 2;
+      } else if (action === 'uncross') {
+        if (state.board[r][c] !== 2) return;
+        state.board[r][c] = 0;
+      }
+
+      updateBoard();
+      if (checkWin()) handleWin();
+    }
+
+    function flashError(r, c) {
+      const cell = document.querySelector('.cell[data-r="' + r + '"][data-c="' + c + '"]');
+      if (!cell) return;
+      cell.classList.add('error-flash');
+      setTimeout(() => cell.classList.remove('error-flash'), 300);
+    }
+
+    // ===== Game Logic =====
+    function checkWin() {
+      const data = state.currentPuzzle.parsedData;
+      for (let r = 0; r < data.length; r++) {
+        for (let c = 0; c < data[0].length; c++) {
+          if (data[r][c] === 1 && state.board[r][c] !== 1) return false;
+          if (data[r][c] === 0 && state.board[r][c] === 1) return false;
+        }
+      }
+      return true;
+    }
+
+    function isRowSatisfied(r) {
+      const data = state.currentPuzzle.parsedData;
+      for (let c = 0; c < data[r].length; c++) {
+        if (data[r][c] === 1 && state.board[r][c] !== 1) return false;
+        if (data[r][c] === 0 && state.board[r][c] === 1) return false;
+      }
+      return true;
+    }
+
+    function isColSatisfied(c) {
+      const data = state.currentPuzzle.parsedData;
+      for (let r = 0; r < data.length; r++) {
+        if (data[r][c] === 1 && state.board[r][c] !== 1) return false;
+        if (data[r][c] === 0 && state.board[r][c] === 1) return false;
+      }
+      return true;
+    }
+
+    function useHint() {
+      const max = maxHintsForDifficulty(state.currentPuzzle.difficulty);
+      if (state.hintsUsed >= max) return;
+      const data = state.currentPuzzle.parsedData;
+      const rows = data.length;
+      const cols = data[0].length;
+
+      const incomplete = [];
+      for (let r = 0; r < rows; r++) {
+        if (!isRowSatisfied(r)) incomplete.push({ type: 'row', idx: r });
+      }
+      for (let c = 0; c < cols; c++) {
+        if (!isColSatisfied(c)) incomplete.push({ type: 'col', idx: c });
+      }
+      if (incomplete.length === 0) return;
+
+      startTimer();
+      const choice = incomplete[Math.floor(Math.random() * incomplete.length)];
+      if (choice.type === 'row') {
+        for (let c = 0; c < cols; c++) {
+          state.board[choice.idx][c] = data[choice.idx][c] === 1 ? 1 : 2;
+        }
+      } else {
+        for (let r = 0; r < rows; r++) {
+          state.board[r][choice.idx] = data[r][choice.idx] === 1 ? 1 : 2;
+        }
+      }
+
+      state.hintsUsed++;
+      updateHintButton();
+      updateBoard();
+      if (checkWin()) handleWin();
+    }
+
+    function resetPuzzle() {
+      const rows = state.currentPuzzle.parsedData.length;
+      const cols = state.currentPuzzle.parsedData[0].length;
+      state.board = Array.from({ length: rows }, () => Array(cols).fill(0));
+      state.hintsUsed = 0;
+      state.timer = 0;
+      state.timerStarted = false;
+      if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+      document.getElementById('timer').textContent = '00:00';
+      updateHintButton();
+      updateBoard();
+    }
+
+    // ===== Mode & Controls =====
+    function updateModeButton() {
+      const btn = document.getElementById('mode-btn');
+      if (state.mode === 'fill') {
+        btn.textContent = '🖊 ぬる';
+        btn.className = 'mode-btn fill-mode';
+      } else {
+        btn.textContent = '✕ けす';
+        btn.className = 'mode-btn cross-mode';
+      }
+    }
+
+    function updateHintButton() {
+      const max = maxHintsForDifficulty(state.currentPuzzle.difficulty);
+      const btn = document.getElementById('hint-btn');
+      btn.textContent = '💡 ヒント (' + (max - state.hintsUsed) + ')';
+      btn.disabled = state.hintsUsed >= max;
+    }
+
+    // ===== Timer =====
+    function startTimer() {
+      if (state.timerStarted) return;
+      state.timerStarted = true;
+      state.timerInterval = setInterval(() => {
+        state.timer++;
+        document.getElementById('timer').textContent = formatTime(state.timer);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+      }
+    }
+
+    // ===== Win =====
+    async function handleWin() {
+      stopTimer();
+
+      // Color reveal animation
+      const color = state.currentPuzzle.color;
+      document.querySelectorAll('#nonogram-table .cell.filled').forEach(cell => {
+        cell.classList.add('revealed');
+        cell.style.backgroundColor = color;
+      });
+      // Cross marks become white
+      document.querySelectorAll('#nonogram-table .cell.crossed').forEach(cell => {
+        cell.classList.remove('crossed');
+      });
+
+      // Save progress
+      await savePuzzleProgress(state.currentPuzzle.id, state.timer, state.hintsUsed);
+
+      // Show clear overlay after a short delay
+      setTimeout(() => {
+        const overlay = document.getElementById('clear-overlay');
+        document.getElementById('clear-emoji').textContent = state.currentPuzzle.emoji;
+
+        const prog = state.progress[state.currentPuzzle.id];
+        let statsHtml = 'タイム: <span>' + formatTime(state.timer) + '</span>';
+        if (state.hintsUsed > 0) {
+          statsHtml += '<br>ヒント: <span>' + state.hintsUsed + '回</span>';
+        }
+        if (prog && state.timer <= prog.bestTime) {
+          statsHtml += '<br>🏆 ベストタイム！';
+        }
+        document.getElementById('clear-stats').innerHTML = statsHtml;
+
+        // Next puzzle button
+        const nextPuzzle = getNextPuzzle();
+        const nextBtn = document.getElementById('next-btn');
+        if (nextPuzzle) {
+          nextBtn.style.display = '';
+          nextBtn.textContent = 'つぎのパズル →';
+        } else {
+          nextBtn.style.display = 'none';
+        }
+
+        overlay.classList.add('show');
+        showConfetti();
+      }, 800);
+    }
+
+    function getNextPuzzle() {
+      const puzzles = PUZZLES.filter(p => p.difficulty === state.currentPuzzle.difficulty);
+      const idx = puzzles.findIndex(p => p.id === state.currentPuzzle.id);
+      return idx < puzzles.length - 1 ? puzzles[idx + 1] : null;
+    }
+
+    function showConfetti() {
+      const colors = ['#ff6b8a','#ffd700','#64b5f6','#81c784','#ba68c8','#ffb74d','#4fc3f7'];
+      for (let i = 0; i < 40; i++) {
+        const conf = document.createElement('div');
+        conf.className = 'confetti';
+        conf.style.left = Math.random() * 100 + 'vw';
+        conf.style.top = -10 + 'px';
+        conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        conf.style.width = (6 + Math.random() * 8) + 'px';
+        conf.style.height = (6 + Math.random() * 8) + 'px';
+        conf.style.animationDelay = (Math.random() * 0.8) + 's';
+        conf.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+        document.body.appendChild(conf);
+        setTimeout(() => conf.remove(), 4000);
+      }
+    }
+
+    // ===== Event Listeners =====
+    document.getElementById('mode-btn').addEventListener('click', () => {
+      state.mode = state.mode === 'fill' ? 'cross' : 'fill';
+      updateModeButton();
+    });
+
+    document.getElementById('hint-btn').addEventListener('click', useHint);
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      if (state.timerStarted && state.timer > 5) {
+        if (!confirm('パズルをリセットする？')) return;
+      }
+      resetPuzzle();
+    });
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      stopTimer();
+      renderSelectScreen();
+      showScreen('select');
+    });
+
+    document.getElementById('easy-toggle').addEventListener('click', () => {
+      state.easyMode = !state.easyMode;
+      document.getElementById('easy-toggle').classList.toggle('on', state.easyMode);
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      document.getElementById('clear-overlay').classList.remove('show');
+      const next = getNextPuzzle();
+      if (next) startPuzzle(next.id);
+    });
+
+    document.getElementById('select-btn').addEventListener('click', () => {
+      document.getElementById('clear-overlay').classList.remove('show');
+      renderSelectScreen();
+      showScreen('select');
+    });
+
+    // ===== Init =====
+    async function init() {
+      initNicknameScreen();
+
+      // Check for existing player
+      let id = localStorage.getItem('nonogram-player-id');
+      if (id) {
+        state.playerId = id;
+        const loaded = await loadPlayerData();
+        if (loaded && state.nickname) {
+          renderSelectScreen();
+          showScreen('select');
+          return;
+        }
+      }
+
+      // New player
+      state.playerId = id || generatePlayerId();
+      localStorage.setItem('nonogram-player-id', state.playerId);
+      showScreen('nickname');
+    }
+
+    init();
+  })();
+  </script>
+</body>
+</html>
