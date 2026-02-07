@@ -75,6 +75,7 @@
       background: #c4b4d4;
       border-radius: 10px;
       transition: gap 0.5s, padding 0.5s;
+      touch-action: none;
     }
     .board.completed {
       gap: 0px;
@@ -97,6 +98,10 @@
       position: relative;
     }
     .tile:active { transform: scale(0.95); }
+    .tile.dragging {
+      transition: none !important;
+      z-index: 5;
+    }
     .board.completed .tile {
       border-radius: 0;
       cursor: default;
@@ -273,7 +278,7 @@
   <details class="how-to-play">
     <summary>あそびかた</summary>
     <ul>
-      <li>タイルをタップして空いているマスにスライドしよう</li>
+      <li>タイルをタップ、またはスワイプして空いているマスにスライドしよう</li>
       <li>全部のタイルを正しい場所に並べると、かわいい動物の絵が完成するよ！</li>
       <li>「ヒント」ボタンで番号が表示されるよ</li>
       <li>「お手本」ボタンを押している間、完成した絵が見られるよ</li>
@@ -318,6 +323,9 @@
     let isPlaying = false;
     let hintOn = false;
     let imageDataURL = '';
+    let dragState = null;
+    let dragDidMove = false;
+    const SWIPE_THRESHOLD = 20;
 
     // ===== DOM =====
     const boardEl = document.getElementById('board');
@@ -521,6 +529,10 @@
           tile.appendChild(hint);
 
           tile.addEventListener('click', () => onTileClick(idx));
+          tile.addEventListener('pointerdown', (e) => onPointerDown(e, idx));
+          tile.addEventListener('pointermove', onPointerMove);
+          tile.addEventListener('pointerup', onPointerUp);
+          tile.addEventListener('pointercancel', onPointerUp);
         }
 
         boardEl.appendChild(tile);
@@ -529,8 +541,8 @@
       boardEl.classList.toggle('hint-on', hintOn);
     }
 
-    // ===== タイルクリック =====
-    function onTileClick(idx) {
+    // ===== タイル移動 =====
+    function moveTile(idx) {
       if (boardEl.classList.contains('completed')) return;
 
       const emptyIdx = tiles.indexOf(0);
@@ -555,6 +567,102 @@
       // クリア判定
       if (checkWin()) {
         onClear();
+      }
+    }
+
+    function onTileClick(idx) {
+      if (dragDidMove) {
+        dragDidMove = false;
+        return;
+      }
+      moveTile(idx);
+    }
+
+    // ===== ドラッグ操作 =====
+    function onPointerDown(e, tileIdx) {
+      if (boardEl.classList.contains('completed')) return;
+
+      const emptyIdx = tiles.indexOf(0);
+      const neighbors = getNeighbors(emptyIdx);
+      if (!neighbors.includes(tileIdx)) return;
+
+      // タイルから空きマスへの方向を判定
+      const tileRow = Math.floor(tileIdx / gridSize);
+      const tileCol = tileIdx % gridSize;
+      const emptyRow = Math.floor(emptyIdx / gridSize);
+      const emptyCol = emptyIdx % gridSize;
+
+      let direction;
+      if (emptyRow < tileRow) direction = 'up';
+      else if (emptyRow > tileRow) direction = 'down';
+      else if (emptyCol < tileCol) direction = 'left';
+      else direction = 'right';
+
+      const tileEl = e.currentTarget;
+      const tileSize = tileEl.offsetWidth + 3; // タイル幅 + gap
+
+      dragState = {
+        tileIdx,
+        startX: e.clientX,
+        startY: e.clientY,
+        tileEl,
+        direction,
+        tileSize,
+        lastDx: 0,
+        lastDy: 0
+      };
+      dragDidMove = false;
+
+      tileEl.classList.add('dragging');
+      tileEl.setPointerCapture(e.pointerId);
+    }
+
+    function onPointerMove(e) {
+      if (!dragState) return;
+
+      let dx = e.clientX - dragState.startX;
+      let dy = e.clientY - dragState.startY;
+      const maxDist = dragState.tileSize;
+
+      // 空きマスの方向にのみ移動を制限
+      switch (dragState.direction) {
+        case 'up':
+          dx = 0;
+          dy = Math.max(-maxDist, Math.min(0, dy));
+          break;
+        case 'down':
+          dx = 0;
+          dy = Math.min(maxDist, Math.max(0, dy));
+          break;
+        case 'left':
+          dy = 0;
+          dx = Math.max(-maxDist, Math.min(0, dx));
+          break;
+        case 'right':
+          dy = 0;
+          dx = Math.min(maxDist, Math.max(0, dx));
+          break;
+      }
+
+      dragState.tileEl.style.transform = `translate(${dx}px, ${dy}px)`;
+      dragState.lastDx = dx;
+      dragState.lastDy = dy;
+    }
+
+    function onPointerUp(e) {
+      if (!dragState) return;
+
+      const dist = Math.abs(dragState.lastDx) + Math.abs(dragState.lastDy);
+      const tileIdx = dragState.tileIdx;
+      const tileEl = dragState.tileEl;
+
+      tileEl.classList.remove('dragging');
+      tileEl.style.transform = '';
+      dragState = null;
+
+      if (dist >= SWIPE_THRESHOLD) {
+        dragDidMove = true;
+        moveTile(tileIdx);
       }
     }
 
