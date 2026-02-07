@@ -30,6 +30,7 @@
 | リバーシ | `games/reversi.html` | CPU対戦も可能なボードゲーム |
 | 将棋 | `games/shogi.html` | 動ける場所が光る初心者向け将棋 |
 | ポケモンしりとり | `games/pokemon-shiritori.html` | ポケモンの名前でしりとり対決（pokemon-data.json使用） |
+| お絵かきロジック | `games/nonogram.html` | 数字のヒントでマスを塗って絵を完成させるノノグラムパズル |
 | スライドパズル | `games/sliding-puzzle.html` | 動物イラストを完成させるスライドパズル |
 
 ## 技術スタック
@@ -195,6 +196,17 @@ node scripts/fetch-pokemon.js
    - 小学生向けとして不適切な内容（暴力・ギャンブルなど）がないか
 
 問題がある場合は、作業前にユーザーに確認・相談する。
+
+### ⚠️ ゲーム追加・変更時の必須チェック（index.html整合性）
+
+新しいゲームを追加したり、`index.html`を変更するPRを作成する際は、**必ず最新のmainブランチを取り込んでから**作業すること。
+
+**背景**: 過去に、複数のゲーム追加PRが並行して作られた際、後からマージされたPRが先にマージされたゲームのリンクを`index.html`から消してしまう事故が発生した（ノノグラムのリンク消失）。
+
+**対策**:
+1. **PRを作る前に`main`を取り込む**: `git pull origin main` または `git merge origin/main` を実行して、最新の`index.html`を反映する
+2. **`index.html`のゲームリンク数を確認**: `games/`フォルダ内の`.html`ゲームファイル数と、`index.html`内のゲームカード数が一致しているか確認する
+3. **既存ゲームのリンクが消えていないか確認**: `git diff origin/main -- index.html` で、意図しない削除がないかチェックする
 
 ### フィードバック対応
 
