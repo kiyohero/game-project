@@ -304,6 +304,7 @@
       { id: 'panda',   emoji: '🐼', name: 'パンダ',   draw: drawPanda },
       { id: 'frog',    emoji: '🐸', name: 'カエル',   draw: drawFrog },
       { id: 'penguin', emoji: '🐧', name: 'ペンギン', draw: drawPenguin },
+      { id: 'hippo',   emoji: '🦛', name: 'カバ',     draw: drawHippo },
     ];
 
     const DIFFICULTIES = [
@@ -1324,6 +1325,109 @@
       // 足（右）
       ctx.beginPath();
       ctx.ellipse(cx + s * 0.08, cy + s * 0.32, s * 0.06, s * 0.025, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // --- カバ ---
+    function drawHippo(ctx, s) {
+      const cx = s / 2, cy = s / 2;
+
+      // 足（左前）
+      ctx.fillStyle = '#8888a0';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.15, cy + s * 0.35, s * 0.06, s * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 足（右前）
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.15, cy + s * 0.35, s * 0.06, s * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 体
+      ctx.fillStyle = '#a0a0b8';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.15, s * 0.3, s * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 頭
+      ctx.fillStyle = '#a8a8c0';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - s * 0.08, s * 0.25, s * 0.22, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 耳（左）
+      ctx.fillStyle = '#9090a8';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.2, cy - s * 0.26, s * 0.05, s * 0.06, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      // 耳の中（左）
+      ctx.fillStyle = '#d4a0a0';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.2, cy - s * 0.26, s * 0.03, s * 0.04, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 耳（右）
+      ctx.fillStyle = '#9090a8';
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.2, cy - s * 0.26, s * 0.05, s * 0.06, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      // 耳の中（右）
+      ctx.fillStyle = '#d4a0a0';
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.2, cy - s * 0.26, s * 0.03, s * 0.04, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 鼻先（大きな鼻/口まわり）
+      ctx.fillStyle = '#b8b0c8';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.02, s * 0.18, s * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 鼻の穴（左）
+      ctx.fillStyle = '#6a6a80';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.06, cy - s * 0.01, s * 0.025, s * 0.02, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 鼻の穴（右）
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.06, cy - s * 0.01, s * 0.025, s * 0.02, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（左）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.1, cy - s * 0.14, s * 0.025, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.095, cy - s * 0.15, s * 0.01, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（右）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.1, cy - s * 0.14, s * 0.025, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.105, cy - s * 0.15, s * 0.01, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 口
+      ctx.strokeStyle = '#6a6a80';
+      ctx.lineWidth = s * 0.006;
+      ctx.beginPath();
+      ctx.arc(cx, cy + s * 0.06, s * 0.06, 0.1 * Math.PI, 0.9 * Math.PI);
+      ctx.stroke();
+
+      // ほっぺ
+      ctx.fillStyle = 'rgba(255, 150, 150, 0.3)';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.16, cy - s * 0.06, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.16, cy - s * 0.06, s * 0.035, 0, Math.PI * 2);
       ctx.fill();
     }
 
