@@ -6,50 +6,62 @@
   <title>ゲーム</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f0fa; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 15px 15px; }
-    h1 { font-size: 1.8rem; color: #6b5b7a; margin-bottom: 12px; }
-    .game-list { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 400px; }
-    .game-card { background: #9b8ab8; padding: 12px 15px; border-radius: 8px; text-decoration: none; transition: transform 0.2s; }
-    .game-card:hover { transform: scale(1.02); }
-    .game-card:active { transform: scale(0.98); }
-    .game-card h2 { color: #ffffff; font-size: 1.15rem; margin-bottom: 3px; }
-    .game-card p { color: #e8e0f0; font-size: 0.8rem; line-height: 1.3; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f0fa; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 15px 10px; }
+    h1 { font-size: 1.6rem; color: #6b5b7a; margin-bottom: 12px; }
+    .game-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; }
+    .game-card {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #a78bbd, #8b6fa8);
+      border-radius: 14px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 8px rgba(107, 91, 122, 0.25);
+    }
+    .game-card:hover { transform: scale(1.05); }
+    .game-card:active { transform: scale(0.95); }
+    .game-icon { font-size: 2.2rem; line-height: 1; }
+    .game-card span:last-child { color: #fff; font-size: 0.78rem; font-weight: 600; text-align: center; padding: 0 4px; line-height: 1.2; }
   </style>
 </head>
 <body>
   <h1>ゲーム</h1>
   <div class="game-list">
     <a href="games/2048.html" class="game-card">
-      <h2>2048</h2>
-      <p>おなじ数字をくっつけて、2048を目指すパズルゲーム</p>
+      <span class="game-icon">🔢</span>
+      <span>2048</span>
     </a>
     <a href="games/tic-tac-toe.html" class="game-card">
-      <h2>マルバツゲーム</h2>
-      <p>先に3つならべたほうが勝ち！2人で遊べる対戦ゲーム</p>
+      <span class="game-icon">⭕</span>
+      <span>マルバツ</span>
     </a>
     <a href="games/invader.html" class="game-card">
-      <h2>インベーダーゲーム</h2>
-      <p>せまりくる敵をビームでたおせ！スマホでも遊べるよ</p>
+      <span class="game-icon">👾</span>
+      <span>インベーダー</span>
     </a>
     <a href="games/reversi.html" class="game-card">
-      <h2>リバーシ</h2>
-      <p>はさんでひっくり返せ！2人対戦もCPU対戦もできるよ</p>
+      <span class="game-icon">⚫</span>
+      <span>リバーシ</span>
     </a>
     <a href="games/shogi.html" class="game-card">
-      <h2>将棋</h2>
-      <p>動ける場所が光るから、ルールを知らなくても遊べるよ！</p>
+      <span class="game-icon">♟️</span>
+      <span>将棋</span>
     </a>
     <a href="games/pokemon-shiritori.html" class="game-card">
-      <h2>ポケモンしりとり</h2>
-      <p>ポケモンの名前でしりとり！「ン」で終わったら負けだよ</p>
+      <span class="game-icon">⚡</span>
+      <span>ポケモン<br>しりとり</span>
     </a>
     <a href="games/nonogram.html" class="game-card">
-      <h2>お絵かきロジック</h2>
-      <p>数字のヒントでマスをぬって、絵を完成させるパズル！</p>
+      <span class="game-icon">🎨</span>
+      <span>お絵かき<br>ロジック</span>
     </a>
     <a href="games/sliding-puzzle.html" class="game-card">
-      <h2>🧩 スライドパズル</h2>
-      <p>タイルをスライドして、かわいい動物の絵を完成させよう！</p>
+      <span class="game-icon">🧩</span>
+      <span>スライド<br>パズル</span>
     </a>
   </div>
   <script>
