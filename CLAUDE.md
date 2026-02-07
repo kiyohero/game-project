@@ -24,42 +24,96 @@
 
 | ゲーム | ファイル | 説明 |
 |--------|----------|------|
-| 2048 | `2048.html` | 数字タイルを結合して2048を目指すパズル |
-| マルバツ | `tic-tac-toe.html` | 3目並べ対戦ゲーム |
-| インベーダー | `invader.html` | 敵を撃ち落とすシューティング |
-| リバーシ | `reversi.html` | CPU対戦も可能なボードゲーム |
-| 将棋 | `shogi.html` | 動ける場所が光る初心者向け将棋 |
-| ポケモンしりとり | `pokemon-shiritori.html` | ポケモンの名前でしりとり対決 |
+| 2048 | `games/2048.html` | 数字タイルを結合して2048を目指すパズル |
+| マルバツ | `games/tic-tac-toe.html` | 3目並べ対戦ゲーム |
+| インベーダー | `games/invader.html` | 敵を撃ち落とすシューティング（Canvas使用） |
+| リバーシ | `games/reversi.html` | CPU対戦も可能なボードゲーム |
+| 将棋 | `games/shogi.html` | 動ける場所が光る初心者向け将棋 |
+| ポケモンしりとり | `games/pokemon-shiritori.html` | ポケモンの名前でしりとり対決（pokemon-data.json使用） |
 
 ## 技術スタック
 
 - HTML5 / CSS3 / JavaScript
 - Canvas API（インベーダー）
-- localStorage（スコア保存）
+- localStorage（ゲーム履歴・スコア保存）
+- Firebase / Firestore（ランキング機能）
 - モバイル・デスクトップ両対応
 - 外部ライブラリの使用可
 
-## プロジェクト構造
+## アーキテクチャ
 
-※ ゲームは随時追加されるため、以下は主要ファイルの参考例です
+### ゲームの仕組み
+
+1. **ゲーム一覧（index.html）**
+   - 全ゲームへのリンクを表示
+   - `gameHistory`をlocalStorageに記録して、最近プレイしたゲームを上に表示
+
+2. **各ゲーム（games/*.html）**
+   - 独立した単一HTMLファイル
+   - `common.js`と`common.css`を読み込み
+   - game-listへの戻るリンクが自動挿入される
+   - `common.js`によってアクセス時刻がlocalStorageに記録される
+
+3. **データ永続化**
+   - **ローカル保存**: localStorage（スコア、ゲーム履歴）
+   - **クラウド保存**: Firebase Firestore（ランキング、全プレイヤーデータ）
+
+4. **外部データ**
+   - **pokemon-data.json**: PokeAPIから事前に生成・保存したデータ
+   - games/フォルダに静的ファイルとして配置
+   - ゲーム起動時に読み込まれる（実行時のAPI呼び出しなし）
+
+### 主要な設計パターン
+
+- **IIFE（即座関数実行）**: `common.js`の実装パターン
+- **静的ファイルオンリー**: GitHub Pagesで動作するため、APIサーバーなし
+- **クライアントサイド処理**: すべてのゲームロジックはブラウザで実行
+
+## プロジェクト構造
 
 ```
 game-project/
-├── index.html         # ゲーム選択ポータル
-├── common.css         # 共通スタイル
-├── common.js          # 共通スクリプト（ナビ自動挿入）
-└── *.html             # 各ゲームファイル
+├── index.html                    # ゲーム選択ポータル
+├── games/
+│   ├── *.html                    # 各ゲームファイル
+│   ├── common.css                # 共通スタイル
+│   ├── common.js                 # 共通スクリプト（ナビ自動挿入）
+│   ├── ranking.js                # ランキング機能（Firebase）
+│   ├── ranking.css               # ランキング画面のスタイル
+│   ├── firebase-config.js         # Firebase設定
+│   └── pokemon-data.json          # ポケモン名データ（PokeAPI由来）
+├── scripts/
+│   └── fetch-pokemon.js           # PokeAPIからポケモンデータを取得するスクリプト
+└── CLAUDE.md                      # このファイル
 ```
 
 ### 共通ファイルについて
 
 - **common.css**: 背景色、ボタン、ナビゲーション等の共通スタイル
-- **common.js**: 各ゲームページに「← ゲーム一覧」リンクを自動挿入
+- **common.js**: 各ゲームページに「← ゲーム一覧」リンクを自動挿入・アクセス履歴を記録
+
+### ランキング機能について
+
+- **ranking.js / ranking.css**: Firebase Firestoreを使用したゲームのスコアランキング機能
+- **firebase-config.js**: Firebase認証とFirestore接続設定
+- 各ゲームは独立してランキングデータをFirestoreに保存・読み込み可能
+
+### ポケモンデータについて
+
+- **pokemon-data.json**: PokeAPIから取得した全ポケモンの日本語名リスト
+- **fetch-pokemon.js**: Node.js実行スクリプト。PokeAPIから最新データを取得して`pokemon-data.json`を生成
+  - 実行方法: `node scripts/fetch-pokemon.js`
 
 新しいゲームを追加する際は、以下を`<head>`内に追加：
 ```html
 <link rel="stylesheet" href="common.css">
 <script src="common.js" defer></script>
+```
+
+ランキング機能を使用する場合は、`firebase-config.js`と`ranking.js`も読み込み：
+```html
+<script src="firebase-config.js" defer></script>
+<script src="ranking.js" defer></script>
 ```
 
 ## デザイン
@@ -68,6 +122,36 @@ game-project/
 - 楽しいアニメーション・エフェクト
 - 完全日本語対応
 - 各ゲームに「← ゲーム一覧」リンクを設置（index.htmlへ戻れるように）
+
+## ローカル開発
+
+### ローカルテスト環境の起動
+
+GitHub Pagesと同じく静的ファイルのみを提供するため、簡単なHTTPサーバーで動作確認：
+
+```bash
+# Python 3をインストール済みの場合
+python3 -m http.server 8000
+
+# Python 2の場合
+python -m SimpleHTTPServer 8000
+
+# または Node.js http-server を使用
+npm install -g http-server
+http-server
+```
+
+ブラウザで `http://localhost:8000` にアクセスして確認。
+
+### ポケモンデータの更新
+
+PokeAPIのデータを最新に保つ場合：
+
+```bash
+node scripts/fetch-pokemon.js
+```
+
+このスクリプトは全ポケモンの日本語名を`games/pokemon-data.json`に保存します。実行にはNode.jsが必要。
 
 ## 開発の流れ
 
