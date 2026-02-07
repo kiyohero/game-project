@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>スライドパズル</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="ranking.css">
+  <script src="common.js" defer></script>
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
+  <style>
+    h1 { font-size: 2rem; margin-bottom: 8px; }
+
+    /* 動物選択 */
+    .animal-select {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .animal-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 3px solid #d4c8e0;
+      background: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .animal-btn:hover { transform: scale(1.1); }
+    .animal-btn.active {
+      border-color: #7a6b8a;
+      background: #e8e0f0;
+      transform: scale(1.15);
+    }
+
+    /* 難易度選択 */
+    .difficulty-select {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .diff-btn {
+      background: #d4c8e0;
+      color: #6b5b7a;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .diff-btn:hover { background: #c4b4d4; }
+    .diff-btn.active {
+      background: #7a6b8a;
+      color: #fff;
+    }
+
+    /* パズルボード */
+    .board-wrapper {
+      position: relative;
+      margin-bottom: 10px;
+    }
+    .board {
+      display: grid;
+      gap: 3px;
+      padding: 3px;
+      background: #c4b4d4;
+      border-radius: 10px;
+      transition: gap 0.5s, padding 0.5s;
+    }
+    .board.completed {
+      gap: 0px;
+      padding: 0px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .tile {
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: rgba(255,255,255,0.8);
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+      background-size: cover;
+      transition: transform 0.15s ease-out, opacity 0.3s;
+      position: relative;
+    }
+    .tile:active { transform: scale(0.95); }
+    .board.completed .tile {
+      border-radius: 0;
+      cursor: default;
+    }
+    .tile.empty {
+      background: transparent !important;
+      cursor: default;
+    }
+    .tile .hint-num {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 0.65rem;
+      background: rgba(0,0,0,0.35);
+      color: #fff;
+      border-radius: 3px;
+      padding: 0 3px;
+      line-height: 1.4;
+      display: none;
+    }
+    .hint-on .tile .hint-num {
+      display: block;
+    }
+    .tile.empty .hint-num { display: none !important; }
+
+    /* プレビューオーバーレイ */
+    .preview-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 10;
+    }
+    .preview-overlay.show {
+      opacity: 1;
+    }
+    .preview-overlay canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* スコア表示 */
+    .score-bar {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+      color: #6b5b7a;
+      font-weight: bold;
+    }
+
+    /* 操作ボタン */
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .ctrl-btn {
+      background: #7a6b8a;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .ctrl-btn:hover { background: #6b5b7a; }
+    .ctrl-btn:active { transform: scale(0.95); }
+    .ctrl-btn.toggle-on {
+      background: #e8a040;
+    }
+
+    /* ランキングボタン */
+    .ranking-btn {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #7a6b8a;
+      color: white;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      transition: transform 0.15s;
+      z-index: 50;
+    }
+    .ranking-btn:hover { transform: scale(1.1); }
+
+    /* クリア演出 */
+    .clear-msg {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(250, 245, 255, 0.92);
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    .clear-msg.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .clear-msg h2 {
+      font-size: 2.2rem;
+      color: #6b5b7a;
+      margin-bottom: 10px;
+      animation: bounceIn 0.6s ease;
+    }
+    .clear-msg .stats {
+      font-size: 1.1rem;
+      color: #9b8ab8;
+      margin-bottom: 20px;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      50% { transform: scale(1.1); }
+      70% { transform: scale(0.95); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 紙吹雪 */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      z-index: 90;
+      pointer-events: none;
+      border-radius: 2px;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧩 スライドパズル</h1>
+
+  <div class="animal-select" id="animalSelect"></div>
+  <div class="difficulty-select" id="diffSelect"></div>
+
+  <div class="board-wrapper">
+    <div class="board" id="board"></div>
+    <div class="preview-overlay" id="previewOverlay">
+      <canvas id="previewCanvas"></canvas>
+    </div>
+  </div>
+
+  <div class="score-bar">
+    <span id="moveCount">手数: 0</span>
+    <span id="timer">⏱ 00:00</span>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" id="shuffleBtn">🔀 シャッフル</button>
+    <button class="ctrl-btn" id="hintBtn">🔢 ヒント</button>
+    <button class="ctrl-btn" id="previewBtn">👀 お手本</button>
+  </div>
+
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
+    <ul>
+      <li>タイルをタップして空いているマスにスライドしよう</li>
+      <li>全部のタイルを正しい場所に並べると、かわいい動物の絵が完成するよ！</li>
+      <li>「ヒント」ボタンで番号が表示されるよ</li>
+      <li>「お手本」ボタンを押している間、完成した絵が見られるよ</li>
+      <li>できるだけ少ない手数でクリアを目指そう！</li>
+    </ul>
+  </details>
+
+  <div class="clear-msg" id="clearMsg">
+    <h2>🎉 かんせい！</h2>
+    <div class="stats" id="clearStats"></div>
+    <button class="btn" id="clearPlayAgain">もういちど遊ぶ</button>
+  </div>
+
+  <button class="ranking-btn" id="rankingBtn">🏆</button>
+
+  <script>
+  (function() {
+    // ===== 動物イラスト定義 =====
+    const ANIMALS = [
+      { id: 'cat',     emoji: '🐱', name: 'ネコ',     draw: drawCat },
+      { id: 'dog',     emoji: '🐶', name: 'イヌ',     draw: drawDog },
+      { id: 'rabbit',  emoji: '🐰', name: 'ウサギ',   draw: drawRabbit },
+      { id: 'panda',   emoji: '🐼', name: 'パンダ',   draw: drawPanda },
+      { id: 'frog',    emoji: '🐸', name: 'カエル',   draw: drawFrog },
+      { id: 'penguin', emoji: '🐧', name: 'ペンギン', draw: drawPenguin },
+    ];
+
+    const DIFFICULTIES = [
+      { size: 3, label: 'かんたん' },
+      { size: 4, label: 'ふつう' },
+      { size: 5, label: 'むずかしい' },
+    ];
+
+    // ===== 状態 =====
+    let currentAnimal = 0;
+    let currentDifficulty = 0;
+    let gridSize = 3;
+    let tiles = [];        // 1D配列: タイル番号(0=空き)
+    let moves = 0;
+    let timerInterval = null;
+    let seconds = 0;
+    let isPlaying = false;
+    let hintOn = false;
+    let imageDataURL = '';
+
+    // ===== DOM =====
+    const boardEl = document.getElementById('board');
+    const moveCountEl = document.getElementById('moveCount');
+    const timerEl = document.getElementById('timer');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const hintBtn = document.getElementById('hintBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewOverlay = document.getElementById('previewOverlay');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const clearMsg = document.getElementById('clearMsg');
+    const clearStats = document.getElementById('clearStats');
+    const clearPlayAgain = document.getElementById('clearPlayAgain');
+    const rankingBtn = document.getElementById('rankingBtn');
+
+    // ===== 初期化 =====
+    function init() {
+      buildAnimalButtons();
+      buildDiffButtons();
+      setupEvents();
+      newGame();
+    }
+
+    function buildAnimalButtons() {
+      const container = document.getElementById('animalSelect');
+      ANIMALS.forEach((a, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'animal-btn' + (i === 0 ? ' active' : '');
+        btn.textContent = a.emoji;
+        btn.title = a.name;
+        btn.addEventListener('click', () => {
+          currentAnimal = i;
+          container.querySelectorAll('.animal-btn').forEach((b, j) => {
+            b.classList.toggle('active', j === i);
+          });
+          newGame();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function buildDiffButtons() {
+      const container = document.getElementById('diffSelect');
+      DIFFICULTIES.forEach((d, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'diff-btn' + (i === 0 ? ' active' : '');
+        btn.textContent = d.label;
+        btn.addEventListener('click', () => {
+          currentDifficulty = i;
+          gridSize = d.size;
+          container.querySelectorAll('.diff-btn').forEach((b, j) => {
+            b.classList.toggle('active', j === i);
+          });
+          newGame();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function setupEvents() {
+      shuffleBtn.addEventListener('click', () => newGame());
+      hintBtn.addEventListener('click', () => {
+        hintOn = !hintOn;
+        hintBtn.classList.toggle('toggle-on', hintOn);
+        boardEl.classList.toggle('hint-on', hintOn);
+      });
+
+      // お手本: 押している間だけ表示
+      const showPreview = () => { previewOverlay.classList.add('show'); };
+      const hidePreview = () => { previewOverlay.classList.remove('show'); };
+      previewBtn.addEventListener('mousedown', showPreview);
+      previewBtn.addEventListener('mouseup', hidePreview);
+      previewBtn.addEventListener('mouseleave', hidePreview);
+      previewBtn.addEventListener('touchstart', (e) => { e.preventDefault(); showPreview(); });
+      previewBtn.addEventListener('touchend', hidePreview);
+      previewBtn.addEventListener('touchcancel', hidePreview);
+
+      clearPlayAgain.addEventListener('click', () => {
+        clearMsg.classList.remove('show');
+        newGame();
+      });
+
+      rankingBtn.addEventListener('click', () => {
+        if (typeof Ranking !== 'undefined') {
+          Ranking.showRankingModal(getRankingId());
+        }
+      });
+    }
+
+    function getRankingId() {
+      return 'sliding-puzzle-' + gridSize + 'x' + gridSize;
+    }
+
+    // ===== ゲーム開始 =====
+    function newGame() {
+      stopTimer();
+      moves = 0;
+      seconds = 0;
+      isPlaying = false;
+      updateScoreDisplay();
+      clearMsg.classList.remove('show');
+      boardEl.classList.remove('completed');
+
+      // イラスト生成
+      generateImage();
+
+      // タイル初期化（完成状態）
+      const total = gridSize * gridSize;
+      tiles = [];
+      for (let i = 1; i < total; i++) tiles.push(i);
+      tiles.push(0); // 最後が空き
+
+      // シャッフル
+      shuffle();
+
+      // 描画
+      renderBoard();
+    }
+
+    function generateImage() {
+      const size = 400;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // 背景
+      ctx.fillStyle = '#faf5ff';
+      ctx.fillRect(0, 0, size, size);
+
+      // 動物を描画
+      ANIMALS[currentAnimal].draw(ctx, size);
+
+      imageDataURL = canvas.toDataURL();
+
+      // プレビュー用
+      previewCanvas.width = size;
+      previewCanvas.height = size;
+      const pctx = previewCanvas.getContext('2d');
+      pctx.drawImage(canvas, 0, 0);
+    }
+
+    // ===== シャッフル（実際にスライドを繰り返す） =====
+    function shuffle() {
+      const total = gridSize * gridSize;
+      const shuffleMoves = gridSize * gridSize * 20;
+      let emptyIdx = tiles.indexOf(0);
+      let lastMove = -1;
+
+      for (let i = 0; i < shuffleMoves; i++) {
+        const neighbors = getNeighbors(emptyIdx);
+        // 直前に戻る動きを避ける
+        const filtered = neighbors.filter(n => n !== lastMove);
+        const pick = filtered[Math.floor(Math.random() * filtered.length)];
+        lastMove = emptyIdx;
+        tiles[emptyIdx] = tiles[pick];
+        tiles[pick] = 0;
+        emptyIdx = pick;
+      }
+    }
+
+    function getNeighbors(idx) {
+      const row = Math.floor(idx / gridSize);
+      const col = idx % gridSize;
+      const result = [];
+      if (row > 0) result.push(idx - gridSize);
+      if (row < gridSize - 1) result.push(idx + gridSize);
+      if (col > 0) result.push(idx - 1);
+      if (col < gridSize - 1) result.push(idx + 1);
+      return result;
+    }
+
+    // ===== 描画 =====
+    function renderBoard() {
+      const boardSize = Math.min(340, window.innerWidth - 40);
+      const tileSize = Math.floor((boardSize - (gridSize + 1) * 3) / gridSize);
+      const actualSize = tileSize * gridSize + (gridSize + 1) * 3;
+
+      boardEl.style.gridTemplateColumns = `repeat(${gridSize}, ${tileSize}px)`;
+      boardEl.style.width = actualSize + 'px';
+      boardEl.innerHTML = '';
+
+      tiles.forEach((num, idx) => {
+        const tile = document.createElement('div');
+        tile.className = 'tile' + (num === 0 ? ' empty' : '');
+        tile.style.width = tileSize + 'px';
+        tile.style.height = tileSize + 'px';
+
+        if (num !== 0) {
+          // 元の位置から背景位置を計算
+          const origRow = Math.floor((num - 1) / gridSize);
+          const origCol = (num - 1) % gridSize;
+          tile.style.backgroundImage = `url(${imageDataURL})`;
+          tile.style.backgroundSize = `${tileSize * gridSize}px ${tileSize * gridSize}px`;
+          tile.style.backgroundPosition = `-${origCol * tileSize}px -${origRow * tileSize}px`;
+
+          // ヒント番号
+          const hint = document.createElement('span');
+          hint.className = 'hint-num';
+          hint.textContent = num;
+          tile.appendChild(hint);
+
+          tile.addEventListener('click', () => onTileClick(idx));
+        }
+
+        boardEl.appendChild(tile);
+      });
+
+      boardEl.classList.toggle('hint-on', hintOn);
+    }
+
+    // ===== タイルクリック =====
+    function onTileClick(idx) {
+      if (boardEl.classList.contains('completed')) return;
+
+      const emptyIdx = tiles.indexOf(0);
+      const neighbors = getNeighbors(emptyIdx);
+
+      if (!neighbors.includes(idx)) return;
+
+      // スワップ
+      tiles[emptyIdx] = tiles[idx];
+      tiles[idx] = 0;
+      moves++;
+
+      // 初回クリックでタイマー開始
+      if (!isPlaying) {
+        isPlaying = true;
+        startTimer();
+      }
+
+      updateScoreDisplay();
+      renderBoard();
+
+      // クリア判定
+      if (checkWin()) {
+        onClear();
+      }
+    }
+
+    function checkWin() {
+      const total = gridSize * gridSize;
+      for (let i = 0; i < total - 1; i++) {
+        if (tiles[i] !== i + 1) return false;
+      }
+      return tiles[total - 1] === 0;
+    }
+
+    // ===== クリア =====
+    function onClear() {
+      stopTimer();
+      isPlaying = false;
+
+      // ボード完成演出（枠線消す）
+      boardEl.classList.add('completed');
+
+      // 少し待ってからメッセージ表示
+      setTimeout(() => {
+        clearStats.textContent = `${moves}手 ／ ${formatTime(seconds)}`;
+        clearMsg.classList.add('show');
+        spawnConfetti();
+
+        // ランキング登録
+        if (typeof Ranking !== 'undefined') {
+          setTimeout(() => {
+            // 手数が少ないほうが良いので、スコアは逆転させる（大きいほど上位）
+            // 最大手数を十分大きく設定して引く
+            const maxScore = 99999;
+            const score = maxScore - moves;
+            Ranking.showSubmitModal(getRankingId(), score, () => {});
+          }, 1500);
+        }
+      }, 800);
+    }
+
+    // ===== タイマー =====
+    function startTimer() {
+      stopTimer();
+      timerInterval = setInterval(() => {
+        seconds++;
+        timerEl.textContent = '⏱ ' + formatTime(seconds);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+    }
+
+    function updateScoreDisplay() {
+      moveCountEl.textContent = '手数: ' + moves;
+      timerEl.textContent = '⏱ ' + formatTime(seconds);
+    }
+
+    // ===== 紙吹雪 =====
+    function spawnConfetti() {
+      const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6bd6', '#a66cff'];
+      for (let i = 0; i < 50; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.top = '-10px';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.width = (6 + Math.random() * 8) + 'px';
+        el.style.height = (6 + Math.random() * 8) + 'px';
+        el.style.animation = `confettiFall ${1.5 + Math.random() * 2}s ease-out forwards`;
+        el.style.animationDelay = Math.random() * 0.5 + 's';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      }
+    }
+
+    // ==========================================
+    //  動物イラスト描画関数
+    // ==========================================
+
+    function drawCat(ctx, s) {
+      const cx = s / 2, cy = s / 2;
+
+      // 体
+      ctx.fillStyle = '#ffb347';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.12, s * 0.28, s * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 耳（左）
+      ctx.fillStyle = '#ffb347';
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.22, cy - s * 0.18);
+      ctx.lineTo(cx - s * 0.12, cy - s * 0.38);
+      ctx.lineTo(cx - s * 0.02, cy - s * 0.18);
+      ctx.fill();
+      // 耳の中（左）
+      ctx.fillStyle = '#ffcccb';
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.19, cy - s * 0.18);
+      ctx.lineTo(cx - s * 0.12, cy - s * 0.32);
+      ctx.lineTo(cx - s * 0.05, cy - s * 0.18);
+      ctx.fill();
+
+      // 耳（右）
+      ctx.fillStyle = '#ffb347';
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.02, cy - s * 0.18);
+      ctx.lineTo(cx + s * 0.12, cy - s * 0.38);
+      ctx.lineTo(cx + s * 0.22, cy - s * 0.18);
+      ctx.fill();
+      ctx.fillStyle = '#ffcccb';
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.05, cy - s * 0.18);
+      ctx.lineTo(cx + s * 0.12, cy - s * 0.32);
+      ctx.lineTo(cx + s * 0.19, cy - s * 0.18);
+      ctx.fill();
+
+      // 顔
+      ctx.fillStyle = '#ffcc80';
+      ctx.beginPath();
+      ctx.arc(cx, cy - s * 0.02, s * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（左）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.08, cy - s * 0.06, s * 0.035, s * 0.045, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 目のハイライト
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.07, cy - s * 0.075, s * 0.012, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（右）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.08, cy - s * 0.06, s * 0.035, s * 0.045, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.09, cy - s * 0.075, s * 0.012, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 鼻
+      ctx.fillStyle = '#ff8a80';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.01);
+      ctx.lineTo(cx - s * 0.025, cy + s * 0.035);
+      ctx.lineTo(cx + s * 0.025, cy + s * 0.035);
+      ctx.fill();
+
+      // 口
+      ctx.strokeStyle = '#a0522d';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.035);
+      ctx.lineTo(cx - s * 0.04, cy + s * 0.07);
+      ctx.moveTo(cx, cy + s * 0.035);
+      ctx.lineTo(cx + s * 0.04, cy + s * 0.07);
+      ctx.stroke();
+
+      // ひげ（左）
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.1, cy + s * 0.01);
+      ctx.lineTo(cx - s * 0.25, cy - s * 0.01);
+      ctx.moveTo(cx - s * 0.1, cy + s * 0.035);
+      ctx.lineTo(cx - s * 0.25, cy + s * 0.04);
+      ctx.moveTo(cx - s * 0.1, cy + s * 0.06);
+      ctx.lineTo(cx - s * 0.25, cy + s * 0.08);
+      ctx.stroke();
+
+      // ひげ（右）
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.1, cy + s * 0.01);
+      ctx.lineTo(cx + s * 0.25, cy - s * 0.01);
+      ctx.moveTo(cx + s * 0.1, cy + s * 0.035);
+      ctx.lineTo(cx + s * 0.25, cy + s * 0.04);
+      ctx.moveTo(cx + s * 0.1, cy + s * 0.06);
+      ctx.lineTo(cx + s * 0.25, cy + s * 0.08);
+      ctx.stroke();
+
+      // ほっぺ
+      ctx.fillStyle = 'rgba(255, 150, 150, 0.35)';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.15, cy + s * 0.04, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.15, cy + s * 0.04, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+
+      // しっぽ
+      ctx.strokeStyle = '#ffb347';
+      ctx.lineWidth = s * 0.03;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.2, cy + s * 0.3);
+      ctx.quadraticCurveTo(cx + s * 0.38, cy + s * 0.15, cx + s * 0.3, cy + s * 0.0);
+      ctx.stroke();
+    }
+
+    function drawDog(ctx, s) {
+      const cx = s / 2, cy = s / 2;
+
+      // 体
+      ctx.fillStyle = '#d4a574';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.12, s * 0.26, s * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // たれ耳（左）
+      ctx.fillStyle = '#b08050';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.22, cy - s * 0.02, s * 0.08, s * 0.18, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // たれ耳（右）
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.22, cy - s * 0.02, s * 0.08, s * 0.18, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 顔
+      ctx.fillStyle = '#ddb892';
+      ctx.beginPath();
+      ctx.arc(cx, cy - s * 0.02, s * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 口周り（白い部分）
+      ctx.fillStyle = '#f5e6d3';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.06, s * 0.12, s * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（左）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.07, cy - s * 0.06, s * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.06, cy - s * 0.07, s * 0.01, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（右）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.07, cy - s * 0.06, s * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.08, cy - s * 0.07, s * 0.01, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 鼻
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.02, s * 0.035, s * 0.025, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 舌ペロ
+      ctx.fillStyle = '#ff8a9a';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.1, s * 0.03, s * 0.045, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 口
+      ctx.strokeStyle = '#8b6f47';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.035);
+      ctx.lineTo(cx - s * 0.03, cy + s * 0.06);
+      ctx.moveTo(cx, cy + s * 0.035);
+      ctx.lineTo(cx + s * 0.03, cy + s * 0.06);
+      ctx.stroke();
+
+      // ほっぺ
+      ctx.fillStyle = 'rgba(255, 150, 150, 0.3)';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.14, cy + s * 0.03, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.14, cy + s * 0.03, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+
+      // しっぽ
+      ctx.strokeStyle = '#d4a574';
+      ctx.lineWidth = s * 0.035;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx + s * 0.18, cy + s * 0.28);
+      ctx.quadraticCurveTo(cx + s * 0.35, cy + s * 0.1, cx + s * 0.28, cy - s * 0.02);
+      ctx.stroke();
+    }
+
+    function drawRabbit(ctx, s) {
+      const cx = s / 2, cy = s / 2 + s * 0.05;
+
+      // 体
+      ctx.fillStyle = '#fff5f5';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.08, s * 0.24, s * 0.26, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 耳（左）
+      ctx.fillStyle = '#fff5f5';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.1, cy - s * 0.32, s * 0.06, s * 0.18, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffb6c1';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.1, cy - s * 0.3, s * 0.03, s * 0.12, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 耳（右）
+      ctx.fillStyle = '#fff5f5';
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.1, cy - s * 0.32, s * 0.06, s * 0.18, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffb6c1';
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.1, cy - s * 0.3, s * 0.03, s * 0.12, 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 顔
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx, cy - s * 0.04, s * 0.19, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（左）
+      ctx.fillStyle = '#e74c6f';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.07, cy - s * 0.07, s * 0.025, s * 0.035, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.06, cy - s * 0.08, s * 0.01, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（右）
+      ctx.fillStyle = '#e74c6f';
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.07, cy - s * 0.07, s * 0.025, s * 0.035, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.08, cy - s * 0.08, s * 0.01, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 鼻
+      ctx.fillStyle = '#ff8a9a';
+      ctx.beginPath();
+      ctx.arc(cx, cy + s * 0.0, s * 0.02, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 口
+      ctx.strokeStyle = '#d4838f';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.02);
+      ctx.lineTo(cx - s * 0.025, cy + s * 0.045);
+      ctx.moveTo(cx, cy + s * 0.02);
+      ctx.lineTo(cx + s * 0.025, cy + s * 0.045);
+      ctx.stroke();
+
+      // ほっぺ
+      ctx.fillStyle = 'rgba(255, 130, 150, 0.4)';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.13, cy + s * 0.0, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.13, cy + s * 0.0, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawPanda(ctx, s) {
+      const cx = s / 2, cy = s / 2;
+
+      // 体
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.1, s * 0.26, s * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 耳（左・黒）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.17, cy - s * 0.2, s * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 耳（右・黒）
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.17, cy - s * 0.2, s * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 顔（白）
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx, cy - s * 0.02, s * 0.21, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目の周り（黒パッチ・左）
+      ctx.fillStyle = '#333';
+      ctx.save();
+      ctx.translate(cx - s * 0.08, cy - s * 0.06);
+      ctx.rotate(-0.3);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.055, s * 0.07, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 目の周り（黒パッチ・右）
+      ctx.save();
+      ctx.translate(cx + s * 0.08, cy - s * 0.06);
+      ctx.rotate(0.3);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.055, s * 0.07, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 目（白・左）
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.08, cy - s * 0.06, s * 0.025, 0, Math.PI * 2);
+      ctx.fill();
+      // 目（黒・左）
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.08, cy - s * 0.055, s * 0.015, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（白・右）
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.08, cy - s * 0.06, s * 0.025, 0, Math.PI * 2);
+      ctx.fill();
+      // 目（黒・右）
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.08, cy - s * 0.055, s * 0.015, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 鼻
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.03, s * 0.03, s * 0.02, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 口
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.045);
+      ctx.lineTo(cx - s * 0.025, cy + s * 0.07);
+      ctx.moveTo(cx, cy + s * 0.045);
+      ctx.lineTo(cx + s * 0.025, cy + s * 0.07);
+      ctx.stroke();
+
+      // ほっぺ
+      ctx.fillStyle = 'rgba(255, 150, 150, 0.3)';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.14, cy + s * 0.04, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.14, cy + s * 0.04, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 笹の葉
+      ctx.fillStyle = '#66bb6a';
+      ctx.save();
+      ctx.translate(cx + s * 0.28, cy - s * 0.05);
+      ctx.rotate(0.5);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.02, s * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.translate(s * 0.02, -s * 0.06);
+      ctx.rotate(-0.6);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.015, s * 0.06, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawFrog(ctx, s) {
+      const cx = s / 2, cy = s / 2 + s * 0.02;
+
+      // 体
+      ctx.fillStyle = '#66bb6a';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.08, s * 0.26, s * 0.26, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // お腹
+      ctx.fillStyle = '#c8e6c9';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.12, s * 0.16, s * 0.17, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目の突起（左）
+      ctx.fillStyle = '#66bb6a';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.1, cy - s * 0.17, s * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目の突起（右）
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.1, cy - s * 0.17, s * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（白・左）
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.1, cy - s * 0.17, s * 0.065, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（黒・左）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.1, cy - s * 0.16, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.09, cy - s * 0.175, s * 0.012, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（白・右）
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.1, cy - s * 0.17, s * 0.065, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（黒・右）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.1, cy - s * 0.16, s * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.11, cy - s * 0.175, s * 0.012, 0, Math.PI * 2);
+      ctx.fill();
+
+      // にっこり口
+      ctx.strokeStyle = '#388e3c';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy + s * 0.02, s * 0.1, 0.15, Math.PI - 0.15);
+      ctx.stroke();
+
+      // ほっぺ
+      ctx.fillStyle = 'rgba(255, 150, 130, 0.35)';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.17, cy + s * 0.0, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.17, cy + s * 0.0, s * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawPenguin(ctx, s) {
+      const cx = s / 2, cy = s / 2 + s * 0.02;
+
+      // 体（黒）
+      ctx.fillStyle = '#37474f';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.05, s * 0.24, s * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // お腹（白）
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + s * 0.08, s * 0.16, s * 0.22, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 顔
+      ctx.fillStyle = '#37474f';
+      ctx.beginPath();
+      ctx.arc(cx, cy - s * 0.1, s * 0.17, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 顔（白い部分）
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - s * 0.06, s * 0.13, s * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（左）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.06, cy - s * 0.08, s * 0.022, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.055, cy - s * 0.09, s * 0.008, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 目（右）
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.06, cy - s * 0.08, s * 0.022, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.065, cy - s * 0.09, s * 0.008, 0, Math.PI * 2);
+      ctx.fill();
+
+      // くちばし
+      ctx.fillStyle = '#ff9800';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - s * 0.04);
+      ctx.lineTo(cx - s * 0.035, cy - s * 0.01);
+      ctx.lineTo(cx + s * 0.035, cy - s * 0.01);
+      ctx.fill();
+
+      // ほっぺ
+      ctx.fillStyle = 'rgba(255, 130, 130, 0.4)';
+      ctx.beginPath();
+      ctx.arc(cx - s * 0.1, cy - s * 0.04, s * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + s * 0.1, cy - s * 0.04, s * 0.03, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 手羽（左）
+      ctx.fillStyle = '#37474f';
+      ctx.save();
+      ctx.translate(cx - s * 0.22, cy + s * 0.02);
+      ctx.rotate(-0.2);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.05, s * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 手羽（右）
+      ctx.save();
+      ctx.translate(cx + s * 0.22, cy + s * 0.02);
+      ctx.rotate(0.2);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.05, s * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 足（左）
+      ctx.fillStyle = '#ff9800';
+      ctx.beginPath();
+      ctx.ellipse(cx - s * 0.08, cy + s * 0.32, s * 0.06, s * 0.025, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 足（右）
+      ctx.beginPath();
+      ctx.ellipse(cx + s * 0.08, cy + s * 0.32, s * 0.06, s * 0.025, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ===== 起動 =====
+    init();
+  })();
+  </script>
+</body>
+</html>
