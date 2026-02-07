@@ -30,6 +30,7 @@
 | リバーシ | `games/reversi.html` | CPU対戦も可能なボードゲーム |
 | 将棋 | `games/shogi.html` | 動ける場所が光る初心者向け将棋 |
 | ポケモンしりとり | `games/pokemon-shiritori.html` | ポケモンの名前でしりとり対決（pokemon-data.json使用） |
+| スライドパズル | `games/sliding-puzzle.html` | 動物イラストを完成させるスライドパズル |
 
 ## 技術スタック
 
