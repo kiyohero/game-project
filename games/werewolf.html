@@ -809,6 +809,12 @@
         });
         html += `</div><button class="btn btn-primary" onclick="confirmProtectAction()" id="confirm-btn" disabled>決定</button>`;
         actionsHtml.innerHTML = html;
+      } else {
+        // 村人：行動なし、次へ進むボタンを表示
+        actionsHtml.innerHTML = `
+          <p class="instruction">🏠 ${player.name}さんは<ruby>村人<rt>むらびと</rt></ruby>です。<br>夜は静かに<ruby>眠<rt>ねむ</rt></ruby>りましょう。</p>
+          <button class="btn btn-primary" onclick="skipVillagerNight()">次へ</button>
+        `;
       }
 
       showScreen('screen-night');
@@ -823,6 +829,11 @@
       document.querySelectorAll('.player-btn').forEach(btn => btn.classList.remove('selected'));
       event.target.classList.add('selected');
       document.getElementById('confirm-btn').disabled = false;
+    }
+
+    function skipVillagerNight() {
+      state.nightActionIndex++;
+      showNightActions();
     }
 
     function confirmNightAction() {
