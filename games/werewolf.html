@@ -526,7 +526,7 @@
     <div id="day-message"></div>
     <div id="player-status-list"></div>
     <div id="cpu-speeches"></div>
-    <button class="btn btn-primary" onclick="showScreen('screen-vote')">投票へ</button>
+    <button class="btn btn-primary" onclick="startVotePhase()">投票へ</button>
   </div>
 
   <!-- 投票画面 -->
@@ -760,7 +760,7 @@
       state.phase = 'night';
       state.nightKillTarget = -1;
       state.nightProtectTarget = -1;
-      state.nightActionQueue = state.players.filter(p => !p.isCpu);
+      state.nightActionQueue = state.players.filter(p => !p.isCpu && p.isAlive);
       state.nightActionIndex = 0;
 
       showNightActions();
@@ -939,6 +939,13 @@
     // 昼フェーズ
     function showDayPhase() {
       state.phase = 'day';
+
+      // 夜キル後に勝利条件を確認
+      const nightWinner = checkWinCondition();
+      if (nightWinner) {
+        showGameOver(nightWinner);
+        return;
+      }
 
       // 夜の結果
       const dayMessageDiv = document.getElementById('day-message');
@@ -1165,7 +1172,7 @@
       const title = winner === 'villager' ? '村人チームの勝利！' : '<ruby>人狼<rt>じんろう</rt></ruby>チームの勝利！';
 
       document.getElementById('final-emoji').textContent = emoji;
-      document.getElementById('final-title').textContent = title;
+      document.getElementById('final-title').innerHTML = title;
 
       // 全員の役職表示
       let rolesHtml = '';
