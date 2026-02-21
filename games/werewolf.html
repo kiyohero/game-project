@@ -711,7 +711,10 @@
       } else {
         label.textContent = `${player.name}さん、準備ができたら画面を見てください`;
         instruction.textContent = '';
-        document.getElementById('role-check-btn').style.display = 'block';
+        const btn = document.getElementById('role-check-btn');
+        btn.style.display = 'block';
+        btn.textContent = 'タップして役職を見る';
+        btn.onclick = showRole;
         document.getElementById('role-display-area').innerHTML = '';
       }
 
@@ -769,42 +772,58 @@
     // 夜フェーズ画面
     function showNightActions() {
       document.getElementById('day-info').textContent = `${state.day}日目の夜`;
+      showScreen('screen-night');
+
+      const actionsHtml = document.getElementById('night-actions');
+      actionsHtml.innerHTML = '';
 
       if (state.nightActionIndex >= state.nightActionQueue.length) {
-        // 人間プレイヤーの行動完了、CPU行動実行
-        cpuNightActions();
-        applyNightKill();
-        showDayPhase();
+        // 人間プレイヤーの行動完了 → 「朝へ進む」ボタンを表示
+        actionsHtml.innerHTML = `
+          <p class="instruction">全員の夜の行動が終わりました。</p>
+          <button class="btn btn-primary" onclick="endNightPhase()">朝へ進む</button>
+        `;
         return;
       }
 
       const player = state.nightActionQueue[state.nightActionIndex];
-      const actionsHtml = document.getElementById('night-actions');
-      actionsHtml.innerHTML = '';
 
       if (player.role === 'werewolf') {
         // 人狼の行動
         const targets = state.players.filter(p => p.isAlive && p.role !== 'werewolf');
-        let html = `<p class="instruction">🐺 <ruby>人狼<rt>じんろう</rt></ruby>さん、誰を倒しますか？</p><div class="player-selection">`;
-        targets.forEach(t => {
-          html += `<button class="player-btn" onclick="selectKillTarget(${t.id})">${t.name}</button>`;
-        });
-        html += `</div><button class="btn btn-primary" onclick="confirmNightAction()" id="confirm-btn" disabled>決定</button>`;
-        actionsHtml.innerHTML = html;
+        if (targets.length === 0) {
+          actionsHtml.innerHTML = `
+            <p class="instruction">🐺 ${player.name}さんは<ruby>人狼<rt>じんろう</rt></ruby>ですが、今夜<ruby>倒<rt>たお</rt></ruby>せる<ruby>相手<rt>あいて</rt></ruby>がいません。</p>
+            <button class="btn btn-primary" onclick="skipVillagerNight()">次へ</button>
+          `;
+        } else {
+          let html = `<p class="instruction">🐺 <ruby>人狼<rt>じんろう</rt></ruby>さん、誰を倒しますか？</p><div class="player-selection">`;
+          targets.forEach(t => {
+            html += `<button class="player-btn" onclick="selectKillTarget(${t.id}, event)">${t.name}</button>`;
+          });
+          html += `</div><button class="btn btn-primary" onclick="confirmNightAction()" id="confirm-btn" disabled>決定</button>`;
+          actionsHtml.innerHTML = html;
+        }
       } else if (player.role === 'seer') {
         // 占い師の行動
         const targets = state.players.filter(p => p.isAlive && p.id !== player.id);
-        let html = `<p class="instruction">🔮 占い師さん、誰を占いますか？</p><div class="player-selection">`;
-        targets.forEach(t => {
-          html += `<button class="player-btn" onclick="selectSeerTarget(${t.id})">${t.name}</button>`;
-        });
-        html += `</div><button class="btn btn-primary" onclick="confirmSeerAction()" id="confirm-btn" disabled>決定</button>`;
-        actionsHtml.innerHTML = html;
+        if (targets.length === 0) {
+          actionsHtml.innerHTML = `
+            <p class="instruction">🔮 ${player.name}さんは占い師ですが、今夜占える<ruby>相手<rt>あいて</rt></ruby>がいません。</p>
+            <button class="btn btn-primary" onclick="skipVillagerNight()">次へ</button>
+          `;
+        } else {
+          let html = `<p class="instruction">🔮 占い師さん、誰を占いますか？</p><div class="player-selection">`;
+          targets.forEach(t => {
+            html += `<button class="player-btn" onclick="selectSeerTarget(${t.id}, event)">${t.name}</button>`;
+          });
+          html += `</div><button class="btn btn-primary" onclick="confirmSeerAction()" id="confirm-btn" disabled>決定</button>`;
+          actionsHtml.innerHTML = html;
+        }
       } else if (player.role === 'knight') {
         // 騎士の行動
         const targets = state.players.filter(p => p.isAlive && p.id !== player.id && p.id !== player.lastProtected);
         if (targets.length === 0) {
-          // 守れる対象がいない（前夜と同じ人しかいない）
           actionsHtml.innerHTML = `
             <p class="instruction">🛡️ ${player.name}さんは<ruby>騎士<rt>きし</rt></ruby>です。<br>今夜は<ruby>守<rt>まも</rt></ruby>れる<ruby>相手<rt>あいて</rt></ruby>がいません。</p>
             <button class="btn btn-primary" onclick="skipVillagerNight()">次へ</button>
@@ -812,7 +831,7 @@
         } else {
           let html = `<p class="instruction">🛡️ 騎士さん、誰を守りますか？</p><div class="player-selection">`;
           targets.forEach(t => {
-            html += `<button class="player-btn" onclick="selectProtectTarget(${t.id})">${t.name}</button>`;
+            html += `<button class="player-btn" onclick="selectProtectTarget(${t.id}, event)">${t.name}</button>`;
           });
           html += `</div><button class="btn btn-primary" onclick="confirmProtectAction()" id="confirm-btn" disabled>決定</button>`;
           actionsHtml.innerHTML = html;
@@ -824,18 +843,22 @@
           <button class="btn btn-primary" onclick="skipVillagerNight()">次へ</button>
         `;
       }
+    }
 
-      showScreen('screen-night');
+    function endNightPhase() {
+      cpuNightActions();
+      applyNightKill();
+      showDayPhase();
     }
 
     let selectedKillTarget = -1;
     let selectedSeerTarget = -1;
     let selectedProtectTarget = -1;
 
-    function selectKillTarget(id) {
+    function selectKillTarget(id, e) {
       selectedKillTarget = id;
-      document.querySelectorAll('.player-btn').forEach(btn => btn.classList.remove('selected'));
-      event.target.classList.add('selected');
+      document.querySelectorAll('#night-actions .player-btn').forEach(btn => btn.classList.remove('selected'));
+      e.target.classList.add('selected');
       document.getElementById('confirm-btn').disabled = false;
     }
 
@@ -851,10 +874,10 @@
       showNightActions();
     }
 
-    function selectSeerTarget(id) {
+    function selectSeerTarget(id, e) {
       selectedSeerTarget = id;
-      document.querySelectorAll('.player-btn').forEach(btn => btn.classList.remove('selected'));
-      event.target.classList.add('selected');
+      document.querySelectorAll('#night-actions .player-btn').forEach(btn => btn.classList.remove('selected'));
+      e.target.classList.add('selected');
       document.getElementById('confirm-btn').disabled = false;
     }
 
@@ -877,10 +900,10 @@
       showNightActions();
     }
 
-    function selectProtectTarget(id) {
+    function selectProtectTarget(id, e) {
       selectedProtectTarget = id;
-      document.querySelectorAll('.player-btn').forEach(btn => btn.classList.remove('selected'));
-      event.target.classList.add('selected');
+      document.querySelectorAll('#night-actions .player-btn').forEach(btn => btn.classList.remove('selected'));
+      e.target.classList.add('selected');
       document.getElementById('confirm-btn').disabled = false;
     }
 
@@ -1046,7 +1069,7 @@
       let html = '';
       state.players.filter(p => p.isAlive).forEach(t => {
         const disabled = t.id === currentVoter.id ? 'disabled style="opacity:0.4"' : '';
-        html += `<button class="player-btn" onclick="selectVoteTarget(${t.id})" ${disabled}>${t.name}</button>`;
+        html += `<button class="player-btn" onclick="selectVoteTarget(${t.id}, event)" ${disabled}>${t.name}</button>`;
       });
       optionsDiv.innerHTML = html;
       document.getElementById('vote-btn').disabled = true;
@@ -1054,18 +1077,19 @@
 
     let selectedVoteTarget = -1;
 
-    function selectVoteTarget(id) {
+    function selectVoteTarget(id, e) {
       const voters = state.players.filter(p => !p.isCpu && p.isAlive);
       const currentVoter = voters.find(v => !state.votes.hasOwnProperty(v.id));
       if (currentVoter && id === currentVoter.id) return;
 
       selectedVoteTarget = id;
       document.querySelectorAll('#vote-options .player-btn').forEach(btn => btn.classList.remove('selected'));
-      event.target.classList.add('selected');
+      e.target.classList.add('selected');
       document.getElementById('vote-btn').disabled = false;
     }
 
     function executeVote() {
+      if (selectedVoteTarget === -1) return; // 未選択の防御
       const voters = state.players.filter(p => !p.isCpu && p.isAlive);
       const currentVoter = voters.find(v => !state.votes.hasOwnProperty(v.id));
 
@@ -1105,15 +1129,27 @@
     function showVoteResult() {
       const voteCount = {};
       Object.values(state.votes).forEach(targetId => {
-        voteCount[targetId] = (voteCount[targetId] || 0) + 1;
+        if (targetId !== undefined && targetId !== -1) {
+          voteCount[targetId] = (voteCount[targetId] || 0) + 1;
+        }
       });
 
       // 投票数一覧
       let html = '';
       Object.entries(voteCount).forEach(([targetId, count]) => {
-        html += `<div class="vote-result">${state.players[targetId].name}: ${count}票</div>`;
+        const p = state.players[parseInt(targetId)];
+        if (p) html += `<div class="vote-result">${p.name}: ${count}票</div>`;
       });
-      document.getElementById('vote-count-list').innerHTML = html;
+      document.getElementById('vote-count-list').innerHTML = html || '<div class="vote-result">投票なし</div>';
+
+      // 投票がない場合は追放なしで次フェーズへ
+      if (Object.keys(voteCount).length === 0) {
+        document.getElementById('execution-message').innerHTML = '<p style="text-align:center;">今回は<ruby>追放<rt>ついほう</rt></ruby>なしです。</p>';
+        document.getElementById('next-btn').textContent = '次の夜へ';
+        document.getElementById('next-btn').onclick = () => { state.day++; startNight(); };
+        showScreen('screen-result');
+        return;
+      }
 
       // 最多票の人を特定
       let maxVotes = 0;
@@ -1201,6 +1237,10 @@
       state.executedPlayer = -1;
       state.nightActionQueue = [];
       state.nightActionIndex = 0;
+      selectedKillTarget = -1;
+      selectedSeerTarget = -1;
+      selectedProtectTarget = -1;
+      selectedVoteTarget = -1;
       document.body.classList.remove('night-mode');
       showScreen('screen-title');
       updateCpuButtons();
