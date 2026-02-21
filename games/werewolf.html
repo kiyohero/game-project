@@ -692,6 +692,7 @@
     function showRoleCheckScreen() {
       if (state.roleCheckIndex >= state.playerCount) {
         // 全員確認完了
+        state.day = 1;
         startNight();
         return;
       }
@@ -757,7 +758,6 @@
     // 夜フェーズ開始
     function startNight() {
       state.phase = 'night';
-      state.day = 1;
       state.nightKillTarget = -1;
       state.nightProtectTarget = -1;
       state.nightActionQueue = state.players.filter(p => !p.isCpu);
@@ -803,12 +803,20 @@
       } else if (player.role === 'knight') {
         // 騎士の行動
         const targets = state.players.filter(p => p.isAlive && p.id !== player.id && p.id !== player.lastProtected);
-        let html = `<p class="instruction">🛡️ 騎士さん、誰を守りますか？</p><div class="player-selection">`;
-        targets.forEach(t => {
-          html += `<button class="player-btn" onclick="selectProtectTarget(${t.id})">${t.name}</button>`;
-        });
-        html += `</div><button class="btn btn-primary" onclick="confirmProtectAction()" id="confirm-btn" disabled>決定</button>`;
-        actionsHtml.innerHTML = html;
+        if (targets.length === 0) {
+          // 守れる対象がいない（前夜と同じ人しかいない）
+          actionsHtml.innerHTML = `
+            <p class="instruction">🛡️ ${player.name}さんは<ruby>騎士<rt>きし</rt></ruby>です。<br>今夜は<ruby>守<rt>まも</rt></ruby>れる<ruby>相手<rt>あいて</rt></ruby>がいません。</p>
+            <button class="btn btn-primary" onclick="skipVillagerNight()">次へ</button>
+          `;
+        } else {
+          let html = `<p class="instruction">🛡️ 騎士さん、誰を守りますか？</p><div class="player-selection">`;
+          targets.forEach(t => {
+            html += `<button class="player-btn" onclick="selectProtectTarget(${t.id})">${t.name}</button>`;
+          });
+          html += `</div><button class="btn btn-primary" onclick="confirmProtectAction()" id="confirm-btn" disabled>決定</button>`;
+          actionsHtml.innerHTML = html;
+        }
       } else {
         // 村人：行動なし、次へ進むボタンを表示
         actionsHtml.innerHTML = `
@@ -1015,34 +1023,42 @@
         return;
       }
 
+      showVoteScreen();
+      showScreen('screen-vote');
+    }
+
+    function showVoteScreen() {
+      const voters = state.players.filter(p => !p.isCpu && p.isAlive);
+      const currentVoter = voters.find(v => !state.votes.hasOwnProperty(v.id));
+      if (!currentVoter) return;
+
       const instruction = document.getElementById('vote-instruction');
-      instruction.textContent = '';
+      instruction.textContent = `${currentVoter.name}さん、誰を追放しますか？`;
+
       const optionsDiv = document.getElementById('vote-options');
       let html = '';
-      const targets = state.players.filter(p => p.isAlive);
-      targets.forEach(t => {
-        html += `<button class="player-btn" onclick="selectVoteTarget(${t.id})">${t.name}</button>`;
+      state.players.filter(p => p.isAlive).forEach(t => {
+        const disabled = t.id === currentVoter.id ? 'disabled style="opacity:0.4"' : '';
+        html += `<button class="player-btn" onclick="selectVoteTarget(${t.id})" ${disabled}>${t.name}</button>`;
       });
       optionsDiv.innerHTML = html;
-
-      showScreen('screen-vote');
+      document.getElementById('vote-btn').disabled = true;
     }
 
     let selectedVoteTarget = -1;
 
     function selectVoteTarget(id) {
-      // 自分には投票できない
-      const currentVoter = state.players.find(p => !p.isCpu && p.isAlive);
+      const voters = state.players.filter(p => !p.isCpu && p.isAlive);
+      const currentVoter = voters.find(v => !state.votes.hasOwnProperty(v.id));
       if (currentVoter && id === currentVoter.id) return;
 
       selectedVoteTarget = id;
-      document.querySelectorAll('.player-btn').forEach(btn => btn.classList.remove('selected'));
+      document.querySelectorAll('#vote-options .player-btn').forEach(btn => btn.classList.remove('selected'));
       event.target.classList.add('selected');
       document.getElementById('vote-btn').disabled = false;
     }
 
     function executeVote() {
-      // 投票済みのプレイヤー名を取得
       const voters = state.players.filter(p => !p.isCpu && p.isAlive);
       const currentVoter = voters.find(v => !state.votes.hasOwnProperty(v.id));
 
@@ -1051,15 +1067,12 @@
       state.votes[currentVoter.id] = selectedVoteTarget;
       selectedVoteTarget = -1;
 
-      // 次のプレイヤーか全員投票完了
       const allVoted = voters.every(v => state.votes.hasOwnProperty(v.id));
       if (allVoted) {
         cpuVote();
         showVoteResult();
       } else {
-        // 投票画面をリセット
-        document.getElementById('vote-options').querySelectorAll('.player-btn').forEach(btn => btn.classList.remove('selected'));
-        document.getElementById('vote-btn').disabled = true;
+        showVoteScreen();
       }
     }
 
