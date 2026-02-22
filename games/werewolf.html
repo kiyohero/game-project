@@ -186,6 +186,23 @@
     }
     .job-random-btn:active { transform: scale(0.95); }
 
+    /* ===== トグルスイッチ ===== */
+    .toggle-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .toggle-btn {
+      flex-shrink: 0; padding: 8px 18px;
+      border: 2px solid var(--border); border-radius: 99px;
+      font-size: 0.88rem; font-weight: 800;
+      background: var(--card); color: var(--text-sub);
+      cursor: pointer; transition: all 0.2s;
+      min-width: 64px; text-align: center;
+    }
+    .toggle-btn.on {
+      background: var(--purple); border-color: var(--purple); color: #fff;
+    }
+
     /* ===== 役職チップ ===== */
     .role-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .role-chip {
@@ -474,6 +491,17 @@
   </div>
 
   <div class="card">
+    <span class="lbl">おたすけ設定</span>
+    <div class="toggle-row">
+      <div>
+        <div style="font-weight:700;font-size:0.95rem;">🛡️ プレイヤー1を守る</div>
+        <div class="sub mt8">プレイヤー1は夜に<ruby>人狼<rt>じんろう</rt></ruby>に倒されません</div>
+      </div>
+      <button id="protect-p1-btn" class="toggle-btn" onclick="toggleProtectP1()">OFF</button>
+    </div>
+  </div>
+
+  <div class="card">
     <span class="lbl">プレイヤーの名前と職業</span>
     <div class="name-grid" id="player-name-inputs"></div>
   </div>
@@ -574,6 +602,7 @@
 const G = {
   playerCount: 5,
   cpuCount: 4,
+  protectPlayer1: false,  // プレイヤー1を夜の攻撃から守る
   players: [],       // {id, name, role, alive, cpu, seerResults, lastProtected}
   day: 1,
 
@@ -709,10 +738,23 @@ function randomName(exclude = []) {
 const _savedNames = {}; // {idx: {adj, ani, jobId}}
 const _cpuNames = {};   // {idx: string}
 
+function toggleProtectP1() {
+  G.protectPlayer1 = !G.protectPlayer1;
+  const btn = document.getElementById('protect-p1-btn');
+  btn.textContent = G.protectPlayer1 ? 'ON' : 'OFF';
+  btn.classList.toggle('on', G.protectPlayer1);
+}
+
 function showSetup() {
   hideNav();
   showScreen('screen-setup');
   renderAll();
+  // トグルボタンの状態を反映
+  const btn = document.getElementById('protect-p1-btn');
+  if (btn) {
+    btn.textContent = G.protectPlayer1 ? 'ON' : 'OFF';
+    btn.classList.toggle('on', G.protectPlayer1);
+  }
   showNav('ゲームスタート →', startGame);
 }
 
@@ -1046,10 +1088,15 @@ function showNightAction() {
   const content = document.getElementById('night-content');
 
   if (p.role === 'werewolf') {
-    // 人狼：誰を倒すか選ぶ
-    const targets = G.players.filter(x => x.alive && x.role !== 'werewolf');
+    // 人狼：誰を倒すか選ぶ（プレイヤー1保護ONなら除外）
+    const targets = G.players.filter(x =>
+      x.alive && x.role !== 'werewolf' &&
+      !(G.protectPlayer1 && x.id === 0)
+    );
+    const shieldNote = G.protectPlayer1
+      ? '<br><small style="opacity:.7;">（🛡️ プレイヤー1は選べません）</small>' : '';
     content.innerHTML = `
-      <div class="night-inst">🐺 あなたは<strong><ruby>人狼<rt>じんろう</rt></ruby></strong>です。<br>今夜、誰を倒しますか？</div>
+      <div class="night-inst">🐺 あなたは<strong><ruby>人狼<rt>じんろう</rt></ruby></strong>です。<br>今夜、誰を倒しますか？${shieldNote}</div>
       <div class="p-grid" id="night-grid"></div>
     `;
     const grid = document.getElementById('night-grid');
@@ -1167,10 +1214,13 @@ function confirmKnightAction() {
 }
 
 function doCpuNightActions() {
-  // CPU人狼
+  // CPU人狼（プレイヤー1保護ONなら除外）
   const wolfCpu = G.players.find(p => p.cpu && p.alive && p.role === 'werewolf');
   if (wolfCpu && G.nightKill === -1) {
-    const targets = G.players.filter(p => p.alive && p.role !== 'werewolf');
+    const targets = G.players.filter(p =>
+      p.alive && p.role !== 'werewolf' &&
+      !(G.protectPlayer1 && p.id === 0)
+    );
     if (targets.length > 0) G.nightKill = targets[Math.floor(Math.random() * targets.length)].id;
   }
   // CPU占い師
@@ -1196,7 +1246,8 @@ function doCpuNightActions() {
 }
 
 function applyNightKill() {
-  if (G.nightKill !== -1 && G.nightKill !== G.nightProtect) {
+  const isShielded = G.protectPlayer1 && G.nightKill === 0;
+  if (G.nightKill !== -1 && G.nightKill !== G.nightProtect && !isShielded) {
     G.players[G.nightKill].alive = false;
     G.killedLastNight = G.nightKill;
   } else {
@@ -1238,7 +1289,9 @@ function showDayPhase() {
     const div = document.createElement('div');
     div.className = 'pl-item' + (p.alive ? '' : ' dead');
     const jobTag = p.job ? `<span style="font-size:0.78rem;color:var(--text-sub);margin-left:4px;">${p.job.emoji}</span>` : '';
-    div.innerHTML = `<span class="pl-icon">${p.alive ? '👤' : '💀'}</span><span>${p.name}${jobTag}</span>`;
+    const shieldTag = (G.protectPlayer1 && p.id === 0 && p.alive)
+      ? `<span style="font-size:0.78rem;margin-left:4px;" title="夜に倒されません">🛡️</span>` : '';
+    div.innerHTML = `<span class="pl-icon">${p.alive ? '👤' : '💀'}</span><span>${p.name}${jobTag}${shieldTag}</span>`;
     pl.appendChild(div);
   });
 
