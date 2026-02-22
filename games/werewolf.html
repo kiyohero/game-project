@@ -689,8 +689,7 @@ function renderPlayerCount() {
     b.textContent = n + '人';
     b.onclick = () => {
       G.playerCount = n;
-      // 人間の人数を維持しつつ、少なくとも1人は人間になるよう調整
-      G.cpuCount = Math.min(G.cpuCount, G.playerCount - 1);
+      G.cpuCount = G.playerCount - 1; // 常に1人でプレイがデフォルト
       renderAll();
     };
     c.appendChild(b);
