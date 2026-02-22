@@ -445,7 +445,7 @@
   </div>
 
   <div class="card">
-    <span class="lbl">CPUプレイヤー</span>
+    <span class="lbl">何人で遊ぶ？</span>
     <div class="cnt-row" id="cpu-count-btns"></div>
     <p class="sub mt8" id="cpu-status-text"></p>
   </div>
@@ -689,7 +689,8 @@ function renderPlayerCount() {
     b.textContent = n + '人';
     b.onclick = () => {
       G.playerCount = n;
-      if (G.cpuCount >= n) G.cpuCount = 0;
+      // 人間の人数を維持しつつ、少なくとも1人は人間になるよう調整
+      G.cpuCount = Math.min(G.cpuCount, G.playerCount - 1);
       renderAll();
     };
     c.appendChild(b);
@@ -699,17 +700,18 @@ function renderPlayerCount() {
 function renderCpuCount() {
   const c = document.getElementById('cpu-count-btns');
   c.innerHTML = '';
-  for (let i = 0; i < G.playerCount; i++) {
+  const humanCount = G.playerCount - G.cpuCount;
+  for (let h = 1; h <= G.playerCount; h++) {
     const b = document.createElement('button');
-    b.className = 'cnt-btn' + (i === G.cpuCount ? ' sel' : '');
-    b.textContent = i + '人';
-    b.onclick = () => { G.cpuCount = i; renderCpuCount(); renderRoleChips(); renderNames(); };
+    b.className = 'cnt-btn' + (h === humanCount ? ' sel' : '');
+    b.textContent = h + '人';
+    b.onclick = () => { G.cpuCount = G.playerCount - h; renderCpuCount(); renderRoleChips(); renderNames(); };
     c.appendChild(b);
   }
   document.getElementById('cpu-status-text').textContent =
     G.cpuCount === 0
       ? '全員人間でプレイ（順番にパスするスタイル）'
-      : `CPU ${G.cpuCount}人 ／ 人間 ${G.playerCount - G.cpuCount}人`;
+      : `残り ${G.cpuCount}人はCPUが参加`;
 }
 
 function renderRoleChips() {
