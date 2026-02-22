@@ -145,23 +145,28 @@
     }
 
     /* ===== 名前入力 ===== */
-    .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .name-wrap { position: relative; }
+    .name-grid { display: flex; flex-direction: column; gap: 8px; }
+    .name-wrap { display: flex; align-items: center; gap: 8px; }
     .name-num {
-      position: absolute; left: 9px; top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.68rem; font-weight: 700;
-      color: var(--purple-lt); pointer-events: none;
+      flex-shrink: 0; width: 22px; text-align: center;
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--purple-lt);
     }
-    .name-inp {
-      width: 100%; padding: 12px 10px 12px 30px;
+    .name-selects { display: flex; gap: 6px; flex: 1; }
+    .name-select {
+      flex: 1; padding: 10px 4px;
       border: 2px solid var(--border); border-radius: 10px;
-      font-size: 0.9rem; color: var(--text); background: var(--card);
+      font-size: 0.82rem; color: var(--text); background: var(--card);
+      cursor: pointer; text-align: center;
       transition: border-color 0.2s, background 0.5s, color 0.5s;
-      box-sizing: border-box;
     }
-    .name-inp:focus { outline: none; border-color: var(--purple); }
-    .name-inp:disabled { opacity: 0.45; }
+    .name-select:focus { outline: none; border-color: var(--purple); }
+    .name-cpu-label {
+      flex: 1; padding: 11px 10px;
+      font-size: 0.85rem; color: var(--text-sub);
+      border: 2px solid var(--border); border-radius: 10px;
+      background: var(--card); opacity: 0.6;
+    }
 
     /* ===== 役職チップ ===== */
     .role-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -440,7 +445,7 @@
   </div>
 
   <div class="card">
-    <span class="lbl">CPUプレイヤー</span>
+    <span class="lbl">何人で遊ぶ？</span>
     <div class="cnt-row" id="cpu-count-btns"></div>
     <p class="sub mt8" id="cpu-status-text"></p>
   </div>
@@ -631,7 +636,35 @@ const ROLE_INFO = {
   villager: { name:'村人', ruby:'むらびと', emoji:'👤', desc:'特殊な力はないけど推理で勝て！', team:'村人チーム' },
 };
 
-const _savedNames = {};
+// =====================================================================
+// ニックネームデータ（お絵描きロジックと共通）
+// =====================================================================
+const ADJECTIVES = [
+  'きままな','のんびり','せっかち','おだやかな','ひょうきんな',
+  'まじめな','ゆかいな','おっとり','げんきな','しずかな',
+  'あわてんぼうの','のんきな','おちゃめな','やさしい','くいしんぼうの',
+  'ねぼすけ','わんぱく','おしゃれな','ふしぎな','すばやい'
+];
+const ANIMALS = [
+  'カバ','イルカ','ペンギン','アザラシ','ラッコ','クラゲ',
+  'マンボウ','サメ','カメ','タコ','イカ',
+  'クマノミ','エイ','チンアナゴ','カワウソ','オットセイ',
+  'クジラ','シャチ','フグ','タツノオトシゴ','カニ'
+];
+
+function randomName(exclude = []) {
+  let name, tries = 0;
+  do {
+    const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+    const ani = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+    name = adj + ani;
+    tries++;
+  } while (exclude.includes(name) && tries < 50);
+  return name;
+}
+
+const _savedNames = {}; // {idx: {adj, ani}}
+const _cpuNames = {};   // {idx: string}
 
 function showSetup() {
   hideNav();
@@ -656,7 +689,8 @@ function renderPlayerCount() {
     b.textContent = n + '人';
     b.onclick = () => {
       G.playerCount = n;
-      if (G.cpuCount >= n) G.cpuCount = 0;
+      // 人間の人数を維持しつつ、少なくとも1人は人間になるよう調整
+      G.cpuCount = Math.min(G.cpuCount, G.playerCount - 1);
       renderAll();
     };
     c.appendChild(b);
@@ -666,17 +700,18 @@ function renderPlayerCount() {
 function renderCpuCount() {
   const c = document.getElementById('cpu-count-btns');
   c.innerHTML = '';
-  for (let i = 0; i < G.playerCount; i++) {
+  const humanCount = G.playerCount - G.cpuCount;
+  for (let h = 1; h <= G.playerCount; h++) {
     const b = document.createElement('button');
-    b.className = 'cnt-btn' + (i === G.cpuCount ? ' sel' : '');
-    b.textContent = i + '人';
-    b.onclick = () => { G.cpuCount = i; renderCpuCount(); renderRoleChips(); renderNames(); };
+    b.className = 'cnt-btn' + (h === humanCount ? ' sel' : '');
+    b.textContent = h + '人';
+    b.onclick = () => { G.cpuCount = G.playerCount - h; renderCpuCount(); renderRoleChips(); renderNames(); };
     c.appendChild(b);
   }
   document.getElementById('cpu-status-text').textContent =
     G.cpuCount === 0
       ? '全員人間でプレイ（順番にパスするスタイル）'
-      : `CPU ${G.cpuCount}人 ／ 人間 ${G.playerCount - G.cpuCount}人`;
+      : `残り ${G.cpuCount}人はCPUが参加`;
 }
 
 function renderRoleChips() {
@@ -699,28 +734,75 @@ function renderRoleChips() {
 
 function renderNames() {
   const c = document.getElementById('player-name-inputs');
-  // 入力値を保存
-  c.querySelectorAll('input').forEach(inp => {
-    _savedNames[inp.dataset.idx] = inp.value;
+  // 現在の人間プレイヤーの選択を保存
+  c.querySelectorAll('.name-wrap[data-type="human"]').forEach(wrap => {
+    const idx = wrap.dataset.idx;
+    const adjSel = wrap.querySelector('.adj-sel');
+    const aniSel = wrap.querySelector('.ani-sel');
+    if (adjSel && aniSel) _savedNames[idx] = { adj: adjSel.value, ani: aniSel.value };
   });
   c.innerHTML = '';
+
+  // 既存CPUネームのリスト（重複回避用）
+  const usedCpuNames = Object.entries(_cpuNames)
+    .filter(([k]) => k < G.playerCount - G.cpuCount === false) // CPU枠のみ
+    .map(([, v]) => v);
+
   for (let i = 0; i < G.playerCount; i++) {
     const isCpu = i >= G.playerCount - G.cpuCount;
     const wrap = document.createElement('div');
     wrap.className = 'name-wrap';
+    wrap.dataset.idx = i;
+    wrap.dataset.type = isCpu ? 'cpu' : 'human';
+
     const num = document.createElement('span');
     num.className = 'name-num';
     num.textContent = i + 1;
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.className = 'name-inp';
-    inp.dataset.idx = i;
-    inp.placeholder = isCpu ? `CPU${i - (G.playerCount - G.cpuCount) + 1}` : `プレイヤー${i + 1}`;
-    inp.disabled = isCpu;
-    inp.value = _savedNames[i] != null ? _savedNames[i] : inp.placeholder;
-    inp.addEventListener('input', () => { _savedNames[i] = inp.value; });
     wrap.appendChild(num);
-    wrap.appendChild(inp);
+
+    if (isCpu) {
+      // CPUはランダム生成名（初回のみ生成）
+      if (!_cpuNames[i]) {
+        _cpuNames[i] = randomName(usedCpuNames);
+        usedCpuNames.push(_cpuNames[i]);
+      }
+      const label = document.createElement('div');
+      label.className = 'name-cpu-label';
+      label.textContent = '🤖 ' + _cpuNames[i];
+      wrap.appendChild(label);
+    } else {
+      // 人間プレイヤー：形容詞＋動物のセレクト
+      delete _cpuNames[i];
+      const saved = _savedNames[i];
+      const defAdj = saved ? saved.adj : ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+      const defAni = saved ? saved.ani : ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+
+      const selWrap = document.createElement('div');
+      selWrap.className = 'name-selects';
+
+      const adjSel = document.createElement('select');
+      adjSel.className = 'name-select adj-sel';
+      ADJECTIVES.forEach(adj => {
+        const opt = document.createElement('option');
+        opt.value = adj; opt.textContent = adj;
+        if (adj === defAdj) opt.selected = true;
+        adjSel.appendChild(opt);
+      });
+
+      const aniSel = document.createElement('select');
+      aniSel.className = 'name-select ani-sel';
+      ANIMALS.forEach(ani => {
+        const opt = document.createElement('option');
+        opt.value = ani; opt.textContent = ani;
+        if (ani === defAni) opt.selected = true;
+        aniSel.appendChild(opt);
+      });
+
+      selWrap.appendChild(adjSel);
+      selWrap.appendChild(aniSel);
+      wrap.appendChild(selWrap);
+    }
+
     c.appendChild(wrap);
   }
 }
@@ -730,13 +812,21 @@ function renderNames() {
 // =====================================================================
 function startGame() {
   G.players = [];
-  const inputs = document.querySelectorAll('#player-name-inputs input');
+  const nameWraps = document.querySelectorAll('#player-name-inputs .name-wrap');
   for (let i = 0; i < G.playerCount; i++) {
     const isCpu = i >= G.playerCount - G.cpuCount;
-    const inp = inputs[i];
+    let name;
+    if (isCpu) {
+      name = _cpuNames[i] || randomName();
+    } else {
+      const wrap = nameWraps[i];
+      const adjSel = wrap && wrap.querySelector('.adj-sel');
+      const aniSel = wrap && wrap.querySelector('.ani-sel');
+      name = (adjSel && aniSel) ? adjSel.value + aniSel.value : `プレイヤー${i + 1}`;
+    }
     G.players.push({
       id: i,
-      name: (inp.value.trim() || inp.placeholder),
+      name: name,
       role: '',
       alive: true,
       cpu: isCpu,
@@ -1272,6 +1362,7 @@ function resetGame() {
   G.players = [];
   G.day = 1;
   Object.keys(_savedNames).forEach(k => delete _savedNames[k]);
+  Object.keys(_cpuNames).forEach(k => delete _cpuNames[k]);
   showScreen('screen-title');
   hideNav();
 }
