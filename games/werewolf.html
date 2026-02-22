@@ -555,7 +555,7 @@
 // =====================================================================
 const G = {
   playerCount: 5,
-  cpuCount: 0,
+  cpuCount: 4,
   players: [],       // {id, name, role, alive, cpu, seerResults, lastProtected}
   day: 1,
 
@@ -1358,7 +1358,7 @@ function showGameOver(winner) {
 // =====================================================================
 function resetGame() {
   G.playerCount = 5;
-  G.cpuCount = 0;
+  G.cpuCount = 4;
   G.players = [];
   G.day = 1;
   Object.keys(_savedNames).forEach(k => delete _savedNames[k]);
