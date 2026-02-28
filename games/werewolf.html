@@ -168,23 +168,15 @@
       border: 2px solid var(--border); border-radius: 10px;
       background: var(--card); opacity: 0.6;
     }
-    .job-row { display: flex; gap: 6px; align-items: center; }
-    .job-sel {
-      flex: 1; padding: 9px 4px;
+    .role-row { display: flex; gap: 6px; align-items: center; }
+    .role-sel {
+      flex: 1; padding: 9px 8px;
       border: 2px solid var(--border); border-radius: 10px;
-      font-size: 0.82rem; color: var(--text); background: var(--card);
+      font-size: 0.88rem; color: var(--text); background: var(--card);
       cursor: pointer; text-align: center;
       transition: border-color 0.2s, background 0.5s, color 0.5s;
     }
-    .job-sel:focus { outline: none; border-color: var(--purple); }
-    .job-random-btn {
-      padding: 9px 12px;
-      border: 2px solid var(--border); border-radius: 10px;
-      font-size: 0.85rem; color: var(--text-sub); background: var(--card);
-      cursor: pointer; white-space: nowrap;
-      transition: all 0.15s;
-    }
-    .job-random-btn:active { transform: scale(0.95); }
+    .role-sel:focus { outline: none; border-color: var(--purple); }
 
     /* ===== トグルスイッチ ===== */
     .toggle-row {
@@ -502,7 +494,7 @@
   </div>
 
   <div class="card">
-    <span class="lbl">プレイヤーの名前と職業</span>
+    <span class="lbl">プレイヤーの名前と役職</span>
     <div class="name-grid" id="player-name-inputs"></div>
   </div>
 </div>
@@ -682,31 +674,6 @@ const ROLE_INFO = {
   knight:   { name:'騎士', ruby:'きし', emoji:'🛡️', desc:'夜に1人を守る（連続同一NG）', team:'村人チーム' },
   villager: { name:'村人', ruby:'むらびと', emoji:'👤', desc:'特殊な力はないけど推理で勝て！', team:'村人チーム' },
 };
-
-// =====================================================================
-// 職業データ
-// =====================================================================
-const JOBS = [
-  { id:'farmer',     name:'農家',    ruby:'のうか',      emoji:'🌾' },
-  { id:'fisher',     name:'漁師',    ruby:'りょうし',    emoji:'🎣' },
-  { id:'carpenter',  name:'大工',    ruby:'だいく',      emoji:'🔨' },
-  { id:'cook',       name:'料理人',  ruby:'りょうりにん',emoji:'🍳' },
-  { id:'doctor',     name:'お医者',  ruby:'おいしゃ',    emoji:'⚕️'  },
-  { id:'teacher',    name:'先生',    ruby:'せんせい',    emoji:'📚' },
-  { id:'merchant',   name:'商人',    ruby:'しょうにん',  emoji:'🏪' },
-  { id:'traveler',   name:'旅人',    ruby:'たびびと',    emoji:'🎒' },
-  { id:'wizard',     name:'魔法使い',ruby:'まほうつかい',emoji:'🧙' },
-  { id:'detective',  name:'探偵',    ruby:'たんてい',    emoji:'🔍' },
-  { id:'singer',     name:'歌手',    ruby:'かしゅ',      emoji:'🎤' },
-  { id:'painter',    name:'画家',    ruby:'がか',        emoji:'🎨' },
-  { id:'baker',      name:'パン屋',  ruby:'ぱんや',      emoji:'🍞' },
-  { id:'blacksmith', name:'鍛冶屋',  ruby:'かじや',      emoji:'⚒️'  },
-  { id:'herbalist',  name:'薬師',    ruby:'くすし',      emoji:'🌿' },
-];
-
-function randomJob() {
-  return JOBS[Math.floor(Math.random() * JOBS.length)];
-}
 
 // =====================================================================
 // ニックネームデータ（お絵描きロジックと共通）
@@ -892,39 +859,29 @@ function renderNames() {
       selWrap.appendChild(aniSel);
       fields.appendChild(selWrap);
 
-      // 職業行
-      const jobRow = document.createElement('div');
-      jobRow.className = 'job-row';
+      // 役職選択行
+      const roleRow = document.createElement('div');
+      roleRow.className = 'role-row';
 
-      const jobSel = document.createElement('select');
-      jobSel.className = 'job-sel';
+      const roleSel = document.createElement('select');
+      roleSel.className = 'role-sel';
+
       // おまかせ（ランダム）
       const randOpt = document.createElement('option');
       randOpt.value = 'random';
       randOpt.textContent = '🎲 おまかせ（ランダム）';
-      if (defJobId === 'random') randOpt.selected = true;
-      jobSel.appendChild(randOpt);
-      // 各職業
-      JOBS.forEach(j => {
+      roleSel.appendChild(randOpt);
+
+      // 各役職（ROLE_INFOの順で）
+      [['werewolf','人狼','じんろう','🐺'],['seer','占い師','うらないし','🔮'],['knight','騎士','きし','🛡️'],['villager','村人','むらびと','👤']].forEach(([id,name,ruby,emoji]) => {
         const opt = document.createElement('option');
-        opt.value = j.id;
-        opt.textContent = `${j.emoji} ${j.name}（${j.ruby}）`;
-        if (j.id === defJobId) opt.selected = true;
-        jobSel.appendChild(opt);
+        opt.value = id;
+        opt.textContent = `${emoji} ${name}（${ruby}）`;
+        roleSel.appendChild(opt);
       });
 
-      // ランダムボタン
-      const rndBtn = document.createElement('button');
-      rndBtn.className = 'job-random-btn';
-      rndBtn.textContent = '🎲 ランダム';
-      rndBtn.type = 'button';
-      rndBtn.onclick = () => {
-        jobSel.value = randomJob().id;
-      };
-
-      jobRow.appendChild(jobSel);
-      jobRow.appendChild(rndBtn);
-      fields.appendChild(jobRow);
+      roleRow.appendChild(roleSel);
+      fields.appendChild(roleRow);
 
       wrap.appendChild(fields);
     }
@@ -939,29 +896,24 @@ function renderNames() {
 function startGame() {
   G.players = [];
   const nameWraps = document.querySelectorAll('#player-name-inputs .name-wrap');
-  const usedJobIds = []; // 重複回避（任意）
   for (let i = 0; i < G.playerCount; i++) {
     const isCpu = i >= G.playerCount - G.cpuCount;
-    let name, job;
+    let name, presetRole;
     if (isCpu) {
       name = _cpuNames[i] || randomName();
-      job = randomJob();
+      presetRole = '';
     } else {
       const wrap = nameWraps[i];
       const adjSel = wrap && wrap.querySelector('.adj-sel');
       const aniSel = wrap && wrap.querySelector('.ani-sel');
-      const jobSel = wrap && wrap.querySelector('.job-sel');
+      const roleSel = wrap && wrap.querySelector('.role-sel');
       name = (adjSel && aniSel) ? adjSel.value + aniSel.value : `プレイヤー${i + 1}`;
-      const jobId = jobSel ? jobSel.value : 'random';
-      job = (jobId === 'random')
-        ? JOBS[Math.floor(Math.random() * JOBS.length)]
-        : (JOBS.find(j => j.id === jobId) || JOBS[0]);
+      presetRole = (roleSel && roleSel.value !== 'random') ? roleSel.value : '';
     }
     G.players.push({
       id: i,
       name: name,
-      job: job,
-      role: '',
+      role: presetRole,
       alive: true,
       cpu: isCpu,
       seerResults: [],
@@ -969,18 +921,28 @@ function startGame() {
     });
   }
 
-  // 役職をシャッフルして割り当て
+  // 役職割り当て（固定指定あり → そのまま、'' → ランダム割り当て）
   const cfg = ROLE_CONFIGS[G.playerCount];
-  let roles = [];
-  for (let i = 0; i < cfg.werewolf; i++) roles.push('werewolf');
-  for (let i = 0; i < cfg.seer; i++) roles.push('seer');
-  for (let i = 0; i < cfg.knight; i++) roles.push('knight');
-  while (roles.length < G.playerCount) roles.push('villager');
-  for (let i = roles.length - 1; i > 0; i--) {
+
+  const fixedPlayers = G.players.filter(p => p.role !== '');
+  const randomPlayers = G.players.filter(p => p.role === '');
+
+  const fixedCounts = { werewolf:0, seer:0, knight:0, villager:0 };
+  fixedPlayers.forEach(p => { if (fixedCounts[p.role] !== undefined) fixedCounts[p.role]++; });
+
+  let pool = [];
+  for (let i = 0; i < Math.max(0, cfg.werewolf - fixedCounts.werewolf); i++) pool.push('werewolf');
+  for (let i = 0; i < Math.max(0, cfg.seer - fixedCounts.seer); i++) pool.push('seer');
+  for (let i = 0; i < Math.max(0, cfg.knight - fixedCounts.knight); i++) pool.push('knight');
+  while (pool.length < randomPlayers.length) pool.push('villager');
+  pool = pool.slice(0, randomPlayers.length);
+
+  for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [roles[i], roles[j]] = [roles[j], roles[i]];
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  G.players.forEach((p, i) => { p.role = roles[i]; });
+
+  randomPlayers.forEach((p, i) => { p.role = pool[i]; });
 
   G.day = 1;
   G.revealIdx = 0;
@@ -1033,15 +995,11 @@ function showRoleCard() {
     ? `🐺 仲間: ${allies.map(a => a.name).join(', ')}`
     : `チーム: ${info.team}`;
 
-  const jobBadge = p.job
-    ? `<div style="margin-bottom:14px;opacity:.85;font-size:0.88rem;">${p.job.emoji} <ruby>${p.job.name}<rt>${p.job.ruby}</rt></ruby></div>`
-    : '';
   document.getElementById('rs-card-wrap').innerHTML = `
     <div class="role-card ${p.role}">
       <span class="rc-emoji">${info.emoji}</span>
       <div class="rc-name">${info.name}</div>
       <div class="rc-ruby">${info.ruby}</div>
-      ${jobBadge}
       <div class="rc-desc">${info.desc}</div>
       <div class="rc-team">${teamText}</div>
     </div>
@@ -1518,10 +1476,9 @@ function showGameOver(winner) {
     const info = ROLE_INFO[p.role];
     const div = document.createElement('div');
     div.className = 'go-item' + (p.alive ? '' : ' dead');
-    const jobText = p.job ? `${p.job.emoji} ${p.job.name} ／ ` : '';
     div.innerHTML = `
       <span class="gi-name">${p.alive ? '👤' : '💀'} ${p.name}</span>
-      <span class="gi-role">${jobText}${info.emoji} ${info.name}</span>
+      <span class="gi-role">${info.emoji} ${info.name}</span>
     `;
     roster.appendChild(div);
   });
