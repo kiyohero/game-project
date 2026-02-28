@@ -790,10 +790,10 @@ function renderNames() {
     const idx = wrap.dataset.idx;
     const adjSel = wrap.querySelector('.adj-sel');
     const aniSel = wrap.querySelector('.ani-sel');
-    const jobSel = wrap.querySelector('.job-sel');
+    const roleSel = wrap.querySelector('.role-sel');
     if (adjSel && aniSel) _savedNames[idx] = {
       adj: adjSel.value, ani: aniSel.value,
-      jobId: jobSel ? jobSel.value : 'random'
+      roleId: roleSel ? roleSel.value : 'random'
     };
   });
   c.innerHTML = '';
@@ -831,7 +831,7 @@ function renderNames() {
       const saved = _savedNames[i];
       const defAdj   = saved ? saved.adj   : ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
       const defAni   = saved ? saved.ani   : ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-      const defJobId = saved ? saved.jobId : 'random';
+      const defRoleId = saved ? saved.roleId : 'random';
 
       const fields = document.createElement('div');
       fields.className = 'name-fields';
@@ -1256,7 +1256,7 @@ function showDayPhase() {
   G.players.forEach(p => {
     const div = document.createElement('div');
     div.className = 'pl-item' + (p.alive ? '' : ' dead');
-    const jobTag = p.job ? `<span style="font-size:0.78rem;color:var(--text-sub);margin-left:4px;">${p.job.emoji}</span>` : '';
+    const jobTag = '';
     const shieldTag = (G.protectPlayer1 && p.id === 0 && p.alive)
       ? `<span style="font-size:0.78rem;margin-left:4px;" title="夜に倒されません">🛡️</span>` : '';
     div.innerHTML = `<span class="pl-icon">${p.alive ? '👤' : '💀'}</span><span>${p.name}${jobTag}${shieldTag}</span>`;
@@ -1350,7 +1350,7 @@ function showVoteScreen() {
     const isSelf = t.id === voter.id;
     const btn = document.createElement('button');
     btn.className = 'v-btn' + (isSelf ? ' no-vote' : '');
-    btn.textContent = (t.job ? t.job.emoji + ' ' : '') + t.name + (isSelf ? '\n（自分）' : '');
+    btn.textContent = t.name + (isSelf ? '\n（自分）' : '');
     if (!isSelf) {
       btn.onclick = () => {
         G.voteSelTarget = t.id;
