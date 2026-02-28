@@ -236,6 +236,28 @@ git pull origin main
 
 ## Workflow Orchestration
 
+### 0. 3エージェント開発ワークフロー（全タスク必須）
+
+非自明なタスク（コード変更・機能追加・バグ修正すべて）は以下の順で3エージェントを起動すること：
+
+1. **設計エージェント**（Explore型）を起動
+   - コードを調査し、実装仕様を作成
+   - 出力：ファイルパス・変更箇所・コード案を含む詳細プラン
+
+2. **開発エージェント**（general-purpose型）を起動
+   - 設計エージェントの出力をそのまま渡して実装させる
+   - 出力：変更サマリー
+
+3. **デバッグエージェント**（Explore型）を起動
+   - 変更後のコードをレビューし、バグを発見・修正
+   - 出力：発見した問題と修正案
+
+4. メインエージェントがデバッグ結果を受け取り、問題なければコミット＆プッシュ
+
+**例外（エージェント不要の場合）**：
+- 1行以内の自明な修正（誤字修正など）
+- CLAUDE.mdや設定ファイルのみの変更
+
 ### 1. Plan Node Default
 - Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
 - If something goes sideways, STOP and re-plan immediately – don't keep pushing
