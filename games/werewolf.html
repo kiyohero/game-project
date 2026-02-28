@@ -833,7 +833,7 @@ function renderNames() {
 
   // 既存CPUネームのリスト（重複回避用）
   const usedCpuNames = Object.entries(_cpuNames)
-    .filter(([k]) => k < G.playerCount - G.cpuCount === false)
+    .filter(([k]) => parseInt(k) >= G.playerCount - G.cpuCount)
     .map(([, v]) => v);
 
   for (let i = 0; i < G.playerCount; i++) {
@@ -1099,6 +1099,12 @@ function showNightAction() {
       <div class="night-inst">🐺 あなたは<strong><ruby>人狼<rt>じんろう</rt></ruby></strong>です。<br>今夜、誰を倒しますか？${shieldNote}</div>
       <div class="p-grid" id="night-grid"></div>
     `;
+    if (targets.length === 0) {
+      content.innerHTML = `<div class="night-inst">🐺 あなたは<strong><ruby>人狼<rt>じんろう</rt></ruby></strong>です。<br>今夜は<ruby>倒<rt>たお</rt></ruby>せる<ruby>相手<rt>あいて</rt></ruby>がいません。</div>`;
+      showScreen('screen-night', true);
+      showNav('次へ →', () => { G.nightQueueIdx++; processNightQueue(); });
+      return;
+    }
     const grid = document.getElementById('night-grid');
     targets.forEach(t => {
       const btn = document.createElement('button');
@@ -1140,7 +1146,11 @@ function showNightAction() {
 
   } else if (p.role === 'knight') {
     // 騎士：誰を守るか選ぶ（前回と同じ人はNG）
-    const targets = G.players.filter(x => x.alive && x.id !== p.id && x.id !== p.lastProtected);
+    let targets = G.players.filter(x => x.alive && x.id !== p.id && x.id !== p.lastProtected);
+    if (targets.length === 0) {
+      // 連続NGで全員除外された場合はNG制約を解除して全員を対象にする
+      targets = G.players.filter(x => x.alive && x.id !== p.id);
+    }
     const lastNote = p.lastProtected >= 0
       ? `<br><small style="opacity:.7;">（前回守った ${G.players[p.lastProtected]?.name} さんは選べません）</small>` : '';
     content.innerHTML = `
@@ -1422,6 +1432,15 @@ function showVoteResult() {
   Object.values(G.votes).forEach(tid => {
     tally[tid] = (tally[tid] || 0) + 1;
   });
+  if (Object.keys(tally).length === 0) {
+    document.getElementById('ex-name').textContent = '追放なし';
+    document.getElementById('ex-role').textContent = '';
+    showScreen('screen-vote-result');
+    const winner = checkWin();
+    if (winner) showNav('🏁 結果を見る →', () => showGameOver(winner));
+    else showNav(`🌙 ${G.day + 1}日目の夜へ →`, () => { G.day++; beginNight(); });
+    return;
+  }
   const totalVotes = Object.values(tally).reduce((a, b) => a + b, 0);
   const maxVotes = Math.max(...Object.values(tally));
 
@@ -1519,6 +1538,7 @@ function resetGame() {
   G.cpuCount = 4;
   G.players = [];
   G.day = 1;
+  G.protectPlayer1 = false;
   Object.keys(_savedNames).forEach(k => delete _savedNames[k]);
   Object.keys(_cpuNames).forEach(k => delete _cpuNames[k]);
   showScreen('screen-title');
