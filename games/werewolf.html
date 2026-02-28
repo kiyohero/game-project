@@ -1311,7 +1311,14 @@ function showDayPhase() {
   }
 
   showScreen('screen-day');
-  showNav('🗳️ 投票フェーズへ →', startVote);
+
+  // 夜の結果後に勝利判定（人狼が村人と同数以上になったら即終了）
+  const earlyWinner = checkWin();
+  if (earlyWinner) {
+    showNav('🏁 結果を見る →', () => showGameOver(earlyWinner));
+  } else {
+    showNav('🗳️ 投票フェーズへ →', startVote);
+  }
 }
 
 function getCpuSpeech(cpu) {
