@@ -157,6 +157,16 @@ node scripts/fetch-pokemon.js
 
 ## 開発の流れ
 
+### 起動時の必須手順
+
+Claude Code起動時は、作業を始める前に必ずGitHubの最新状態と同期すること：
+
+```bash
+git pull origin main
+```
+
+ローカルの変更がある場合は競合に注意し、必要に応じてユーザーに確認する。
+
 ### 使用するツール
 
 - **Claude Code**（sonnetモデル）を使用
