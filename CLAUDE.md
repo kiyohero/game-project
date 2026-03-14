@@ -32,6 +32,7 @@
 | ポケモンしりとり | `games/pokemon-shiritori.html` | ポケモンの名前でしりとり対決（pokemon-data.json使用） |
 | お絵かきロジック | `games/nonogram.html` | 数字のヒントでマスを塗って絵を完成させるノノグラムパズル |
 | スライドパズル | `games/sliding-puzzle.html` | 動物イラストを完成させるスライドパズル |
+| アキネーター | `games/akinator.html` | 動物を思い浮かべてYES/NOで答えると当ててくれるゲーム（akinator-data.json使用） |
 
 ## 技術スタック
 
