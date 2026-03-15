@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>クロスワード</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    /* ===== Layout ===== */
+    body {
+      padding: 10px;
+      align-items: stretch;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    /* ===== Screens ===== */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ===== Level Screen ===== */
+    #level-screen {
+      text-align: center;
+    }
+
+    .level-intro {
+      color: #6b5b7a;
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+    }
+
+    .level-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .level-card {
+      background: #fff;
+      border: 2px solid #c8b8e0;
+      border-radius: 14px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      text-align: left;
+    }
+
+    .level-card:hover, .level-card:focus {
+      background: #ede0ff;
+      border-color: #9b8ab8;
+      outline: none;
+    }
+
+    .level-card .level-name {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #6b5b7a;
+    }
+
+    .level-card .level-desc {
+      font-size: 0.85rem;
+      color: #9b8ab8;
+      margin-top: 4px;
+    }
+
+    .level-card .level-best {
+      font-size: 0.8rem;
+      color: #b89ad8;
+      margin-top: 6px;
+    }
+
+    /* Timer toggle */
+    .timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+      color: #6b5b7a;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      display: inline-block;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #c8b8e0;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: #9b8ab8;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+    }
+
+    /* How to play */
+    .howto-toggle {
+      background: none;
+      border: 1px solid #9b8ab8;
+      color: #9b8ab8;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .howto-body {
+      display: none;
+      background: #fff;
+      border: 1px solid #e8e0f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 0.85rem;
+      color: #6b5b7a;
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    .howto-body.open { display: block; }
+
+    .howto-body h3 {
+      font-size: 0.9rem;
+      margin: 10px 0 4px;
+      color: #9b8ab8;
+    }
+
+    .howto-body h3:first-child { margin-top: 0; }
+
+    .parent-note {
+      background: #f0ebfa;
+      border-left: 3px solid #9b8ab8;
+      padding: 8px 10px;
+      border-radius: 0 6px 6px 0;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: #6b5b7a;
+    }
+
+    /* ===== Game Screen ===== */
+    #game-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #game-screen.active {
+      display: flex;
+    }
+
+    .game-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .game-title-area {
+      font-weight: bold;
+      color: #6b5b7a;
+      font-size: 1rem;
+    }
+
+    #timer-display {
+      font-size: 1rem;
+      color: #9b8ab8;
+      font-variant-numeric: tabular-nums;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    /* Crossword grid */
+    #grid-wrapper {
+      width: 100%;
+      overflow: hidden;
+    }
+
+    #grid-table {
+      border-collapse: collapse;
+      margin: 0 auto;
+      table-layout: fixed;
+    }
+
+    #grid-table td {
+      width: 44px;
+      height: 44px;
+      border: 1px solid #9b8ab8;
+      position: relative;
+      cursor: pointer;
+      background: #fff;
+      padding: 0;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    #grid-table td.cell-black {
+      background: #3a3050;
+      border-color: #3a3050;
+      cursor: default;
+    }
+
+    #grid-table td.cell-hl {
+      background: #ddd0f0;
+    }
+
+    #grid-table td.cell-active {
+      background: #b89ad8;
+    }
+
+    #grid-table td.cell-correct {
+      background: #b8e8c0 !important;
+    }
+
+    #grid-table td.cell-wrong {
+      background: #f4b8b8 !important;
+    }
+
+    .cell-num {
+      position: absolute;
+      top: 1px;
+      left: 2px;
+      font-size: 9px;
+      color: #9b8ab8;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .cell-letter {
+      font-size: 1.2rem;
+      color: #3a3050;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .cell-hint-letter {
+      color: #9b8ab8;
+    }
+
+    /* Clue panel */
+    #clue-panel {
+      width: 100%;
+      background: #fff;
+      border: 2px solid #e8e0f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      min-height: 60px;
+    }
+
+    .clue-direction {
+      font-size: 0.7rem;
+      color: #9b8ab8;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .clue-text {
+      font-size: 0.95rem;
+      color: #3a3050;
+      line-height: 1.45;
+    }
+
+    .clue-number {
+      font-weight: bold;
+      color: #9b8ab8;
+      margin-right: 4px;
+    }
+
+    /* Action buttons */
+    .action-row {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 8px 6px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: opacity 0.15s;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .btn-hint {
+      background: #f0d060;
+      color: #6b5b1a;
+    }
+
+    .btn-skip {
+      background: #d0e8f0;
+      color: #1a5b6b;
+    }
+
+    /* Clue list */
+    #clue-list-section {
+      width: 100%;
+    }
+
+    .clue-list-header {
+      font-size: 0.85rem;
+      color: #9b8ab8;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .clue-list {
+      background: #fff;
+      border: 1px solid #e8e0f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .clue-item {
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      color: #3a3050;
+      border-bottom: 1px solid #f0ebfa;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .clue-item:last-child { border-bottom: none; }
+
+    .clue-item.clue-solved {
+      color: #aaa;
+      text-decoration: line-through;
+    }
+
+    .clue-item.clue-active {
+      background: #ede0ff;
+    }
+
+    .clue-item.clue-skipped::after {
+      content: ' ⏭';
+      color: #9b8ab8;
+    }
+
+    .clue-item-num {
+      font-weight: bold;
+      color: #9b8ab8;
+      flex-shrink: 0;
+    }
+
+    /* Virtual keyboard */
+    #vkbd {
+      width: 100%;
+      padding: 4px 0;
+    }
+
+    .vkbd-row {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 3px;
+      justify-content: center;
+    }
+
+    .vkbd-key {
+      flex: 1;
+      max-width: 52px;
+      height: 40px;
+      background: #e8e0f0;
+      border: 1px solid #c8b8e0;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #3a3050;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .vkbd-key:active {
+      background: #b89ad8;
+      color: #fff;
+    }
+
+    .vkbd-key.vkbd-empty {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .vkbd-key.vkbd-delete {
+      max-width: none;
+      flex: 2;
+      background: #d0c8e0;
+      font-size: 0.75rem;
+    }
+
+    /* ===== Complete Overlay ===== */
+    #complete-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(58, 48, 80, 0.75);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #complete-overlay.active {
+      display: flex;
+    }
+
+    .complete-box {
+      background: #fff;
+      border-radius: 18px;
+      padding: 28px 32px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(58,48,80,0.25);
+    }
+
+    .complete-box h2 {
+      font-size: 2rem;
+      color: #9b8ab8;
+      margin-bottom: 10px;
+    }
+
+    .complete-stats {
+      font-size: 0.95rem;
+      color: #6b5b7a;
+      margin-bottom: 18px;
+      line-height: 1.8;
+    }
+
+    .complete-stats strong {
+      color: #3a3050;
+    }
+
+    .complete-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .complete-buttons .btn {
+      padding: 10px 18px;
+      font-size: 0.95rem;
+    }
+
+    /* Confetti canvas */
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 380px) {
+      #grid-table td {
+        width: 38px;
+        height: 38px;
+      }
+      .cell-letter { font-size: 1rem; }
+      .vkbd-key { height: 36px; font-size: 0.8rem; }
+    }
+
+    @media (max-width: 320px) {
+      #grid-table td {
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    /* ===== Reduced Motion ===== */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== LEVEL SCREEN ========== -->
+<div id="level-screen" class="screen active">
+  <h1>🔤 クロスワード</h1>
+  <p class="level-intro">もじをうめて、ことばをかんせいさせよう！</p>
+
+  <div class="timer-row">
+    <label for="timer-toggle">⏱ タイマー</label>
+    <label class="toggle-switch">
+      <input type="checkbox" id="timer-toggle">
+      <span class="toggle-slider"></span>
+    </label>
+    <span id="timer-toggle-label">OFF</span>
+  </div>
+
+  <div class="level-cards">
+    <button class="level-card" data-level="easy">
+      <div class="level-name">⭐ やさしい</div>
+      <div class="level-desc">どうぶつのことば（7マス × 7マス）</div>
+      <div class="level-best" id="best-easy">ベストタイム：－</div>
+    </button>
+    <button class="level-card" data-level="normal">
+      <div class="level-name">⭐⭐ ふつう</div>
+      <div class="level-desc">きもちのことば（ASDサポートあり）</div>
+      <div class="level-best" id="best-normal">ベストタイム：－</div>
+    </button>
+    <button class="level-card" data-level="hard">
+      <div class="level-name">⭐⭐⭐ むずかしい</div>
+      <div class="level-desc">しぜん・りかのことば</div>
+      <div class="level-best" id="best-hard">ベストタイム：－</div>
+    </button>
+  </div>
+
+  <button class="howto-toggle" id="howto-toggle-btn">❓ あそびかた</button>
+  <div class="howto-body" id="howto-body">
+    <h3>📝 もじのいれかた</h3>
+    <p>したのひらがなボタンをおすか、キーボードでローマ字をうつとひらがなが入ります。</p>
+    <h3>↔️ むきのかえかた</h3>
+    <p>よことたてのことばがかさなっているマスをもう一度タップすると、むきがかわります。</p>
+    <h3>💡 ヒント</h3>
+    <p>ヒントボタンをおすと、えらんだことばの空いているマスに1もじ入ります。使える回数はレベルによってちがいます。</p>
+    <h3>⏭ スキップ</h3>
+    <p>むずかしいことばはスキップして、あとでかんがえることができます。</p>
+    <div class="parent-note">
+      <strong>🌟 保護者の方へ（ふつうレベルについて）</strong><br>
+      ふつうレベルは、気持ちの言葉を場面と結びつける練習です。クルーを声に出して読んで、お子さんと一緒に考えてみましょう。
+    </div>
+  </div>
+</div>
+
+<!-- ========== GAME SCREEN ========== -->
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <div class="game-title-area" id="game-level-name"></div>
+    <div id="timer-display" style="display:none">0:00</div>
+    <div id="hints-remaining" style="font-size:0.85rem;color:#9b8ab8;"></div>
+  </div>
+
+  <div id="grid-wrapper">
+    <table id="grid-table"></table>
+  </div>
+
+  <div id="clue-panel">
+    <div class="clue-direction" id="clue-dir"></div>
+    <div class="clue-text" id="clue-text">ことばをえらんでください</div>
+  </div>
+
+  <div class="action-row">
+    <button class="action-btn btn-hint" id="btn-hint">💡 ヒント</button>
+    <button class="action-btn btn-skip" id="btn-skip">⏭ スキップ</button>
+  </div>
+
+  <div id="clue-list-section">
+    <div class="clue-list-header">→ よこ</div>
+    <div class="clue-list" id="clue-list-yoko"></div>
+    <div class="clue-list-header" style="margin-top:8px">↓ たて</div>
+    <div class="clue-list" id="clue-list-tate"></div>
+  </div>
+
+  <div id="vkbd"></div>
+</div>
+
+<!-- ========== COMPLETE OVERLAY ========== -->
+<div id="complete-overlay">
+  <canvas id="confetti-canvas"></canvas>
+  <div class="complete-box">
+    <h2>🎉 かんせい！</h2>
+    <div class="complete-stats" id="complete-stats"></div>
+    <div class="complete-buttons">
+      <button class="btn" id="btn-replay">もう一度</button>
+      <button class="btn" id="btn-levelselect" style="background:#c8b8e0;color:#3a3050;">レベルをかえる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // =====================================================================
+  // PUZZLE DATA
+  // =====================================================================
+  var PUZZLES = {
+    easy: {
+      name: '⭐ やさしい',
+      storageKey: 'crossword-best-easy',
+      hintCount: 5,
+      rows: 7,
+      cols: 7,
+      // null = white cell, '#' = black cell
+      grid: [
+        ['き','つ','ね','#','う','し','#'],
+        ['#', '#', 'こ','#','#', '#', '#'],
+        ['#', '#', '#', '#','#', '#', '#'],
+        ['う','さ','ぎ','#','い','ぬ','#'],
+        ['#', '#', '#', '#','#', '#', '#'],
+        ['#', 'と','り','#','さ','る','#'],
+        ['#', '#', '#', '#','#', '#', '#']
+      ],
+      words: [
+        {id:1, dir:'yoko', row:0, col:0, answer:['き','つ','ね'], clue:'🦊 しっぽがながい かしこい どうぶつ'},
+        {id:2, dir:'tate', row:0, col:2, answer:['ね','こ'],      clue:'🐱 ニャーとなく どうぶつ'},
+        {id:3, dir:'yoko', row:0, col:4, answer:['う','し'],      clue:'🐄 モーとなく どうぶつ'},
+        {id:4, dir:'yoko', row:3, col:0, answer:['う','さ','ぎ'], clue:'🐰 ぴょんぴょんはねる どうぶつ'},
+        {id:5, dir:'yoko', row:3, col:4, answer:['い','ぬ'],      clue:'🐶 ワンワンほえる どうぶつ'},
+        {id:6, dir:'yoko', row:5, col:1, answer:['と','り'],      clue:'🐦 そらをとぶ どうぶつ'},
+        {id:7, dir:'yoko', row:5, col:4, answer:['さ','る'],      clue:'🐒 きにのぼる どうぶつ'}
+      ]
+    },
+    normal: {
+      name: '⭐⭐ ふつう',
+      storageKey: 'crossword-best-normal',
+      hintCount: 3,
+      rows: 7,
+      cols: 7,
+      grid: [
+        ['#','か','な','し','い','#','#'],
+        ['#','#', '#', 'ん','#', '#','#'],
+        ['#','#', '#', 'ぱ','#', '#','#'],
+        ['う','れ','し','い','#', '#','#'],
+        ['#','#', '#', '#', '#', '#','#'],
+        ['さ','び','し','い','#', '#','#'],
+        ['た','の','し','い','#', '#','#']
+      ],
+      words: [
+        {id:1, dir:'yoko', row:0, col:1, answer:['か','な','し','い'], clue:'😢 たいせつなものをなくしたとき、どんなきもち？'},
+        {id:2, dir:'tate', row:0, col:3, answer:['し','ん','ぱ','い'], clue:'😟 テストにうかるかどうか わからないとき、どんなきもち？'},
+        {id:3, dir:'yoko', row:3, col:0, answer:['う','れ','し','い'], clue:'😄 ほめられたり プレゼントをもらったとき、どんなきもち？'},
+        {id:4, dir:'yoko', row:5, col:0, answer:['さ','び','し','い'], clue:'🥺 ともだちがどこかへいってしまったとき、どんなきもち？'},
+        {id:5, dir:'yoko', row:6, col:0, answer:['た','の','し','い'], clue:'😊 みんなでゲームをしているとき、どんなきもち？'}
+      ]
+    },
+    hard: {
+      name: '⭐⭐⭐ むずかしい',
+      storageKey: 'crossword-best-hard',
+      hintCount: 2,
+      rows: 7,
+      cols: 7,
+      grid: [
+        ['む','し','め','が','ね','#','#'],
+        ['#', 'ん','#', 'っ','#', '#','#'],
+        ['#', 'ぶ','#', 'き','せ','つ','#'],
+        ['#', 'ん','#', '#', '#', '#','#'],
+        ['#', '#', 'た','い','ふ','う','#'],
+        ['#', '#', '#', '#', '#', '#','#'],
+        ['そ','ら','ま','め','#', '#','#']
+      ],
+      words: [
+        {id:1, dir:'yoko', row:0, col:0, answer:['む','し','め','が','ね'], clue:'🔍 ちいさいものをおおきくみせる どうぐ'},
+        {id:2, dir:'tate', row:0, col:1, answer:['し','ん','ぶ','ん'],      clue:'📰 まいにちはいたつされる ニュースのかみ'},
+        {id:3, dir:'tate', row:0, col:3, answer:['が','っ','き'],           clue:'🎵 おんがくでつかうどうぐ。ピアノやバイオリン'},
+        {id:4, dir:'yoko', row:2, col:3, answer:['き','せ','つ'],           clue:'🌸 はる・なつ・あき・ふゆ のことをまとめて…'},
+        {id:5, dir:'yoko', row:4, col:2, answer:['た','い','ふ','う'],      clue:'🌀 おおあめとつよいかぜをもってくる てんきのなまえ'},
+        {id:6, dir:'yoko', row:6, col:0, answer:['そ','ら','ま','め'],      clue:'🫛 さやがそら（うえ）をむいてそだつ まめ'}
+      ]
+    }
+  };
+
+  // =====================================================================
+  // ROMAJI → KANA TABLE
+  // =====================================================================
+  var ROMAJI_TABLE = [
+    // 3+ char mappings first (longest match)
+    ['sha','しゃ'],['shi','し'],['shu','しゅ'],['sho','しょ'],
+    ['chi','ち'],['cha','ちゃ'],['chu','ちゅ'],['cho','ちょ'],
+    ['tsu','つ'],['xtsu','っ'],['xtu','っ'],['ltsu','っ'],['ltu','っ'],
+    ['xya','ゃ'],['xyu','ゅ'],['xyo','ょ'],
+    ['lya','ゃ'],['lyu','ゅ'],['lyo','ょ'],
+    ['kya','きゃ'],['kyu','きゅ'],['kyo','きょ'],
+    ['nya','にゃ'],['nyu','にゅ'],['nyo','にょ'],
+    ['hya','ひゃ'],['hyu','ひゅ'],['hyo','ひょ'],
+    ['mya','みゃ'],['myu','みゅ'],['myo','みょ'],
+    ['rya','りゃ'],['ryu','りゅ'],['ryo','りょ'],
+    ['gya','ぎゃ'],['gyu','ぎゅ'],['gyo','ぎょ'],
+    ['zya','じゃ'],['zyu','じゅ'],['zyo','じょ'],
+    ['ja','じゃ'],['ju','じゅ'],['jo','じょ'],
+    ['dya','ぢゃ'],['dyu','ぢゅ'],['dyo','ぢょ'],
+    ['bya','びゃ'],['byu','びゅ'],['byo','びょ'],
+    ['pya','ぴゃ'],['pyu','ぴゅ'],['pyo','ぴょ'],
+    // 2-char
+    ['ka','か'],['ki','き'],['ku','く'],['ke','け'],['ko','こ'],
+    ['sa','さ'],['si','し'],['su','す'],['se','せ'],['so','そ'],
+    ['ta','た'],['ti','ち'],['tu','つ'],['te','て'],['to','と'],
+    ['na','な'],['ni','に'],['nu','ぬ'],['ne','ね'],['no','の'],
+    ['ha','は'],['hi','ひ'],['fu','ふ'],['hu','ふ'],['he','へ'],['ho','ほ'],
+    ['ma','ま'],['mi','み'],['mu','む'],['me','め'],['mo','も'],
+    ['ya','や'],['yu','ゆ'],['yo','よ'],
+    ['ra','ら'],['ri','り'],['ru','る'],['re','れ'],['ro','ろ'],
+    ['wa','わ'],['wi','い'],['we','え'],['wo','を'],
+    ['ga','が'],['gi','ぎ'],['gu','ぐ'],['ge','げ'],['go','ご'],
+    ['za','ざ'],['zi','じ'],['zu','ず'],['ze','ぜ'],['zo','ぞ'],
+    ['ji','じ'],
+    ['da','だ'],['di','ぢ'],['du','づ'],['de','で'],['do','ど'],
+    ['ba','ば'],['bi','び'],['bu','ぶ'],['be','べ'],['bo','ぼ'],
+    ['pa','ぱ'],['pi','ぴ'],['pu','ぷ'],['pe','ぺ'],['po','ぽ'],
+    ['nn','ん'],
+    // 1-char
+    ['a','あ'],['i','い'],['u','う'],['e','え'],['o','お'],
+    ['-','ー']
+  ];
+
+  // =====================================================================
+  // VIRTUAL KEYBOARD LAYOUT
+  // =====================================================================
+  var VKBD_ROWS = [
+    ['あ','い','う','え','お'],
+    ['か','き','く','け','こ'],
+    ['さ','し','す','せ','そ'],
+    ['た','ち','つ','て','と'],
+    ['な','に','ぬ','ね','の'],
+    ['は','ひ','ふ','へ','ほ'],
+    ['ま','み','む','め','も'],
+    ['や', null,'ゆ', null,'よ'],
+    ['ら','り','る','れ','ろ'],
+    ['わ', null, null, null,'を'],
+    [null, null, null, null,'ん'],
+    ['っ','ゃ','ゅ','ょ','ー'],
+    ['DEL']
+  ];
+
+  // =====================================================================
+  // STATE
+  // =====================================================================
+  var state = {
+    level: null,
+    puzzle: null,
+    cellNumbers: null,   // Map key "r,c" -> number
+    cellData: null,      // 2D array of { answer, input, wordIds }
+    wordState: null,     // map wordId -> { solved, skipped, hintUsed }
+    selectedWordId: null,
+    selectedDir: null,   // 'yoko' or 'tate'
+    activeRow: null,
+    activeCol: null,
+    hintsLeft: 0,
+    timerEnabled: false,
+    timerStarted: false,
+    timerSeconds: 0,
+    timerInterval: null,
+    romajiBuffer: '',
+    startTime: null,
+    completionTime: null
+  };
+
+  // =====================================================================
+  // UTILITY
+  // =====================================================================
+  function $(id) { return document.getElementById(id); }
+
+  function formatTime(secs) {
+    var m = Math.floor(secs / 60);
+    var s = secs % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function loadBestTime(key) {
+    try { return localStorage.getItem(key); } catch(e) { return null; }
+  }
+
+  function saveBestTime(key, secs) {
+    try { localStorage.setItem(key, secs); } catch(e) {}
+  }
+
+  function loadSettings() {
+    try {
+      var s = localStorage.getItem('crossword-settings');
+      if (s) return JSON.parse(s);
+    } catch(e) {}
+    return { timerEnabled: false };
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem('crossword-settings', JSON.stringify({ timerEnabled: state.timerEnabled }));
+    } catch(e) {}
+  }
+
+  // =====================================================================
+  // INIT LEVEL SCREEN
+  // =====================================================================
+  function initLevelScreen() {
+    var settings = loadSettings();
+    state.timerEnabled = settings.timerEnabled || false;
+    $('timer-toggle').checked = state.timerEnabled;
+    $('timer-toggle-label').textContent = state.timerEnabled ? 'ON' : 'OFF';
+
+    ['easy','normal','hard'].forEach(function(lvl) {
+      var key = PUZZLES[lvl].storageKey;
+      var best = loadBestTime(key);
+      var el = $('best-' + lvl);
+      if (el) {
+        el.textContent = best ? 'ベストタイム：' + formatTime(parseInt(best)) : 'ベストタイム：－';
+      }
+    });
+
+    $('timer-toggle').onchange = function() {
+      state.timerEnabled = this.checked;
+      $('timer-toggle-label').textContent = state.timerEnabled ? 'ON' : 'OFF';
+      saveSettings();
+    };
+
+    $('howto-toggle-btn').onclick = function() {
+      var body = $('howto-body');
+      body.classList.toggle('open');
+    };
+
+    var cards = document.querySelectorAll('.level-card');
+    cards.forEach(function(card) {
+      card.onclick = function() {
+        startLevel(card.getAttribute('data-level'));
+      };
+    });
+  }
+
+  // =====================================================================
+  // COMPUTE CELL NUMBERS
+  // =====================================================================
+  function computeCellNumbers(puzzle) {
+    var numbers = {};
+    var num = 1;
+    for (var r = 0; r < puzzle.rows; r++) {
+      for (var c = 0; c < puzzle.cols; c++) {
+        if (puzzle.grid[r][c] === '#') continue;
+        var startsAcross = (c === 0 || puzzle.grid[r][c-1] === '#') &&
+                           (c+1 < puzzle.cols && puzzle.grid[r][c+1] !== '#');
+        var startsDown   = (r === 0 || puzzle.grid[r-1][c] === '#') &&
+                           (r+1 < puzzle.rows && puzzle.grid[r+1][c] !== '#');
+        if (startsAcross || startsDown) {
+          numbers[r + ',' + c] = num++;
+        }
+      }
+    }
+    return numbers;
+  }
+
+  // =====================================================================
+  // BUILD CELL DATA
+  // =====================================================================
+  function buildCellData(puzzle) {
+    var data = [];
+    for (var r = 0; r < puzzle.rows; r++) {
+      data.push([]);
+      for (var c = 0; c < puzzle.cols; c++) {
+        data[r].push({ answer: null, input: '', isHint: false, wordIds: [] });
+      }
+    }
+    puzzle.words.forEach(function(word) {
+      for (var i = 0; i < word.answer.length; i++) {
+        var r = word.dir === 'yoko' ? word.row : word.row + i;
+        var c = word.dir === 'yoko' ? word.col + i : word.col;
+        data[r][c].answer = word.answer[i];
+        if (data[r][c].wordIds.indexOf(word.id) === -1) {
+          data[r][c].wordIds.push(word.id);
+        }
+      }
+    });
+    return data;
+  }
+
+  // =====================================================================
+  // START LEVEL
+  // =====================================================================
+  function startLevel(levelKey) {
+    state.level = levelKey;
+    state.puzzle = PUZZLES[levelKey];
+    state.cellNumbers = computeCellNumbers(state.puzzle);
+    state.cellData = buildCellData(state.puzzle);
+    state.wordState = {};
+    state.puzzle.words.forEach(function(w) {
+      state.wordState[w.id] = { solved: false, skipped: false };
+    });
+    state.hintsLeft = state.puzzle.hintCount;
+    state.timerStarted = false;
+    state.timerSeconds = 0;
+    state.romajiBuffer = '';
+    state.selectedWordId = null;
+    state.activeRow = null;
+    state.activeCol = null;
+    if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+
+    showScreen('game-screen');
+    renderGameHeader();
+    renderGrid();
+    renderVirtualKeyboard();
+    renderClueLists();
+    updateHintButton();
+
+    // Auto-select first word
+    var firstWord = state.puzzle.words[0];
+    selectWord(firstWord.id, firstWord.row, firstWord.col);
+  }
+
+  // =====================================================================
+  // SHOW SCREEN
+  // =====================================================================
+  function showScreen(id) {
+    ['level-screen','game-screen'].forEach(function(s) {
+      var el = $(s);
+      el.classList.remove('active');
+    });
+    $(id).classList.add('active');
+  }
+
+  // =====================================================================
+  // RENDER GAME HEADER
+  // =====================================================================
+  function renderGameHeader() {
+    $('game-level-name').textContent = state.puzzle.name;
+    var timerEl = $('timer-display');
+    if (state.timerEnabled) {
+      timerEl.style.display = '';
+      timerEl.textContent = '0:00';
+    } else {
+      timerEl.style.display = 'none';
+    }
+    updateHintsDisplay();
+  }
+
+  function updateHintsDisplay() {
+    $('hints-remaining').textContent = '💡×' + state.hintsLeft;
+  }
+
+  // =====================================================================
+  // RENDER GRID
+  // =====================================================================
+  function renderGrid() {
+    var table = $('grid-table');
+    table.innerHTML = '';
+    var puzzle = state.puzzle;
+    for (var r = 0; r < puzzle.rows; r++) {
+      var tr = document.createElement('tr');
+      for (var c = 0; c < puzzle.cols; c++) {
+        var td = document.createElement('td');
+        td.setAttribute('data-row', r);
+        td.setAttribute('data-col', c);
+        if (puzzle.grid[r][c] === '#') {
+          td.classList.add('cell-black');
+        } else {
+          var numKey = r + ',' + c;
+          if (state.cellNumbers[numKey]) {
+            var numSpan = document.createElement('span');
+            numSpan.className = 'cell-num';
+            numSpan.textContent = state.cellNumbers[numKey];
+            td.appendChild(numSpan);
+          }
+          var letterSpan = document.createElement('span');
+          letterSpan.className = 'cell-letter';
+          letterSpan.id = 'cell-letter-' + r + '-' + c;
+          letterSpan.textContent = state.cellData[r][c].input || '';
+          td.appendChild(letterSpan);
+          td.addEventListener('click', onCellClick);
+        }
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+  }
+
+  function getCellTd(r, c) {
+    return document.querySelector('#grid-table td[data-row="' + r + '"][data-col="' + c + '"]');
+  }
+
+  function updateCellDisplay(r, c) {
+    var span = $('cell-letter-' + r + '-' + c);
+    if (!span) return;
+    var cd = state.cellData[r][c];
+    span.textContent = cd.input || '';
+    span.className = 'cell-letter' + (cd.isHint ? ' cell-hint-letter' : '');
+  }
+
+  // =====================================================================
+  // HIGHLIGHT
+  // =====================================================================
+  function applyHighlight() {
+    var puzzle = state.puzzle;
+    // Clear all
+    for (var r = 0; r < puzzle.rows; r++) {
+      for (var c = 0; c < puzzle.cols; c++) {
+        var td = getCellTd(r, c);
+        if (td && !td.classList.contains('cell-black')) {
+          td.classList.remove('cell-hl', 'cell-active');
+        }
+      }
+    }
+    if (!state.selectedWordId) return;
+    var word = getWord(state.selectedWordId);
+    if (!word) return;
+    for (var i = 0; i < word.answer.length; i++) {
+      var wr = word.dir === 'yoko' ? word.row : word.row + i;
+      var wc = word.dir === 'yoko' ? word.col + i : word.col;
+      var wtd = getCellTd(wr, wc);
+      if (wtd) {
+        if (wr === state.activeRow && wc === state.activeCol) {
+          wtd.classList.add('cell-active');
+        } else {
+          wtd.classList.add('cell-hl');
+        }
+      }
+    }
+  }
+
+  // =====================================================================
+  // CELL CLICK
+  // =====================================================================
+  function onCellClick(e) {
+    var td = e.currentTarget;
+    var r = parseInt(td.getAttribute('data-row'));
+    var c = parseInt(td.getAttribute('data-col'));
+    var cd = state.cellData[r][c];
+    if (!cd || !cd.wordIds || cd.wordIds.length === 0) return;
+
+    // Find words at this cell
+    var yokoWords = cd.wordIds.filter(function(id) { return getWord(id).dir === 'yoko'; });
+    var tateWords = cd.wordIds.filter(function(id) { return getWord(id).dir === 'tate'; });
+
+    // If clicking the already active cell and it's an intersection, toggle direction
+    if (r === state.activeRow && c === state.activeCol && yokoWords.length > 0 && tateWords.length > 0) {
+      var newDir = state.selectedDir === 'yoko' ? 'tate' : 'yoko';
+      var newWords = newDir === 'yoko' ? yokoWords : tateWords;
+      var unsolvedNew = newWords.filter(function(id){ return !state.wordState[id].solved; });
+      var wid = unsolvedNew.length > 0 ? unsolvedNew[0] : newWords[0];
+      selectWord(wid, r, c);
+      return;
+    }
+
+    // Prefer across if available and unsolved, else down
+    var unsolvedYoko = yokoWords.filter(function(id){ return !state.wordState[id].solved; });
+    var unsolvedTate = tateWords.filter(function(id){ return !state.wordState[id].solved; });
+
+    var chosen;
+    if (unsolvedYoko.length > 0) {
+      chosen = unsolvedYoko[0];
+    } else if (unsolvedTate.length > 0) {
+      chosen = unsolvedTate[0];
+    } else if (yokoWords.length > 0) {
+      chosen = yokoWords[0];
+    } else {
+      chosen = tateWords[0];
+    }
+    selectWord(chosen, r, c);
+  }
+
+  function getWord(id) {
+    return state.puzzle.words.find(function(w) { return w.id === id; });
+  }
+
+  function selectWord(wordId, activeR, activeC) {
+    var word = getWord(wordId);
+    if (!word) return;
+    state.selectedWordId = wordId;
+    state.selectedDir = word.dir;
+    if (activeR !== undefined) {
+      state.activeRow = activeR;
+      state.activeCol = activeC;
+    } else {
+      // Set active to first empty cell, or first cell
+      var found = false;
+      for (var i = 0; i < word.answer.length; i++) {
+        var r = word.dir === 'yoko' ? word.row : word.row + i;
+        var c = word.dir === 'yoko' ? word.col + i : word.col;
+        if (!state.cellData[r][c].input) {
+          state.activeRow = r;
+          state.activeCol = c;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        state.activeRow = word.row;
+        state.activeCol = word.col;
+      }
+    }
+    applyHighlight();
+    updateCluePanel();
+    updateClueListHighlight();
+  }
+
+  // =====================================================================
+  // CLUE PANEL
+  // =====================================================================
+  function updateCluePanel() {
+    var word = getWord(state.selectedWordId);
+    if (!word) {
+      $('clue-dir').textContent = '';
+      $('clue-text').textContent = 'ことばをえらんでください';
+      return;
+    }
+    $('clue-dir').textContent = word.dir === 'yoko' ? '→ よこ' : '↓ たて';
+    var numKey = word.row + ',' + word.col;
+    var num = state.cellNumbers[numKey] || '';
+    var ws = state.wordState[word.id];
+    var skipped = ws && ws.skipped ? ' ⏭' : '';
+    $('clue-text').innerHTML = '<span class="clue-number">' + num + '</span>' + escapeHtml(word.clue) + skipped;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // =====================================================================
+  // CLUE LISTS
+  // =====================================================================
+  function renderClueLists() {
+    renderClueList('yoko', $('clue-list-yoko'));
+    renderClueList('tate', $('clue-list-tate'));
+  }
+
+  function renderClueList(dir, container) {
+    container.innerHTML = '';
+    state.puzzle.words.filter(function(w){ return w.dir === dir; }).forEach(function(word) {
+      var item = document.createElement('div');
+      item.className = 'clue-item';
+      item.setAttribute('data-word-id', word.id);
+      var numKey = word.row + ',' + word.col;
+      var num = state.cellNumbers[numKey] || '';
+      var ws = state.wordState[word.id];
+      if (ws.solved) item.classList.add('clue-solved');
+      if (ws.skipped) item.classList.add('clue-skipped');
+      item.innerHTML = '<span class="clue-item-num">' + num + '</span><span>' + escapeHtml(word.clue) + '</span>';
+      item.addEventListener('click', function() {
+        selectWord(word.id);
+      });
+      container.appendChild(item);
+    });
+  }
+
+  function updateClueListHighlight() {
+    document.querySelectorAll('.clue-item').forEach(function(item) {
+      var id = parseInt(item.getAttribute('data-word-id'));
+      item.classList.toggle('clue-active', id === state.selectedWordId);
+    });
+  }
+
+  function updateClueItem(wordId) {
+    var item = document.querySelector('.clue-item[data-word-id="' + wordId + '"]');
+    if (!item) return;
+    var ws = state.wordState[wordId];
+    item.classList.toggle('clue-solved', ws.solved);
+    item.classList.toggle('clue-skipped', ws.skipped);
+  }
+
+  // =====================================================================
+  // INPUT
+  // =====================================================================
+  function inputKana(kana) {
+    if (!state.selectedWordId) return;
+    var ws = state.wordState[state.selectedWordId];
+    if (ws && ws.solved) return;
+
+    startTimerIfNeeded();
+
+    var r = state.activeRow;
+    var c = state.activeCol;
+    if (r === null || c === null) return;
+    if (state.puzzle.grid[r][c] === '#') return;
+
+    state.cellData[r][c].input = kana;
+    state.cellData[r][c].isHint = false;
+    updateCellDisplay(r, c);
+
+    checkWordComplete(state.selectedWordId, function(correct) {
+      if (!correct) {
+        // Advance cursor
+        advanceCursor();
+      }
+    });
+  }
+
+  function advanceCursor() {
+    var word = getWord(state.selectedWordId);
+    if (!word) return;
+    var idx = getCursorIndex(word);
+    if (idx < word.answer.length - 1) {
+      idx++;
+      var nr = word.dir === 'yoko' ? word.row : word.row + idx;
+      var nc = word.dir === 'yoko' ? word.col + idx : word.col;
+      state.activeRow = nr;
+      state.activeCol = nc;
+      applyHighlight();
+    }
+  }
+
+  function getCursorIndex(word) {
+    for (var i = 0; i < word.answer.length; i++) {
+      var r = word.dir === 'yoko' ? word.row : word.row + i;
+      var c = word.dir === 'yoko' ? word.col + i : word.col;
+      if (r === state.activeRow && c === state.activeCol) return i;
+    }
+    return 0;
+  }
+
+  function deleteChar() {
+    var r = state.activeRow;
+    var c = state.activeCol;
+    if (r === null || c === null) return;
+
+    var word = getWord(state.selectedWordId);
+    if (!word) return;
+    if (state.wordState[word.id].solved) return;
+
+    var cd = state.cellData[r][c];
+    if (cd.input) {
+      cd.input = '';
+      cd.isHint = false;
+      updateCellDisplay(r, c);
+    } else {
+      // Move back
+      var idx = getCursorIndex(word);
+      if (idx > 0) {
+        idx--;
+        var nr = word.dir === 'yoko' ? word.row : word.row + idx;
+        var nc = word.dir === 'yoko' ? word.col + idx : word.col;
+        state.activeRow = nr;
+        state.activeCol = nc;
+        state.cellData[nr][nc].input = '';
+        state.cellData[nr][nc].isHint = false;
+        updateCellDisplay(nr, nc);
+        applyHighlight();
+      }
+    }
+  }
+
+  // =====================================================================
+  // ROMAJI CONVERSION
+  // =====================================================================
+  function processRomajiKey(key) {
+    key = key.toLowerCase();
+
+    // Handle backspace
+    if (key === 'backspace') {
+      if (state.romajiBuffer.length > 0) {
+        state.romajiBuffer = state.romajiBuffer.slice(0, -1);
+      } else {
+        deleteChar();
+      }
+      return;
+    }
+
+    // Only process a-z and hyphen
+    if (!/^[a-z\-]$/.test(key)) return;
+
+    state.romajiBuffer += key;
+    var buf = state.romajiBuffer;
+
+    // Double consonant check (not for n)
+    if (buf.length >= 2) {
+      var last2 = buf.slice(-2);
+      var ch = last2[0];
+      if (ch !== 'n' && ch === last2[1] && 'bcdfghjklmnpqrstvwxyz'.indexOf(ch) !== -1) {
+        // Output っ, keep the repeated consonant
+        state.romajiBuffer = ch;
+        inputKana('っ');
+        buf = state.romajiBuffer;
+      }
+    }
+
+    // Try to match longest romaji
+    var matched = false;
+    for (var i = 0; i < ROMAJI_TABLE.length; i++) {
+      var rom = ROMAJI_TABLE[i][0];
+      var kana = ROMAJI_TABLE[i][1];
+      if (buf.endsWith(rom)) {
+        // Also check longer patterns won't match
+        var couldExtend = false;
+        for (var j = 0; j < ROMAJI_TABLE.length; j++) {
+          if (ROMAJI_TABLE[j][0].startsWith(buf) && ROMAJI_TABLE[j][0] !== buf) {
+            couldExtend = true;
+            break;
+          }
+        }
+        if (!couldExtend) {
+          state.romajiBuffer = '';
+          inputKana(kana);
+          matched = true;
+          break;
+        } else {
+          // Could still extend, wait
+          break;
+        }
+      }
+    }
+
+    // Handle 'n' special case: n before consonant (not vowel, not 'n', not 'y')
+    if (!matched && buf === 'n') {
+      // Wait for next key — handled on next keystroke
+    } else if (!matched && buf.length >= 2 && buf[0] === 'n') {
+      var afterN = buf[1];
+      if ('aiueoyn'.indexOf(afterN) === -1) {
+        // Output ん, reprocess from afterN
+        state.romajiBuffer = afterN;
+        inputKana('ん');
+        // Recurse with remaining buffer
+        var remaining = buf.slice(2);
+        for (var k = 0; k < remaining.length; k++) {
+          processRomajiKey(remaining[k]);
+        }
+      }
+    } else if (!matched) {
+      // Check if buffer can start any romaji
+      var canStart = false;
+      for (var m = 0; m < ROMAJI_TABLE.length; m++) {
+        if (ROMAJI_TABLE[m][0].startsWith(buf)) {
+          canStart = true;
+          break;
+        }
+      }
+      if (!canStart) {
+        // Clear buffer, try just the last char
+        var lastChar = buf.slice(-1);
+        state.romajiBuffer = '';
+        processRomajiKey(lastChar);
+      }
+    }
+  }
+
+  // =====================================================================
+  // PHYSICAL KEYBOARD
+  // =====================================================================
+  document.addEventListener('keydown', function(e) {
+    if (!$('game-screen').classList.contains('active')) return;
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      state.romajiBuffer = '';
+      deleteChar();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      moveToNextWord(1);
+    } else if (e.key.length === 1) {
+      // Hiragana direct input
+      if (/[\u3041-\u3096ー]/.test(e.key)) {
+        state.romajiBuffer = '';
+        inputKana(e.key);
+      } else {
+        processRomajiKey(e.key);
+      }
+    }
+  });
+
+  // =====================================================================
+  // CHECK WORD
+  // =====================================================================
+  function checkWordComplete(wordId, callback) {
+    var word = getWord(wordId);
+    if (!word) { if(callback) callback(false); return; }
+    var allFilled = true;
+    var allCorrect = true;
+    for (var i = 0; i < word.answer.length; i++) {
+      var r = word.dir === 'yoko' ? word.row : word.row + i;
+      var c = word.dir === 'yoko' ? word.col + i : word.col;
+      var cd = state.cellData[r][c];
+      if (!cd.input) { allFilled = false; break; }
+      if (cd.input !== word.answer[i]) { allCorrect = false; }
+    }
+    if (!allFilled) { if(callback) callback(false); return; }
+
+    if (allCorrect) {
+      flashWord(word, 'cell-correct', function() {
+        state.wordState[wordId].solved = true;
+        state.wordState[wordId].skipped = false;
+        updateClueItem(wordId);
+        updateCluePanel();
+        if (checkAllSolved()) {
+          triggerCompletion();
+        } else {
+          moveToNextWord(1);
+        }
+        if(callback) callback(true);
+      });
+    } else {
+      flashWord(word, 'cell-wrong', function() {
+        if(callback) callback(false);
+      });
+    }
+  }
+
+  function flashWord(word, cls, done) {
+    var cells = [];
+    for (var i = 0; i < word.answer.length; i++) {
+      var r = word.dir === 'yoko' ? word.row : word.row + i;
+      var c = word.dir === 'yoko' ? word.col + i : word.col;
+      var td = getCellTd(r, c);
+      if (td) { td.classList.add(cls); cells.push(td); }
+    }
+    setTimeout(function() {
+      cells.forEach(function(td) { td.classList.remove(cls); });
+      if (done) done();
+    }, 600);
+  }
+
+  function checkAllSolved() {
+    return state.puzzle.words.every(function(w) { return state.wordState[w.id].solved; });
+  }
+
+  // =====================================================================
+  // MOVE TO NEXT WORD
+  // =====================================================================
+  function moveToNextWord(dir) {
+    var words = state.puzzle.words;
+    var cur = words.findIndex(function(w) { return w.id === state.selectedWordId; });
+    var idx = cur;
+    for (var i = 1; i <= words.length; i++) {
+      idx = (cur + i * dir + words.length) % words.length;
+      if (!state.wordState[words[idx].id].solved) {
+        selectWord(words[idx].id);
+        return;
+      }
+    }
+    // All solved or wrap
+    selectWord(words[0].id);
+  }
+
+  // =====================================================================
+  // HINT
+  // =====================================================================
+  $('btn-hint').addEventListener('click', function() {
+    if (state.hintsLeft <= 0 || !state.selectedWordId) return;
+    var word = getWord(state.selectedWordId);
+    if (!word || state.wordState[word.id].solved) return;
+
+    // Find first empty cell
+    for (var i = 0; i < word.answer.length; i++) {
+      var r = word.dir === 'yoko' ? word.row : word.row + i;
+      var c = word.dir === 'yoko' ? word.col + i : word.col;
+      if (!state.cellData[r][c].input) {
+        startTimerIfNeeded();
+        state.cellData[r][c].input = word.answer[i];
+        state.cellData[r][c].isHint = true;
+        updateCellDisplay(r, c);
+        state.hintsLeft--;
+        updateHintsDisplay();
+        updateHintButton();
+        // Move cursor to next empty
+        state.activeRow = r;
+        state.activeCol = c;
+        advanceCursor();
+        applyHighlight();
+        checkWordComplete(word.id, function(){});
+        return;
+      }
+    }
+  });
+
+  function updateHintButton() {
+    $('btn-hint').disabled = state.hintsLeft <= 0;
+    $('btn-hint').textContent = '💡 ヒント（' + state.hintsLeft + '）';
+  }
+
+  // =====================================================================
+  // SKIP
+  // =====================================================================
+  $('btn-skip').addEventListener('click', function() {
+    if (!state.selectedWordId) return;
+    var ws = state.wordState[state.selectedWordId];
+    if (ws.solved) return;
+    ws.skipped = !ws.skipped;
+    updateClueItem(state.selectedWordId);
+    updateCluePanel();
+    if (ws.skipped) {
+      moveToNextWord(1);
+    }
+  });
+
+  // =====================================================================
+  // TIMER
+  // =====================================================================
+  function startTimerIfNeeded() {
+    if (!state.timerEnabled || state.timerStarted) return;
+    state.timerStarted = true;
+    state.startTime = Date.now();
+    state.timerInterval = setInterval(function() {
+      state.timerSeconds = Math.floor((Date.now() - state.startTime) / 1000);
+      $('timer-display').textContent = formatTime(state.timerSeconds);
+    }, 500);
+  }
+
+  function stopTimer() {
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+  }
+
+  // =====================================================================
+  // COMPLETION
+  // =====================================================================
+  function triggerCompletion() {
+    stopTimer();
+    state.completionTime = state.timerEnabled ? state.timerSeconds : null;
+
+    // Save best time
+    if (state.timerEnabled && state.completionTime !== null) {
+      var key = state.puzzle.storageKey;
+      var prev = loadBestTime(key);
+      if (!prev || state.completionTime < parseInt(prev)) {
+        saveBestTime(key, state.completionTime);
+      }
+    }
+
+    // Count hints and skips
+    var hintsUsed = state.puzzle.hintCount - state.hintsLeft;
+    var skippedCount = state.puzzle.words.filter(function(w) { return state.wordState[w.id].skipped; }).length;
+
+    var stats = '';
+    if (state.timerEnabled && state.completionTime !== null) {
+      stats += 'タイム：<strong>' + formatTime(state.completionTime) + '</strong><br>';
+      var best = loadBestTime(state.puzzle.storageKey);
+      if (best) stats += 'ベストタイム：<strong>' + formatTime(parseInt(best)) + '</strong><br>';
+    }
+    stats += 'ヒント：<strong>' + hintsUsed + '回</strong>';
+    if (skippedCount > 0) stats += '<br>スキップ：<strong>' + skippedCount + 'こ</strong>';
+
+    $('complete-stats').innerHTML = stats;
+    $('complete-overlay').classList.add('active');
+
+    launchConfetti();
+  }
+
+  $('btn-replay').addEventListener('click', function() {
+    $('complete-overlay').classList.remove('active');
+    stopConfetti();
+    startLevel(state.level);
+  });
+
+  $('btn-levelselect').addEventListener('click', function() {
+    $('complete-overlay').classList.remove('active');
+    stopConfetti();
+    showScreen('level-screen');
+    initLevelScreen();
+  });
+
+  // =====================================================================
+  // VIRTUAL KEYBOARD
+  // =====================================================================
+  function renderVirtualKeyboard() {
+    var vkbd = $('vkbd');
+    vkbd.innerHTML = '';
+    VKBD_ROWS.forEach(function(row) {
+      var rowEl = document.createElement('div');
+      rowEl.className = 'vkbd-row';
+      if (row.length === 1 && row[0] === 'DEL') {
+        var key = document.createElement('button');
+        key.className = 'vkbd-key vkbd-delete';
+        key.textContent = '← けす';
+        key.addEventListener('click', function() {
+          state.romajiBuffer = '';
+          deleteChar();
+        });
+        rowEl.appendChild(key);
+      } else {
+        row.forEach(function(ch) {
+          var key = document.createElement('button');
+          if (ch === null) {
+            key.className = 'vkbd-key vkbd-empty';
+          } else {
+            key.className = 'vkbd-key';
+            key.textContent = ch;
+            key.addEventListener('click', (function(kana) {
+              return function() {
+                state.romajiBuffer = '';
+                inputKana(kana);
+              };
+            })(ch));
+          }
+          rowEl.appendChild(key);
+        });
+      }
+      vkbd.appendChild(rowEl);
+    });
+  }
+
+  // =====================================================================
+  // CONFETTI
+  // =====================================================================
+  var confettiAnimId = null;
+  var confettiParticles = [];
+
+  function launchConfetti() {
+    // Check reduced motion
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var canvas = $('confetti-canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var ctx = canvas.getContext('2d');
+    confettiParticles = [];
+    var colors = ['#9b8ab8','#f0d060','#b8e8c0','#f4b8b8','#b8d8f4','#f4c8f0'];
+    for (var i = 0; i < 120; i++) {
+      confettiParticles.push({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * 100,
+        w: 8 + Math.random() * 8,
+        h: 4 + Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        angle: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.2,
+        vx: (Math.random() - 0.5) * 3,
+        vy: 2 + Math.random() * 3
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      confettiParticles.forEach(function(p) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.spin;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+      });
+      confettiParticles = confettiParticles.filter(function(p) { return p.y < canvas.height + 30; });
+      if (confettiParticles.length > 0) {
+        confettiAnimId = requestAnimationFrame(draw);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    confettiAnimId = requestAnimationFrame(draw);
+  }
+
+  function stopConfetti() {
+    if (confettiAnimId) { cancelAnimationFrame(confettiAnimId); confettiAnimId = null; }
+    var canvas = $('confetti-canvas');
+    if (canvas) {
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    confettiParticles = [];
+  }
+
+  // =====================================================================
+  // INIT
+  // =====================================================================
+  initLevelScreen();
+
+})();
+</script>
+</body>
+</html>
