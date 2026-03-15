@@ -33,7 +33,6 @@
 | お絵かきロジック | `games/nonogram.html` | 数字のヒントでマスを塗って絵を完成させるノノグラムパズル |
 | スライドパズル | `games/sliding-puzzle.html` | 動物イラストを完成させるスライドパズル |
 
-
 ## 技術スタック
 
 - HTML5 / CSS3 / JavaScript
