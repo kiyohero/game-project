@@ -1481,6 +1481,20 @@
         return;
       }
     }
+    // All cells filled but answer is wrong — clear and place hint in first cell
+    var r0 = word.dir === 'yoko' ? word.row : word.row;
+    var c0 = word.col;
+    startTimerIfNeeded();
+    state.cellData[r0][c0].input = word.answer[0];
+    state.cellData[r0][c0].isHint = true;
+    updateCellDisplay(r0, c0);
+    state.hintsLeft--;
+    updateHintsDisplay();
+    updateHintButton();
+    state.activeRow = r0;
+    state.activeCol = c0;
+    advanceCursor();
+    applyHighlight();
   });
 
   function updateHintButton() {
