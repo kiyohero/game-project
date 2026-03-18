@@ -396,21 +396,50 @@
       padding: 4px 0;
     }
 
-    .vkbd-row {
+    .vkbd-tabs {
       display: flex;
-      gap: 3px;
-      margin-bottom: 3px;
-      justify-content: center;
+      overflow-x: auto;
+      gap: 4px;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+    .vkbd-tabs::-webkit-scrollbar { display: none; }
 
-    .vkbd-key {
-      flex: 1;
-      max-width: 52px;
-      height: 40px;
+    .vkbd-tab {
+      flex-shrink: 0;
+      min-width: 36px;
+      height: 34px;
       background: #e8e0f0;
       border: 1px solid #c8b8e0;
-      border-radius: 6px;
-      font-size: 0.9rem;
+      border-radius: 6px 6px 0 0;
+      font-size: 1rem;
+      color: #3a3050;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .vkbd-tab.active {
+      background: #b89ad8;
+      color: #fff;
+    }
+
+    .vkbd-chars {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .vkbd-char {
+      flex: 1;
+      height: 48px;
+      background: #fff;
+      border: 1.5px solid #c8b8e0;
+      border-radius: 8px;
+      font-size: 1.2rem;
       color: #3a3050;
       cursor: pointer;
       display: flex;
@@ -420,22 +449,62 @@
       user-select: none;
     }
 
-    .vkbd-key:active {
-      background: #b89ad8;
-      color: #fff;
-    }
+    .vkbd-char:active { background: #b89ad8; color: #fff; }
 
-    .vkbd-key.vkbd-empty {
+    .vkbd-char.vkbd-empty-slot {
       visibility: hidden;
       pointer-events: none;
     }
 
-    .vkbd-key.vkbd-delete {
-      max-width: none;
-      flex: 2;
-      background: #d0c8e0;
-      font-size: 0.75rem;
+    .vkbd-util {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 4px;
     }
+
+    .vkbd-util-key {
+      flex: 1;
+      height: 38px;
+      background: #e8e0f0;
+      border: 1px solid #c8b8e0;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #3a3050;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .vkbd-util-key:active { background: #b89ad8; color: #fff; }
+
+    .vkbd-mod {
+      background: #f0e8ff;
+      border-color: #b89ad8;
+      font-size: 1rem;
+    }
+
+    .vkbd-actions {
+      display: flex;
+    }
+
+    .vkbd-delete {
+      flex: 1;
+      height: 40px;
+      background: #d0c8e0;
+      border: 1px solid #b8a8d0;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #3a3050;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .vkbd-delete:active { background: #9b8ab8; color: #fff; }
 
     /* ===== Complete Overlay ===== */
     #complete-overlay {
@@ -505,7 +574,9 @@
         height: 38px;
       }
       .cell-letter { font-size: 1rem; }
-      .vkbd-key { height: 36px; font-size: 0.8rem; }
+      .vkbd-char { height: 42px; font-size: 1.1rem; }
+      .vkbd-util-key { height: 34px; }
+      .vkbd-tab { min-width: 32px; height: 30px; font-size: 0.9rem; }
     }
 
     @media (max-width: 320px) {
@@ -757,21 +828,32 @@
   // =====================================================================
   // VIRTUAL KEYBOARD LAYOUT
   // =====================================================================
-  var VKBD_ROWS = [
-    ['あ','い','う','え','お'],
-    ['か','き','く','け','こ'],
-    ['さ','し','す','せ','そ'],
-    ['た','ち','つ','て','と'],
-    ['な','に','ぬ','ね','の'],
-    ['は','ひ','ふ','へ','ほ'],
-    ['ま','み','む','め','も'],
-    ['や', null,'ゆ', null,'よ'],
-    ['ら','り','る','れ','ろ'],
-    ['わ', null, null, null,'を'],
-    [null, null, null, null,'ん'],
-    ['っ','ゃ','ゅ','ょ','ー'],
-    ['DEL']
+  // Tab-style virtual keyboard data
+  var VKBD_TABS = [
+    { label: 'あ', chars: ['あ','い','う','え','お'] },
+    { label: 'か', chars: ['か','き','く','け','こ'] },
+    { label: 'さ', chars: ['さ','し','す','せ','そ'] },
+    { label: 'た', chars: ['た','ち','つ','て','と'] },
+    { label: 'な', chars: ['な','に','ぬ','ね','の'] },
+    { label: 'は', chars: ['は','ひ','ふ','へ','ほ'] },
+    { label: 'ま', chars: ['ま','み','む','め','も'] },
+    { label: 'や', chars: ['や', null,'ゆ', null,'よ'] },
+    { label: 'ら', chars: ['ら','り','る','れ','ろ'] },
+    { label: 'わ', chars: ['わ', null, null, null,'を'] }
   ];
+
+  var VKBD_UTIL = ['ん','っ','ゃ','ゅ','ょ','ー','゛','゜'];
+
+  var DAKUTEN_MAP = {
+    'か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご',
+    'さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ',
+    'た':'だ','ち':'ぢ','つ':'づ','て':'で','と':'ど',
+    'は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ'
+  };
+
+  var HANDAKUTEN_MAP = {
+    'は':'ぱ','ひ':'ぴ','ふ':'ぷ','へ':'ぺ','ほ':'ぽ'
+  };
 
   // =====================================================================
   // STATE
@@ -793,7 +875,8 @@
     timerInterval: null,
     romajiBuffer: '',
     startTime: null,
-    completionTime: null
+    completionTime: null,
+    vkbdTab: 0
   };
 
   // =====================================================================
@@ -1276,6 +1359,36 @@
     }
   }
 
+  function applyDakuten() {
+    var r = state.activeRow;
+    var c = state.activeCol;
+    if (r === null || c === null) return;
+    var cur = state.cellData[r][c].input;
+    var voiced = DAKUTEN_MAP[cur];
+    if (voiced) {
+      state.romajiBuffer = '';
+      state.cellData[r][c].input = voiced;
+      state.cellData[r][c].isHint = false;
+      updateCellDisplay(r, c);
+      checkWordComplete(state.selectedWordId, function(){});
+    }
+  }
+
+  function applyHandakuten() {
+    var r = state.activeRow;
+    var c = state.activeCol;
+    if (r === null || c === null) return;
+    var cur = state.cellData[r][c].input;
+    var semivoiced = HANDAKUTEN_MAP[cur];
+    if (semivoiced) {
+      state.romajiBuffer = '';
+      state.cellData[r][c].input = semivoiced;
+      state.cellData[r][c].isHint = false;
+      updateCellDisplay(r, c);
+      checkWordComplete(state.selectedWordId, function(){});
+    }
+  }
+
   // =====================================================================
   // ROMAJI CONVERSION
   // =====================================================================
@@ -1660,40 +1773,80 @@
   function renderVirtualKeyboard() {
     var vkbd = $('vkbd');
     vkbd.innerHTML = '';
-    VKBD_ROWS.forEach(function(row) {
-      var rowEl = document.createElement('div');
-      rowEl.className = 'vkbd-row';
-      if (row.length === 1 && row[0] === 'DEL') {
-        var key = document.createElement('button');
-        key.className = 'vkbd-key vkbd-delete';
-        key.textContent = '← けす';
-        key.addEventListener('pointerdown', function(e) {
-          e.preventDefault();
-          state.romajiBuffer = '';
-          deleteChar();
-        });
-        rowEl.appendChild(key);
-      } else {
-        row.forEach(function(ch) {
-          var key = document.createElement('button');
-          if (ch === null) {
-            key.className = 'vkbd-key vkbd-empty';
-          } else {
-            key.className = 'vkbd-key';
-            key.textContent = ch;
-            key.addEventListener('pointerdown', (function(kana) {
-              return function(e) {
-                e.preventDefault();
-                state.romajiBuffer = '';
-                inputKana(kana);
-              };
-            })(ch));
-          }
-          rowEl.appendChild(key);
-        });
-      }
-      vkbd.appendChild(rowEl);
+
+    // Tab row
+    var tabRow = document.createElement('div');
+    tabRow.className = 'vkbd-tabs';
+    VKBD_TABS.forEach(function(tabDef, idx) {
+      var btn = document.createElement('button');
+      btn.className = 'vkbd-tab' + (idx === state.vkbdTab ? ' active' : '');
+      btn.textContent = tabDef.label;
+      btn.addEventListener('click', function() {
+        state.vkbdTab = idx;
+        renderVirtualKeyboard();
+      });
+      tabRow.appendChild(btn);
     });
+    vkbd.appendChild(tabRow);
+
+    // Character row
+    var charRow = document.createElement('div');
+    charRow.className = 'vkbd-chars';
+    var currentChars = VKBD_TABS[state.vkbdTab].chars;
+    currentChars.forEach(function(ch) {
+      var btn = document.createElement('button');
+      if (ch === null) {
+        btn.className = 'vkbd-char vkbd-empty-slot';
+      } else {
+        btn.className = 'vkbd-char';
+        btn.textContent = ch;
+        btn.addEventListener('click', (function(kana) {
+          return function() {
+            state.romajiBuffer = '';
+            inputKana(kana);
+          };
+        })(ch));
+      }
+      charRow.appendChild(btn);
+    });
+    vkbd.appendChild(charRow);
+
+    // Utility row
+    var utilRow = document.createElement('div');
+    utilRow.className = 'vkbd-util';
+    VKBD_UTIL.forEach(function(ch) {
+      var btn = document.createElement('button');
+      var isMod = (ch === '゛' || ch === '゜');
+      btn.className = 'vkbd-util-key' + (isMod ? ' vkbd-mod' : '');
+      btn.textContent = ch;
+      if (ch === '゛') {
+        btn.addEventListener('click', applyDakuten);
+      } else if (ch === '゜') {
+        btn.addEventListener('click', applyHandakuten);
+      } else {
+        btn.addEventListener('click', (function(kana) {
+          return function() {
+            state.romajiBuffer = '';
+            inputKana(kana);
+          };
+        })(ch));
+      }
+      utilRow.appendChild(btn);
+    });
+    vkbd.appendChild(utilRow);
+
+    // Action row (delete)
+    var actionRow = document.createElement('div');
+    actionRow.className = 'vkbd-actions';
+    var delBtn = document.createElement('button');
+    delBtn.className = 'vkbd-delete';
+    delBtn.textContent = '← けす';
+    delBtn.addEventListener('click', function() {
+      state.romajiBuffer = '';
+      deleteChar();
+    });
+    actionRow.appendChild(delBtn);
+    vkbd.appendChild(actionRow);
   }
 
   // =====================================================================
