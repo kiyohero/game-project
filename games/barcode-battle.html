@@ -405,7 +405,7 @@
   <!-- Screen 1: スキャン画面 -->
   <div id="screen-scan" style="display:block; position:relative;">
     <div class="wins-box" id="wins-box">
-      🏆 <span id="wins-count">0</span>勝
+      🏆 <span id="wins-count">0</span>勝　⭐ Lv.<span id="player-level">0</span>
     </div>
     <h1>📦 バーコードバトル</h1>
 
@@ -513,6 +513,7 @@
     <h2 id="result-title">けっか</h2>
     <p id="result-sub">サブテキスト</p>
     <p class="result-wins-text" id="result-wins">通算 0 勝</p>
+    <p id="result-exp" style="display:none; color:#e67e22; font-weight:bold; font-size:0.95rem; margin:6px 0 10px;"></p>
     <button class="btn-primary" id="resultRescanBtn" style="max-width:300px;">🔄 もう一度スキャン</button>
     <button class="btn-secondary" id="resultRankingBtn" style="margin-top:8px;">🏆 ランキング</button>
   </div>
@@ -573,38 +574,38 @@
     };
 
     const MOVES = [
-      {name:'ひのたま',type:'ほのお',power:30},
-      {name:'ほのおのいき',type:'ほのお',power:25},
-      {name:'かえんほうしゃ',type:'ほのお',power:40},
-      {name:'だいもんじ',type:'ほのお',power:35},
-      {name:'ほのおのパンチ',type:'ほのお',power:20},
-      {name:'みずでっぽう',type:'みず',power:25},
-      {name:'たきのぼり',type:'みず',power:30},
-      {name:'なみのり',type:'みず',power:35},
-      {name:'あわ',type:'みず',power:20},
-      {name:'うずしお',type:'みず',power:40},
-      {name:'はっぱカッター',type:'くさ',power:25},
-      {name:'たねマシンガン',type:'くさ',power:20},
-      {name:'ソーラービーム',type:'くさ',power:40},
-      {name:'くさのぼうず',type:'くさ',power:30},
-      {name:'つるのムチ',type:'くさ',power:25},
-      {name:'かみなり',type:'でんき',power:35},
-      {name:'でんきショック',type:'でんき',power:25},
-      {name:'１０まんボルト',type:'でんき',power:30},
-      {name:'かみなりのひらめき',type:'でんき',power:40},
-      {name:'スパーク',type:'でんき',power:20},
-      {name:'サイコキネシス',type:'エスパー',power:35},
-      {name:'ねんりき',type:'エスパー',power:20},
-      {name:'ミラクルアイ',type:'エスパー',power:25},
-      {name:'ふわふわのかぜ',type:'エスパー',power:30},
-      {name:'ゆめくい',type:'エスパー',power:40},
-      {name:'たいあたり',type:'ノーマル',power:20},
-      {name:'ひっかく',type:'ノーマル',power:25},
-      {name:'ずつき',type:'ノーマル',power:30},
-      {name:'ハイパーボイス',type:'ノーマル',power:35},
-      {name:'ギガインパクト',type:'ノーマル',power:40},
-      {name:'まるくなる',type:'ノーマル',power:15},
-      {name:'おたけび',type:'ノーマル',power:25}
+      {name:'ひのたま',type:'ほのお',power:25},
+      {name:'ほのおのいき',type:'ほのお',power:20},
+      {name:'かえんほうしゃ',type:'ほのお',power:30},
+      {name:'だいもんじ',type:'ほのお',power:28},
+      {name:'ほのおのパンチ',type:'ほのお',power:18},
+      {name:'みずでっぽう',type:'みず',power:20},
+      {name:'たきのぼり',type:'みず',power:25},
+      {name:'なみのり',type:'みず',power:28},
+      {name:'あわ',type:'みず',power:16},
+      {name:'うずしお',type:'みず',power:30},
+      {name:'はっぱカッター',type:'くさ',power:20},
+      {name:'たねマシンガン',type:'くさ',power:16},
+      {name:'ソーラービーム',type:'くさ',power:30},
+      {name:'くさのぼうず',type:'くさ',power:25},
+      {name:'つるのムチ',type:'くさ',power:20},
+      {name:'かみなり',type:'でんき',power:28},
+      {name:'でんきショック',type:'でんき',power:20},
+      {name:'１０まんボルト',type:'でんき',power:25},
+      {name:'かみなりのひらめき',type:'でんき',power:30},
+      {name:'スパーク',type:'でんき',power:16},
+      {name:'サイコキネシス',type:'エスパー',power:28},
+      {name:'ねんりき',type:'エスパー',power:16},
+      {name:'ミラクルアイ',type:'エスパー',power:20},
+      {name:'ふわふわのかぜ',type:'エスパー',power:25},
+      {name:'ゆめくい',type:'エスパー',power:30},
+      {name:'たいあたり',type:'ノーマル',power:16},
+      {name:'ひっかく',type:'ノーマル',power:20},
+      {name:'ずつき',type:'ノーマル',power:25},
+      {name:'ハイパーボイス',type:'ノーマル',power:28},
+      {name:'ギガインパクト',type:'ノーマル',power:30},
+      {name:'まるくなる',type:'ノーマル',power:12},
+      {name:'おたけび',type:'ノーマル',power:20}
     ];
 
     // =====================
@@ -615,7 +616,7 @@
       const adj = ADJECTIVES[Math.floor(rng() * ADJECTIVES.length)];
       const creature = CREATURES[Math.floor(rng() * CREATURES.length)];
       const type = TYPES[Math.floor(rng() * TYPES.length)];
-      const maxHp = 60 + Math.floor(rng() * 9) * 10;
+      const maxHp = 100 + Math.floor(rng() * 9) * 10;
       const atk = 10 + Math.floor(rng() * 21);
       const def = 5 + Math.floor(rng() * 16);
       const spd = 5 + Math.floor(rng() * 21);
@@ -641,9 +642,11 @@
     // =====================
     function calcDamage(attacker, move, defender) {
       const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][defender.type]) || 1;
-      return Math.max(1, Math.round(
+      const raw = Math.max(3, Math.round(
         attacker.atk * move.power / 15 * eff - defender.def / 2 + (Math.random() * 6 - 3)
       ));
+      // 1発のダメージを最大HPの30%以下に制限（最低3ターン保証）
+      return Math.min(raw, Math.round(defender.maxHp * 0.30));
     }
 
     function typeEffMsg(eff) {
@@ -699,12 +702,42 @@
     }
 
     // =====================
+    // EXP / Level system
+    // =====================
+    const EXP_TABLE = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000];
+    const MAX_LEVEL = EXP_TABLE.length - 1;
+
+    function getPlayerExp() {
+      return parseInt(localStorage.getItem('barcode-battle-exp') || '0');
+    }
+
+    function getPlayerLevel() {
+      const exp = getPlayerExp();
+      let level = 0;
+      for (let i = EXP_TABLE.length - 1; i >= 0; i--) {
+        if (exp >= EXP_TABLE[i]) { level = i; break; }
+      }
+      return Math.min(level, MAX_LEVEL);
+    }
+
+    function getExpToNext(level) {
+      if (level >= MAX_LEVEL) return 0;
+      return EXP_TABLE[level + 1] - getPlayerExp();
+    }
+
+    function updateLevelDisplay() {
+      const lvEl = document.getElementById('player-level');
+      if (lvEl) lvEl.textContent = getPlayerLevel();
+    }
+
+    // =====================
     // State
     // =====================
     let playerChar = null;
     let cpuChar = null;
     let html5QrCode = null;
     let battleBusy = false;
+    let turnCount = 0;
 
     // =====================
     // Wins counter
@@ -715,6 +748,7 @@
 
     function updateWinsDisplay() {
       document.getElementById('wins-count').textContent = getWins();
+      updateLevelDisplay();
     }
 
     // =====================
@@ -778,6 +812,16 @@
       if (!barcode) return;
       playerChar = generateCharacter(barcode);
 
+      // レベルによるステータス補正（CPUには適用しない）
+      const level = getPlayerLevel();
+      if (level > 0) {
+        const boost = 1 + level * 0.08;
+        playerChar.maxHp = Math.round(playerChar.maxHp * boost);
+        playerChar.hp    = playerChar.maxHp;
+        playerChar.atk   = Math.round(playerChar.atk * boost);
+        playerChar.def   = Math.round(playerChar.def * boost);
+      }
+
       document.getElementById('char-emoji').textContent = playerChar.emoji;
       document.getElementById('char-name').textContent = playerChar.name;
 
@@ -819,6 +863,7 @@
     function doPlayerAttack(moveIndex) {
       if (battleBusy) return;
       battleBusy = true;
+      turnCount++;
       setMoveBtnsDisabled(true);
 
       const move = playerChar.moves[moveIndex];
@@ -859,7 +904,7 @@
       let bestDmg = -1;
       cpuChar.moves.forEach(move => {
         const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][playerChar.type]) || 1;
-        const estDmg = cpuChar.atk * move.power / 15 * eff - playerChar.def / 2;
+        const estDmg = Math.min(cpuChar.atk * move.power / 15 * eff - playerChar.def / 2, playerChar.maxHp * 0.30);
         if (estDmg > bestDmg) {
           bestDmg = estDmg;
           bestMove = move;
@@ -912,6 +957,16 @@
       if (playerWon) {
         let wins = getWins() + 1;
         localStorage.setItem('barcode-battle-wins', wins);
+
+        // EXP獲得
+        const baseExp = 50;
+        const turnBonus = Math.min(turnCount * 5, 50);
+        const expGained = baseExp + turnBonus;
+        const oldLevel = getPlayerLevel();
+        const newTotalExp = getPlayerExp() + expGained;
+        localStorage.setItem('barcode-battle-exp', newTotalExp);
+        const newLevel = getPlayerLevel();
+        const leveledUp = newLevel > oldLevel;
         updateWinsDisplay();
 
         emojiEl.textContent = '🎉';
@@ -919,6 +974,16 @@
         titleEl.style.color = '#e67e22';
         subEl.textContent = cpuChar.name + ' をたおした！';
         winsEl.textContent = '通算 ' + wins + ' 勝';
+
+        // EXP表示
+        const expEl = document.getElementById('result-exp');
+        if (expEl) {
+          let expText = '＋' + expGained + ' EXP';
+          if (leveledUp) expText += '　🆙 Lv.' + oldLevel + ' → Lv.' + newLevel + '！';
+          else if (newLevel < MAX_LEVEL) expText += '　（次のレベルまで ' + getExpToNext(newLevel) + ' EXP）';
+          expEl.textContent = expText;
+          expEl.style.display = 'block';
+        }
 
         overlay.classList.add('show');
 
@@ -935,6 +1000,8 @@
         titleEl.style.color = '#6b5b7a';
         subEl.textContent = playerChar.name + ' はたおれた…';
         winsEl.textContent = '通算 ' + getWins() + ' 勝';
+        const expEl = document.getElementById('result-exp');
+        if (expEl) expEl.style.display = 'none';
 
         overlay.classList.add('show');
       }
@@ -945,8 +1012,11 @@
     // =====================
     function startBattle() {
       cpuChar = generateCharacter(String(Date.now() + Math.floor(Math.random() * 99999)));
+      // CPUは攻撃力を抑えて複数ターン続くように調整
+      cpuChar.atk = Math.max(5, Math.round(cpuChar.atk * 0.65));
       playerChar.hp = playerChar.maxHp;
       cpuChar.hp = cpuChar.maxHp;
+      turnCount = 0;
 
       showScreen('screen-battle');
 
