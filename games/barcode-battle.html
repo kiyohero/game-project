@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>バーコードバトル</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="ranking.css">
+  <script src="firebase-config.js"></script>
+  <script src="ranking.js" defer></script>
+  <style>
+    body {
+      background: #f5f0fa;
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+      padding: 10px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #6b5b7a;
+      text-align: center;
+      font-size: 1.5rem;
+      margin: 8px 0;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #9b8ab8, #6b5b7a);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      width: 100%;
+      margin: 8px 0;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #6b5b7a;
+      border: 2px solid #9b8ab8;
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .btn-secondary:hover {
+      background: #f5f0fa;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(107, 91, 122, 0.15);
+      margin: 10px 0;
+    }
+
+    .char-emoji-display {
+      font-size: 5rem;
+      text-align: center;
+      display: block;
+      margin: 10px 0;
+      animation: popIn 0.5s ease;
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      color: white;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .stat-box {
+      background: #f5f0fa;
+      border-radius: 8px;
+      padding: 8px 4px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: #9b8ab8;
+      display: block;
+    }
+
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #6b5b7a;
+    }
+
+    .hp-bar-container {
+      background: #e0d8e8;
+      border-radius: 10px;
+      height: 14px;
+      overflow: hidden;
+      margin: 4px 0;
+    }
+
+    .hp-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #e74c3c, #c0392b);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+
+    .hp-bar.healthy {
+      background: linear-gradient(90deg, #2ecc71, #27ae60);
+    }
+
+    .hp-bar.warning {
+      background: linear-gradient(90deg, #f39c12, #e67e22);
+    }
+
+    .battle-area {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .fighter-area {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(107, 91, 122, 0.1);
+    }
+
+    .fighter-emoji {
+      font-size: 3.5rem;
+      display: block;
+      text-align: center;
+    }
+
+    .battle-log {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      border-radius: 10px;
+      padding: 10px;
+      height: 130px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .battle-log p {
+      margin: 2px 0;
+    }
+
+    .moves-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .move-btn {
+      background: white;
+      border: 2px solid #9b8ab8;
+      border-radius: 10px;
+      padding: 8px 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-align: left;
+      transition: transform 0.1s;
+    }
+
+    .move-btn:active {
+      transform: scale(0.95);
+    }
+
+    .move-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .move-btn .move-name {
+      font-weight: bold;
+      display: block;
+      color: #333;
+    }
+
+    .move-btn .move-power {
+      font-size: 0.7rem;
+      color: #888;
+    }
+
+    .result-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(245, 240, 250, 0.96);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .result-overlay.show {
+      display: flex;
+    }
+
+    .result-overlay-emoji {
+      font-size: 5rem;
+      margin-bottom: 12px;
+      animation: popIn 0.5s ease;
+    }
+
+    .result-overlay h2 {
+      font-size: 2rem;
+      color: #6b5b7a;
+      margin: 8px 0;
+    }
+
+    .result-overlay p {
+      color: #9b8ab8;
+      font-size: 1rem;
+      margin: 4px 0;
+    }
+
+    .result-wins-text {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #6b5b7a;
+      margin: 12px 0;
+    }
+
+    .wins-box {
+      background: #9b8ab8;
+      padding: 6px 12px;
+      border-radius: 8px;
+      color: white;
+      font-size: 0.8rem;
+      text-align: center;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0;
+      color: #9b8ab8;
+    }
+
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #d4c8e2;
+    }
+
+    .hint-text {
+      text-align: center;
+      color: #9b8ab8;
+      font-size: 0.8rem;
+      margin: 8px 0;
+    }
+
+    .manual-input-row {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    .manual-input-row input {
+      flex: 1;
+      border: 2px solid #d4c8e2;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .manual-input-row input:focus {
+      border-color: #9b8ab8;
+    }
+
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .char-name-display {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #6b5b7a;
+      text-align: center;
+      margin: 6px 0;
+    }
+
+    .char-barcode-display {
+      font-size: 0.75rem;
+      color: #aaa;
+      text-align: center;
+      margin: 4px 0;
+    }
+
+    .char-type-row {
+      text-align: center;
+      margin: 6px 0;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: #9b8ab8;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 4px 0;
+      margin-bottom: 8px;
+    }
+
+    .back-btn:hover {
+      color: #6b5b7a;
+    }
+
+    .fighter-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      margin: 4px 0;
+    }
+
+    .fighter-name {
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #444;
+    }
+
+    .hp-label {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .screen-header {
+      position: relative;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .error-msg {
+      color: #e74c3c;
+      font-size: 0.85rem;
+      text-align: center;
+      margin: 6px 0;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      70% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .shake {
+      animation: shake 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen 1: スキャン画面 -->
+  <div id="screen-scan" style="display:block; position:relative;">
+    <div class="wins-box" id="wins-box">
+      🏆 <span id="wins-count">0</span>勝
+    </div>
+    <h1>📦 バーコードバトル</h1>
+
+    <div class="card">
+      <button class="btn-primary" id="startCameraBtn">📷 カメラでスキャン</button>
+      <div id="reader" style="display:none;"></div>
+      <div id="camera-error" class="error-msg" style="display:none;"></div>
+
+      <div class="or-divider">または</div>
+
+      <div class="manual-input-row">
+        <input type="text" id="manualInput" placeholder="バーコードの数字を入力..." inputmode="numeric">
+        <button class="btn-secondary" id="manualBtn">🎮 この数字で遊ぶ</button>
+      </div>
+
+      <p class="hint-text">商品のバーコードをスキャンしよう！同じバーコードからは同じキャラが生まれるよ</p>
+    </div>
+  </div>
+
+  <!-- Screen 2: キャラクター確認画面 -->
+  <div id="screen-char" style="display:none;">
+    <button class="back-btn" id="backToScanBtn">← もどる</button>
+    <h1>📦 バーコードバトル</h1>
+
+    <div class="card">
+      <span class="char-emoji-display" id="char-emoji">🐱</span>
+      <div class="char-name-display" id="char-name">キャラクター名</div>
+      <div class="char-type-row">
+        <span class="type-badge" id="char-type">タイプ</span>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-label">HP</span>
+          <span class="stat-value" id="char-hp">80</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">ATK</span>
+          <span class="stat-value" id="char-atk">20</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">DEF</span>
+          <span class="stat-value" id="char-def">10</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">SPD</span>
+          <span class="stat-value" id="char-spd">15</span>
+        </div>
+      </div>
+      <div class="char-barcode-display" id="char-barcode">バーコード：0000000</div>
+    </div>
+
+    <button class="btn-primary" id="startBattleBtn">🥊 CPUと対戦！</button>
+  </div>
+
+  <!-- Screen 3: バトル画面 -->
+  <div id="screen-battle" style="display:none;">
+    <h1>⚔️ バトル！</h1>
+    <div class="battle-area">
+      <!-- CPU area -->
+      <div class="fighter-area">
+        <div class="fighter-name-row">
+          <span class="fighter-name" id="cpu-name">CPU</span>
+          <span class="type-badge" id="cpu-type-badge">タイプ</span>
+        </div>
+        <span class="fighter-emoji" id="cpu-emoji">👾</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="hp-label">HP</span>
+          <div class="hp-bar-container" style="flex:1;">
+            <div class="hp-bar healthy" id="cpu-hp-bar" style="width:100%;"></div>
+          </div>
+          <span class="hp-label" id="cpu-hp-text">80/80</span>
+        </div>
+      </div>
+
+      <!-- Battle log -->
+      <div class="battle-log" id="battle-log"></div>
+
+      <!-- Player area -->
+      <div class="fighter-area">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="hp-label">HP</span>
+          <div class="hp-bar-container" style="flex:1;">
+            <div class="hp-bar healthy" id="player-hp-bar" style="width:100%;"></div>
+          </div>
+          <span class="hp-label" id="player-hp-text">80/80</span>
+        </div>
+        <span class="fighter-emoji" id="player-emoji">🐱</span>
+        <div class="fighter-name-row">
+          <span class="fighter-name" id="player-name">プレイヤー</span>
+          <span class="type-badge" id="player-type-badge">タイプ</span>
+        </div>
+        <div class="moves-grid">
+          <button class="move-btn" id="move-btn-0"><span class="move-name">わざ1</span><span class="move-power">いりょく: 20</span></button>
+          <button class="move-btn" id="move-btn-1"><span class="move-name">わざ2</span><span class="move-power">いりょく: 25</span></button>
+          <button class="move-btn" id="move-btn-2"><span class="move-name">わざ3</span><span class="move-power">いりょく: 30</span></button>
+          <button class="move-btn" id="move-btn-3"><span class="move-name">わざ4</span><span class="move-power">いりょく: 35</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Overlay -->
+  <div class="result-overlay" id="result-overlay">
+    <div class="result-overlay-emoji" id="result-emoji">🎉</div>
+    <h2 id="result-title">けっか</h2>
+    <p id="result-sub">サブテキスト</p>
+    <p class="result-wins-text" id="result-wins">通算 0 勝</p>
+    <button class="btn-primary" id="resultRescanBtn" style="max-width:300px;">🔄 もう一度スキャン</button>
+    <button class="btn-secondary" id="resultRankingBtn" style="margin-top:8px;">🏆 ランキング</button>
+  </div>
+
+  <script>
+    // =====================
+    // Seeded RNG
+    // =====================
+    function createRNG(seedStr) {
+      let s = 0;
+      const str = String(seedStr).replace(/\D/g, '');
+      for (let i = 0; i < str.length; i++) {
+        s = (s * 31 + str.charCodeAt(i)) & 0x7FFFFFFF;
+      }
+      s = (s || 12345) & 0x7FFFFFFF;
+      return function() {
+        s = (s * 1664525 + 1013904223) & 0xFFFFFFFF;
+        return (s >>> 0) / 0x100000000;
+      };
+    }
+
+    // =====================
+    // Data
+    // =====================
+    const ADJECTIVES = ['のんびりした','せっかちな','ふしぎな','おだやかな','きまぐれな',
+      'つよそうな','よわそうな','かしこい','すばやい','のろい','おおきな','ちいさな',
+      'あかるい','くらい','あついな','つめたい','ふるくさい','きびしい','やさしい',
+      'うるさい','しずかな','たのしい','ねぼすけな','いじっぱりな','ひょうきんな'];
+
+    const CREATURES = [
+      {name:'かば',emoji:'🦛'},{name:'さめ',emoji:'🦈'},{name:'ぺんぎん',emoji:'🐧'},
+      {name:'りゅう',emoji:'🐉'},{name:'てんし',emoji:'😇'},{name:'まじょ',emoji:'🧙'},
+      {name:'ゆうれい',emoji:'👻'},{name:'ロボット',emoji:'🤖'},{name:'にんじゃ',emoji:'🥷'},
+      {name:'おうさま',emoji:'👑'},{name:'おばけ',emoji:'👾'},{name:'かいぞく',emoji:'🏴‍☠️'},
+      {name:'まほうつかい',emoji:'🧝'},{name:'てつじん',emoji:'🦾'},{name:'ねこ',emoji:'🐱'},
+      {name:'きつね',emoji:'🦊'},{name:'たぬき',emoji:'🦝'},{name:'うさぎ',emoji:'🐰'},
+      {name:'くま',emoji:'🐻'},{name:'ぞう',emoji:'🐘'},{name:'とり',emoji:'🐦'},
+      {name:'さかな',emoji:'🐟'},{name:'くわがた',emoji:'🦌'},{name:'おに',emoji:'👹'},
+      {name:'ユニコーン',emoji:'🦄'}
+    ];
+
+    const TYPES = [
+      {name:'ほのお',emoji:'🔥',color:'#ff6b35'},
+      {name:'みず',emoji:'💧',color:'#4a90d9'},
+      {name:'くさ',emoji:'🌿',color:'#5cb85c'},
+      {name:'でんき',emoji:'⚡',color:'#f5a623'},
+      {name:'エスパー',emoji:'🔮',color:'#9b59b6'},
+      {name:'ノーマル',emoji:'⭐',color:'#7f8c8d'}
+    ];
+
+    const TYPE_CHART = {
+      'ほのお':  {'ほのお':1,'みず':0.5,'くさ':2,'でんき':1,'エスパー':1,'ノーマル':1},
+      'みず':    {'ほのお':2,'みず':1,'くさ':0.5,'でんき':1,'エスパー':1,'ノーマル':1},
+      'くさ':    {'ほのお':0.5,'みず':2,'くさ':1,'でんき':1,'エスパー':1,'ノーマル':1},
+      'でんき':  {'ほのお':1,'みず':2,'くさ':1,'でんき':1,'エスパー':1,'ノーマル':1},
+      'エスパー':{'ほのお':1,'みず':1,'くさ':1,'でんき':1,'エスパー':0.5,'ノーマル':2},
+      'ノーマル':{'ほのお':1,'みず':1,'くさ':1,'でんき':1,'エスパー':1,'ノーマル':1}
+    };
+
+    const MOVES = [
+      {name:'ひのたま',type:'ほのお',power:30},
+      {name:'ほのおのいき',type:'ほのお',power:25},
+      {name:'かえんほうしゃ',type:'ほのお',power:40},
+      {name:'だいもんじ',type:'ほのお',power:35},
+      {name:'ほのおのパンチ',type:'ほのお',power:20},
+      {name:'みずでっぽう',type:'みず',power:25},
+      {name:'たきのぼり',type:'みず',power:30},
+      {name:'なみのり',type:'みず',power:35},
+      {name:'あわ',type:'みず',power:20},
+      {name:'うずしお',type:'みず',power:40},
+      {name:'はっぱカッター',type:'くさ',power:25},
+      {name:'たねマシンガン',type:'くさ',power:20},
+      {name:'ソーラービーム',type:'くさ',power:40},
+      {name:'くさのぼうず',type:'くさ',power:30},
+      {name:'つるのムチ',type:'くさ',power:25},
+      {name:'かみなり',type:'でんき',power:35},
+      {name:'でんきショック',type:'でんき',power:25},
+      {name:'１０まんボルト',type:'でんき',power:30},
+      {name:'かみなりのひらめき',type:'でんき',power:40},
+      {name:'スパーク',type:'でんき',power:20},
+      {name:'サイコキネシス',type:'エスパー',power:35},
+      {name:'ねんりき',type:'エスパー',power:20},
+      {name:'ミラクルアイ',type:'エスパー',power:25},
+      {name:'ふわふわのかぜ',type:'エスパー',power:30},
+      {name:'ゆめくい',type:'エスパー',power:40},
+      {name:'たいあたり',type:'ノーマル',power:20},
+      {name:'ひっかく',type:'ノーマル',power:25},
+      {name:'ずつき',type:'ノーマル',power:30},
+      {name:'ハイパーボイス',type:'ノーマル',power:35},
+      {name:'ギガインパクト',type:'ノーマル',power:40},
+      {name:'まるくなる',type:'ノーマル',power:15},
+      {name:'おたけび',type:'ノーマル',power:25}
+    ];
+
+    // =====================
+    // Character generation
+    // =====================
+    function generateCharacter(barcodeStr) {
+      const rng = createRNG(barcodeStr);
+      const adj = ADJECTIVES[Math.floor(rng() * ADJECTIVES.length)];
+      const creature = CREATURES[Math.floor(rng() * CREATURES.length)];
+      const type = TYPES[Math.floor(rng() * TYPES.length)];
+      const maxHp = 60 + Math.floor(rng() * 9) * 10;
+      const atk = 10 + Math.floor(rng() * 21);
+      const def = 5 + Math.floor(rng() * 16);
+      const spd = 5 + Math.floor(rng() * 21);
+      const indices = [...Array(MOVES.length).keys()];
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      const moves = indices.slice(0, 4).map(i => MOVES[i]);
+      return {
+        barcode: barcodeStr,
+        name: adj + creature.name,
+        emoji: creature.emoji,
+        type: type.name,
+        typeEmoji: type.emoji,
+        typeColor: type.color,
+        maxHp, hp: maxHp, atk, def, spd, moves
+      };
+    }
+
+    // =====================
+    // Battle utilities
+    // =====================
+    function calcDamage(attacker, move, defender) {
+      const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][defender.type]) || 1;
+      return Math.max(1, Math.round(
+        attacker.atk * move.power / 15 * eff - defender.def / 2 + (Math.random() * 6 - 3)
+      ));
+    }
+
+    function typeEffMsg(eff) {
+      if (eff >= 2) return 'こうかはばつぐんだ！';
+      if (eff <= 0.5) return 'こうかはいまひとつ…';
+      return '';
+    }
+
+    function getTypeColor(typeName) {
+      const t = TYPES.find(t => t.name === typeName);
+      return t ? t.color : '#7f8c8d';
+    }
+
+    // =====================
+    // Screen management
+    // =====================
+    function showScreen(id) {
+      ['screen-scan', 'screen-char', 'screen-battle'].forEach(s => {
+        document.getElementById(s).style.display = s === id ? 'block' : 'none';
+      });
+    }
+
+    // =====================
+    // HP bar update
+    // =====================
+    function updateHpBar(who, hp, maxHp) {
+      const bar = document.getElementById(who + '-hp-bar');
+      const text = document.getElementById(who + '-hp-text');
+      const pct = Math.max(0, Math.min(100, Math.round(hp / maxHp * 100)));
+      bar.style.width = pct + '%';
+      text.textContent = Math.max(0, hp) + '/' + maxHp;
+      bar.classList.remove('healthy', 'warning');
+      if (pct >= 50) {
+        bar.classList.add('healthy');
+      } else if (pct >= 20) {
+        bar.classList.add('warning');
+      }
+    }
+
+    // =====================
+    // Battle log
+    // =====================
+    function addLog(msg, color) {
+      const log = document.getElementById('battle-log');
+      const p = document.createElement('p');
+      if (color) {
+        p.style.color = color;
+        p.style.fontWeight = 'bold';
+      }
+      p.textContent = msg;
+      log.appendChild(p);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // =====================
+    // State
+    // =====================
+    let playerChar = null;
+    let cpuChar = null;
+    let html5QrCode = null;
+    let battleBusy = false;
+
+    // =====================
+    // Wins counter
+    // =====================
+    function getWins() {
+      return parseInt(localStorage.getItem('barcode-battle-wins') || '0');
+    }
+
+    function updateWinsDisplay() {
+      document.getElementById('wins-count').textContent = getWins();
+    }
+
+    // =====================
+    // Camera
+    // =====================
+    function stopCamera() {
+      if (html5QrCode) {
+        try {
+          html5QrCode.stop().catch(() => {});
+        } catch (e) {}
+        html5QrCode = null;
+      }
+      document.getElementById('reader').style.display = 'none';
+    }
+
+    function startCamera() {
+      const readerEl = document.getElementById('reader');
+      const errorEl = document.getElementById('camera-error');
+      errorEl.style.display = 'none';
+      readerEl.style.display = 'block';
+
+      try {
+        if (!window.Html5Qrcode) {
+          throw new Error('Html5Qrcode not loaded');
+        }
+        html5QrCode = new Html5Qrcode('reader');
+        html5QrCode.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 150 } },
+          function(decodedText) {
+            html5QrCode.stop().then(() => {
+              html5QrCode = null;
+              readerEl.style.display = 'none';
+              onBarcodeScanned(decodedText);
+            }).catch(() => {
+              html5QrCode = null;
+              readerEl.style.display = 'none';
+              onBarcodeScanned(decodedText);
+            });
+          },
+          function() {}
+        ).catch(function(err) {
+          readerEl.style.display = 'none';
+          errorEl.textContent = 'カメラが使えませんでした。数字を入力してください';
+          errorEl.style.display = 'block';
+          html5QrCode = null;
+        });
+      } catch (e) {
+        readerEl.style.display = 'none';
+        errorEl.textContent = 'カメラが使えませんでした。数字を入力してください';
+        errorEl.style.display = 'block';
+        html5QrCode = null;
+      }
+    }
+
+    // =====================
+    // onBarcodeScanned
+    // =====================
+    function onBarcodeScanned(barcode) {
+      barcode = String(barcode).trim();
+      if (!barcode) return;
+      playerChar = generateCharacter(barcode);
+
+      document.getElementById('char-emoji').textContent = playerChar.emoji;
+      document.getElementById('char-name').textContent = playerChar.name;
+
+      const typeBadge = document.getElementById('char-type');
+      typeBadge.textContent = playerChar.typeEmoji + ' ' + playerChar.type;
+      typeBadge.style.background = playerChar.typeColor;
+
+      document.getElementById('char-hp').textContent = playerChar.maxHp;
+      document.getElementById('char-atk').textContent = playerChar.atk;
+      document.getElementById('char-def').textContent = playerChar.def;
+      document.getElementById('char-spd').textContent = playerChar.spd;
+      document.getElementById('char-barcode').textContent = 'バーコード：' + barcode;
+
+      showScreen('screen-char');
+    }
+
+    // =====================
+    // Move buttons helpers
+    // =====================
+    function setMoveBtnsDisabled(disabled) {
+      for (let i = 0; i < 4; i++) {
+        document.getElementById('move-btn-' + i).disabled = disabled;
+      }
+    }
+
+    function populateMoveBtns(char) {
+      char.moves.forEach((move, i) => {
+        const btn = document.getElementById('move-btn-' + i);
+        btn.querySelector('.move-name').textContent = move.name;
+        btn.querySelector('.move-power').textContent =
+          'いりょく: ' + move.power + '　タイプ: ' + move.type;
+        btn.style.borderColor = getTypeColor(move.type);
+      });
+    }
+
+    // =====================
+    // Battle sequence
+    // =====================
+    function doPlayerAttack(moveIndex) {
+      if (battleBusy) return;
+      battleBusy = true;
+      setMoveBtnsDisabled(true);
+
+      const move = playerChar.moves[moveIndex];
+      const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][cpuChar.type]) || 1;
+      const dmg = calcDamage(playerChar, move, cpuChar);
+      cpuChar.hp = Math.max(0, cpuChar.hp - dmg);
+
+      addLog(playerChar.name + ' の ' + move.name + '！', '#a8d8ff');
+      const effMsg = typeEffMsg(eff);
+      if (effMsg) addLog(effMsg, eff >= 2 ? '#f5a623' : '#aaa');
+      addLog(cpuChar.name + ' に ' + dmg + ' ダメージ！');
+
+      // shake cpu emoji
+      const cpuEmojiEl = document.getElementById('cpu-emoji');
+      cpuEmojiEl.classList.remove('shake');
+      void cpuEmojiEl.offsetWidth;
+      cpuEmojiEl.classList.add('shake');
+
+      updateHpBar('cpu', cpuChar.hp, cpuChar.maxHp);
+
+      if (checkBattleEnd()) {
+        battleBusy = false;
+        return;
+      }
+
+      // CPU attacks after delay
+      setTimeout(() => {
+        doCpuAttack();
+        battleBusy = false;
+        if (cpuChar.hp > 0 && playerChar.hp > 0) {
+          setMoveBtnsDisabled(false);
+        }
+      }, 800);
+    }
+
+    function selectCpuMove() {
+      let bestMove = cpuChar.moves[0];
+      let bestDmg = -1;
+      cpuChar.moves.forEach(move => {
+        const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][playerChar.type]) || 1;
+        const estDmg = cpuChar.atk * move.power / 15 * eff - playerChar.def / 2;
+        if (estDmg > bestDmg) {
+          bestDmg = estDmg;
+          bestMove = move;
+        }
+      });
+      return bestMove;
+    }
+
+    function doCpuAttack() {
+      const move = selectCpuMove();
+      const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][playerChar.type]) || 1;
+      const dmg = calcDamage(cpuChar, move, playerChar);
+      playerChar.hp = Math.max(0, playerChar.hp - dmg);
+
+      addLog(cpuChar.name + ' の ' + move.name + '！', '#ffb3b3');
+      const effMsg = typeEffMsg(eff);
+      if (effMsg) addLog(effMsg, eff >= 2 ? '#f5a623' : '#aaa');
+      addLog(playerChar.name + ' に ' + dmg + ' ダメージ！');
+
+      const playerEmojiEl = document.getElementById('player-emoji');
+      playerEmojiEl.classList.remove('shake');
+      void playerEmojiEl.offsetWidth;
+      playerEmojiEl.classList.add('shake');
+
+      updateHpBar('player', playerChar.hp, playerChar.maxHp);
+      checkBattleEnd();
+    }
+
+    function checkBattleEnd() {
+      if (cpuChar.hp <= 0) {
+        showResult(true);
+        return true;
+      }
+      if (playerChar.hp <= 0) {
+        showResult(false);
+        return true;
+      }
+      return false;
+    }
+
+    function showResult(playerWon) {
+      setMoveBtnsDisabled(true);
+
+      const overlay = document.getElementById('result-overlay');
+      const emojiEl = document.getElementById('result-emoji');
+      const titleEl = document.getElementById('result-title');
+      const subEl = document.getElementById('result-sub');
+      const winsEl = document.getElementById('result-wins');
+
+      if (playerWon) {
+        let wins = getWins() + 1;
+        localStorage.setItem('barcode-battle-wins', wins);
+        updateWinsDisplay();
+
+        emojiEl.textContent = '🎉';
+        titleEl.textContent = 'かった！';
+        titleEl.style.color = '#e67e22';
+        subEl.textContent = cpuChar.name + ' をたおした！';
+        winsEl.textContent = '通算 ' + wins + ' 勝';
+
+        overlay.classList.add('show');
+
+        setTimeout(() => {
+          try {
+            if (window.Ranking && typeof Ranking.showSubmitModal === 'function') {
+              Ranking.showSubmitModal('barcode-battle', wins);
+            }
+          } catch (e) {}
+        }, 600);
+      } else {
+        emojiEl.textContent = '😢';
+        titleEl.textContent = 'まけた…';
+        titleEl.style.color = '#6b5b7a';
+        subEl.textContent = playerChar.name + ' はたおれた…';
+        winsEl.textContent = '通算 ' + getWins() + ' 勝';
+
+        overlay.classList.add('show');
+      }
+    }
+
+    // =====================
+    // startBattle
+    // =====================
+    function startBattle() {
+      cpuChar = generateCharacter(String(Date.now() + Math.floor(Math.random() * 99999)));
+      playerChar.hp = playerChar.maxHp;
+      cpuChar.hp = cpuChar.maxHp;
+
+      showScreen('screen-battle');
+
+      // CPU area
+      document.getElementById('cpu-name').textContent = cpuChar.name;
+      const cpuTypeBadge = document.getElementById('cpu-type-badge');
+      cpuTypeBadge.textContent = cpuChar.typeEmoji + ' ' + cpuChar.type;
+      cpuTypeBadge.style.background = cpuChar.typeColor;
+      document.getElementById('cpu-emoji').textContent = cpuChar.emoji;
+      updateHpBar('cpu', cpuChar.hp, cpuChar.maxHp);
+
+      // Player area
+      document.getElementById('player-name').textContent = playerChar.name;
+      const playerTypeBadge = document.getElementById('player-type-badge');
+      playerTypeBadge.textContent = playerChar.typeEmoji + ' ' + playerChar.type;
+      playerTypeBadge.style.background = playerChar.typeColor;
+      document.getElementById('player-emoji').textContent = playerChar.emoji;
+      updateHpBar('player', playerChar.hp, playerChar.maxHp);
+
+      populateMoveBtns(playerChar);
+
+      // Clear log
+      document.getElementById('battle-log').innerHTML = '';
+      battleBusy = false;
+
+      addLog('⚔️ バトル開始！', '#9b8ab8');
+      addLog(playerChar.name + ' vs ' + cpuChar.name);
+
+      // Turn order
+      if (playerChar.spd >= cpuChar.spd) {
+        addLog('すばやさで ' + playerChar.name + ' が先制！', '#a8d8ff');
+        setMoveBtnsDisabled(false);
+      } else {
+        addLog('すばやさで ' + cpuChar.name + ' が先制！', '#ffb3b3');
+        setMoveBtnsDisabled(true);
+        battleBusy = true;
+        setTimeout(() => {
+          doCpuAttack();
+          if (playerChar.hp > 0 && cpuChar.hp > 0) {
+            setMoveBtnsDisabled(false);
+          }
+          battleBusy = false;
+        }, 1000);
+      }
+    }
+
+    // =====================
+    // Event listeners
+    // =====================
+    document.getElementById('startCameraBtn').addEventListener('click', function() {
+      startCamera();
+    });
+
+    document.getElementById('manualBtn').addEventListener('click', function() {
+      const val = document.getElementById('manualInput').value.trim();
+      if (val) {
+        stopCamera();
+        onBarcodeScanned(val);
+      }
+    });
+
+    document.getElementById('manualInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const val = this.value.trim();
+        if (val) {
+          stopCamera();
+          onBarcodeScanned(val);
+        }
+      }
+    });
+
+    document.getElementById('backToScanBtn').addEventListener('click', function() {
+      stopCamera();
+      showScreen('screen-scan');
+      updateWinsDisplay();
+    });
+
+    document.getElementById('startBattleBtn').addEventListener('click', function() {
+      startBattle();
+    });
+
+    for (let i = 0; i < 4; i++) {
+      (function(idx) {
+        document.getElementById('move-btn-' + idx).addEventListener('click', function() {
+          if (!battleBusy) {
+            doPlayerAttack(idx);
+          }
+        });
+      })(i);
+    }
+
+    document.getElementById('resultRescanBtn').addEventListener('click', function() {
+      document.getElementById('result-overlay').classList.remove('show');
+      stopCamera();
+      showScreen('screen-scan');
+      updateWinsDisplay();
+    });
+
+    document.getElementById('resultRankingBtn').addEventListener('click', function() {
+      try {
+        if (window.Ranking && typeof Ranking.showRankingModal === 'function') {
+          Ranking.showRankingModal('barcode-battle');
+        }
+      } catch (e) {}
+    });
+
+    // =====================
+    // Init
+    // =====================
+    updateWinsDisplay();
+  </script>
+</body>
+</html>
