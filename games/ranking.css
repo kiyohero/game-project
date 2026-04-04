@@ -260,3 +260,75 @@
   border-radius: 8px;
   margin-bottom: 15px !important;
 }
+
+/* キャプチャ履歴リスト */
+.capture-list {
+  margin-bottom: 16px;
+}
+
+.capture-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f0eaf8;
+}
+
+.capture-item:last-child {
+  border-bottom: none;
+}
+
+.capture-emoji {
+  font-size: 2rem;
+  flex-shrink: 0;
+  width: 42px;
+  text-align: center;
+}
+
+.capture-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.capture-char-name {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #6b5b7a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.capture-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.capture-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.capture-catcher {
+  font-size: 0.75rem;
+  color: #9b8ab8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.capture-time {
+  font-size: 0.65rem;
+  color: #bbb;
+  flex-shrink: 0;
+  text-align: right;
+  line-height: 1.4;
+}
