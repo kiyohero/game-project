@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>投資シミュレーター</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f0fa;min-height:100vh;padding-bottom:20px}
+    .screen{display:none;flex-direction:column;max-width:480px;margin:0 auto;padding:16px}
+    .screen.active{display:flex}
+    .card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 12px rgba(107,91,122,.12);border:1px solid #e8e0f0;margin-bottom:12px}
+    h1{font-size:1.8rem;color:#6b5b7a;text-align:center;margin-bottom:8px}
+    h2{font-size:1.1rem;color:#6b5b7a;margin-bottom:12px}
+    .btn{background:#7a6b8a;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:.95rem;font-weight:700;cursor:pointer;transition:transform .1s}
+    .btn:active{transform:scale(.96)}
+    .btn-primary{background:linear-gradient(135deg,#9b8ab8,#7a6b8a);color:#fff;border:none;border-radius:14px;padding:14px;font-size:1.05rem;font-weight:800;width:100%;cursor:pointer;box-shadow:0 4px 14px rgba(107,91,122,.3);transition:transform .1s}
+    .btn-primary:active{transform:scale(.97)}
+    .btn-buy{background:linear-gradient(135deg,#27ae60,#1a8a4a);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:.95rem;font-weight:700;cursor:pointer;flex:1}
+    .btn-sell{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:.95rem;font-weight:700;cursor:pointer;flex:1}
+    .up{color:#2ecc71;font-weight:700}
+    .down{color:#e74c3c;font-weight:700}
+    .neutral{color:#95a5a6}
+    /* ターンバー */
+    #turn-bar{background:rgba(245,240,250,.95);backdrop-filter:blur(8px);border-bottom:1px solid #e8e0f0;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;margin:-16px -16px 12px}
+    #turn-bar .date{font-size:.85rem;color:#7a6b8a;font-weight:600}
+    #turn-bar .turn-count{font-size:.75rem;color:#9b8ab8}
+    .btn-next{background:#7a6b8a;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.85rem;font-weight:700;cursor:pointer}
+    /* 総資産カード */
+    #total-card{background:linear-gradient(135deg,#9b8ab8,#7a6b8a);border-radius:16px;padding:18px;color:#fff;margin-bottom:12px}
+    #total-card .label{font-size:.78rem;opacity:.8;margin-bottom:4px}
+    #total-card .amount{font-size:1.9rem;font-weight:800}
+    #total-card .change{font-size:.9rem;margin-top:4px}
+    /* 銘柄カード */
+    .asset-card{background:#fff;border-radius:14px;padding:13px;box-shadow:0 2px 8px rgba(107,91,122,.1);border-left:4px solid #ccc;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:transform .1s}
+    .asset-card:active{transform:scale(.98)}
+    .asset-emoji{font-size:1.6rem}
+    .asset-info{flex:1}
+    .asset-name{font-size:.88rem;font-weight:700;color:#4a3a5a}
+    .asset-type{font-size:.7rem;padding:2px 6px;border-radius:6px;color:#fff;display:inline-block;margin-top:2px}
+    .asset-price-col{text-align:right}
+    .asset-price{font-size:1rem;font-weight:700;color:#4a3a5a}
+    .asset-change{font-size:.8rem}
+    /* 保有欄 */
+    .holding-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0e8f8}
+    .holding-row:last-child{border-bottom:none}
+    .holding-name{font-size:.85rem;font-weight:600;color:#4a3a5a}
+    .holding-units{font-size:.75rem;color:#9b8ab8}
+    .holding-val{text-align:right}
+    .holding-total{font-size:.9rem;font-weight:700;color:#4a3a5a}
+    .holding-pl{font-size:.75rem}
+    /* 詳細画面 */
+    #detail-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    #detail-emoji{font-size:2rem}
+    #detail-name{font-size:1.1rem;font-weight:800;color:#4a3a5a}
+    #detail-price{font-size:1.5rem;font-weight:800;color:#4a3a5a}
+    #detail-change{font-size:.9rem;margin-left:6px}
+    canvas{width:100%;height:130px;display:block;border-radius:10px;background:#faf8fd}
+    .period-tabs{display:flex;gap:6px;margin:8px 0}
+    .period-tab{background:#e8e0f0;border:none;border-radius:6px;padding:4px 10px;font-size:.78rem;color:#7a6b8a;cursor:pointer}
+    .period-tab.active{background:#7a6b8a;color:#fff}
+    .risk-bar{display:flex;gap:3px;margin-top:4px}
+    .risk-dot{width:12px;height:12px;border-radius:50%;background:#e8e0f0}
+    .risk-dot.filled{background:#e8734a}
+    /* 売買UI */
+    .trade-section{margin-top:12px}
+    .qty-row{display:flex;align-items:center;gap:10px;justify-content:center;margin:10px 0}
+    .qty-btn{width:38px;height:38px;border-radius:50%;border:2px solid #9b8ab8;background:#fff;font-size:1.2rem;color:#7a6b8a;cursor:pointer;font-weight:700}
+    #detail-qty{width:70px;text-align:center;font-size:1.1rem;font-weight:700;border:2px solid #e8e0f0;border-radius:8px;padding:6px}
+    .trade-summary{background:#f5f0fa;border-radius:10px;padding:10px;font-size:.85rem;color:#6b5b7a;margin-bottom:10px}
+    .trade-summary span{font-weight:700;color:#4a3a5a}
+    .trade-btns{display:flex;gap:8px}
+    .warn-box{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:8px;font-size:.8rem;color:#7a5c00;margin-bottom:8px}
+    /* モーダル */
+    .modal{display:none;position:fixed;inset:0;background:rgba(107,91,122,.5);z-index:200;align-items:center;justify-content:center;padding:20px}
+    .modal.open{display:flex}
+    .modal-box{background:#fff;border-radius:20px;padding:22px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(107,91,122,.25)}
+    .modal-title{font-size:1.1rem;font-weight:800;color:#4a3a5a;margin-bottom:8px}
+    .modal-body{font-size:.9rem;color:#6b5b7a;line-height:1.6;margin-bottom:8px}
+    .lesson-box{background:#f0f8ff;border-radius:10px;padding:10px;font-size:.85rem;color:#2c5f8a;margin:8px 0;border-left:3px solid #4a9b8a}
+    .lesson-box strong{display:block;margin-bottom:2px;color:#2c5f8a}
+    /* 結果画面 */
+    .result-hero{background:linear-gradient(135deg,#9b8ab8,#6b5b7a);border-radius:16px;padding:22px;color:#fff;text-align:center;margin-bottom:14px}
+    .stars{font-size:1.8rem;margin-bottom:6px}
+    .result-amount{font-size:2rem;font-weight:800}
+    .result-pct{font-size:1rem;margin-top:4px;opacity:.9}
+    .compare-box{background:#e8f5e9;border-radius:12px;padding:12px;margin-bottom:10px}
+    .compare-label{font-size:.78rem;color:#2e7d32;margin-bottom:4px}
+    .compare-val{font-size:1.1rem;font-weight:700;color:#2e7d32}
+    .tip-item{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #f0e8f8;font-size:.85rem;color:#6b5b7a}
+    .tip-item:last-child{border-bottom:none}
+    .tip-icon{font-size:1.2rem;flex-shrink:0}
+    #screen-title .hero{text-align:center;padding:10px 0 16px}
+    #screen-title .hero .emoji{font-size:3.5rem;display:block;margin-bottom:8px}
+    #screen-title .hero p{color:#7a6b8a;font-size:.9rem;line-height:1.5}
+    .type-stock{background:#e8734a}
+    .type-index{background:#4a9b8a}
+    .type-bond{background:#4a7ab8}
+    .type-gold{background:#c8a832}
+    .section-title{font-size:.82rem;font-weight:700;color:#9b8ab8;letter-spacing:.05em;margin-bottom:6px;text-transform:uppercase}
+    #div-notice{background:#fffbcc;border-radius:8px;padding:8px;font-size:.82rem;color:#6b5000;margin-bottom:8px;display:none}
+    .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700}
+    .phase-bull{background:#d4edda;color:#155724}
+    .phase-bear{background:#f8d7da;color:#721c24}
+    .phase-neutral{background:#e8e0f0;color:#6b5b7a}
+  </style>
+</head>
+<body>
+
+<!-- タイトル画面 -->
+<div id="screen-title" class="screen active">
+  <div class="hero">
+    <span class="emoji">📈</span>
+    <h1>投資シミュレーター</h1>
+    <p>100万円を運用して資産を増やそう！<br>1ヶ月ずつ進めながら投資を学べるゲームです</p>
+  </div>
+  <details class="how-to-play card">
+    <summary style="font-weight:700;color:#7a6b8a;cursor:pointer;padding:2px 0">📖 遊び方</summary>
+    <div style="margin-top:10px;font-size:.85rem;color:#6b5b7a;line-height:1.7">
+      <p>① <strong>100万円</strong>でスタート。5種類の資産から好きなものを買おう</p>
+      <p>② 「<strong>次の月へ</strong>」ボタンで1ヶ月進む。価格は毎月変わる</p>
+      <p>③ <strong>ニュース</strong>で価格変動の理由がわかる。投資の勉強になるよ</p>
+      <p>④ <strong>12ヶ月後</strong>（1年後）の総資産でスコアが決まる</p>
+      <p>💡 分散投資・長期投資・リスク管理を体験しよう！</p>
+    </div>
+  </details>
+  <div class="card" style="margin-bottom:12px">
+    <div class="section-title">資産の種類</div>
+    <div style="font-size:.82rem;line-height:1.8;color:#6b5b7a">
+      <div>🎮 <strong>ゲーム株</strong>・🏦 <strong>銀行株</strong> … 個別株。リスク高め</div>
+      <div>🌍 <strong>世界株インデックス</strong> … 分散投資。長期向き</div>
+      <div>📋 <strong>国債ファンド</strong> … 超安全。増えにくい</div>
+      <div>🥇 <strong>金ファンド</strong> … 株暴落時の守り</div>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="startGame()">▶ ゲームスタート</button>
+</div>
+
+<!-- メインゲーム画面 -->
+<div id="screen-game" class="screen">
+  <div id="turn-bar">
+    <div>
+      <div class="date" id="turn-date">2025年1月</div>
+      <div class="turn-count" id="turn-count">1 / 12ヶ月目</div>
+    </div>
+    <button class="btn-next" id="btn-next" onclick="nextTurn()">次の月へ ▶</button>
+  </div>
+
+  <div id="div-notice">💰 配当金を受け取りました！</div>
+
+  <div id="total-card">
+    <div class="label">総資産</div>
+    <div class="amount" id="total-amount">¥1,000,000</div>
+    <div class="change" id="total-change">スタート</div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <span class="section-title" style="margin:0">銘柄一覧</span>
+    <span id="phase-badge" class="badge phase-neutral">通常相場</span>
+  </div>
+  <div id="asset-list"></div>
+
+  <div class="card" id="holdings-card" style="display:none">
+    <div class="section-title">保有中の資産</div>
+    <div id="holdings-list"></div>
+  </div>
+</div>
+
+<!-- 銘柄詳細 + 売買画面 -->
+<div id="screen-detail" class="screen">
+  <button class="btn" style="margin-bottom:12px;width:fit-content" onclick="showScreen('screen-game')">← 戻る</button>
+  <div id="detail-header">
+    <span id="detail-emoji"></span>
+    <div>
+      <div id="detail-name"></div>
+      <div>
+        <span id="detail-price"></span>
+        <span id="detail-change"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:10px">
+    <div class="period-tabs">
+      <button class="period-tab active" onclick="setPeriod(3,this)">3ヶ月</button>
+      <button class="period-tab" onclick="setPeriod(6,this)">6ヶ月</button>
+      <button class="period-tab" onclick="setPeriod(0,this)">全期間</button>
+    </div>
+    <canvas id="price-chart" width="460" height="130"></canvas>
+  </div>
+
+  <div class="card">
+    <div id="detail-desc" style="font-size:.85rem;color:#6b5b7a;margin-bottom:8px"></div>
+    <div style="font-size:.8rem;color:#9b8ab8;margin-bottom:3px">リスク</div>
+    <div class="risk-bar" id="detail-risk"></div>
+    <div style="font-size:.8rem;color:#9b8ab8;margin-top:8px">配当利回り（年）: <span id="detail-div" style="color:#4a3a5a;font-weight:700"></span></div>
+  </div>
+
+  <div id="holding-info" class="card" style="display:none">
+    <div class="section-title">保有情報</div>
+    <div id="holding-detail"></div>
+  </div>
+
+  <div class="card trade-section">
+    <div class="section-title">売買</div>
+    <div id="warn-msg" class="warn-box" style="display:none"></div>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <input type="number" id="detail-qty" value="1" min="1" oninput="updateTradeSummary()">
+      <span style="font-size:.85rem;color:#7a6b8a">口</span>
+      <button class="qty-btn" onclick="changeQty(1)">＋</button>
+    </div>
+    <div class="trade-summary" id="trade-summary"></div>
+    <div class="trade-btns">
+      <button class="btn-buy" onclick="executeTrade('buy')">🛒 買う</button>
+      <button class="btn-sell" onclick="executeTrade('sell')">💰 売る</button>
+    </div>
+  </div>
+</div>
+
+<!-- 結果画面 -->
+<div id="screen-result" class="screen">
+  <h1 style="margin-bottom:12px">🎉 1年間お疲れさま！</h1>
+  <div class="result-hero">
+    <div class="stars" id="result-stars"></div>
+    <div class="label" style="opacity:.7;font-size:.8rem">最終資産</div>
+    <div class="result-amount" id="result-amount"></div>
+    <div class="result-pct" id="result-pct"></div>
+  </div>
+  <div class="compare-box card">
+    <div class="compare-label">🌍 もし最初から世界株インデックスだけ買っていたら…</div>
+    <div class="compare-val" id="compare-val"></div>
+    <div style="font-size:.75rem;color:#555;margin-top:3px" id="compare-diff"></div>
+  </div>
+  <div class="card">
+    <div class="section-title">投資で学んだこと</div>
+    <div id="result-tips"></div>
+  </div>
+  <button class="btn-primary" onclick="resetGame()" style="margin-top:8px">🔄 もう一度プレイ</button>
+  <button class="btn" onclick="location.href='../index.html'" style="margin-top:8px;width:100%">← ゲーム一覧へ</button>
+</div>
+
+<!-- ニュースモーダル -->
+<div id="modal-news" class="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="news-title"></div>
+    <div class="modal-body" id="news-body"></div>
+    <div class="lesson-box" id="news-lesson" style="display:none">
+      <strong>💡 投資のポイント</strong>
+      <span id="news-lesson-text"></span>
+    </div>
+    <div id="news-div-info" style="display:none;background:#fffbcc;border-radius:8px;padding:8px;font-size:.82rem;color:#6b5000;margin:6px 0"></div>
+    <button class="btn-primary" onclick="closeNews()" style="margin-top:10px">つぎへ →</button>
+  </div>
+</div>
+
+
+<script>
+// ===== データ定義 =====
+const ASSETS = [
+  {id:'game',  name:'ゲーム株',         emoji:'🎮',typeLabel:'株式', type:'stock',initPrice:5000, vol:.08, drift:.004, div:.01,  risk:4,color:'#e8734a',desc:'人気ゲームが出ると大きく上がるが、失敗すると急落することもある'},
+  {id:'bank',  name:'銀行株',           emoji:'🏦',typeLabel:'株式', type:'stock',initPrice:2000, vol:.04, drift:.002, div:.03,  risk:2,color:'#e8734a',desc:'安定しているが成長は緩やか。配当が多めで収入目的に向いている'},
+  {id:'world', name:'世界株インデックス', emoji:'🌍',typeLabel:'インデックス',type:'index',initPrice:20000,vol:.035,drift:.005,div:.015,risk:2,color:'#4a9b8a',desc:'世界中の会社に分散投資するファンド。長期投資の王道とされている'},
+  {id:'bond',  name:'国債ファンド',      emoji:'📋',typeLabel:'債券',  type:'bond', initPrice:10000,vol:.008,drift:.0015,div:.01, risk:1,color:'#4a7ab8',desc:'ほぼ価格が動かない安全資産。増えにくいが資産を守るのに向いている'},
+  {id:'gold',  name:'金ファンド',        emoji:'🥇',typeLabel:'金',    type:'gold', initPrice:8000, vol:.045,drift:.002, div:0,    risk:3,color:'#c8a832',desc:'株が下がると上がることが多い守りの資産。配当は出ない'},
+];
+
+const EVENTS = [
+  {id:'crash',   title:'📉 株式市場が急落！',       body:'世界的な不安から多くの株が下がりました。',    impact:{game:-.12,bank:-.08,world:-.10,gold:.06,bond:.02},  lesson:'株が下がった時に金が上がりました。これが分散投資の効果です！'},
+  {id:'gamehit', title:'🎮 ゲーム会社が大ヒット！',  body:'新作ゲームが世界的なヒットになりました。',    impact:{game:.18},                                          lesson:'1つの株が大きく上がる一方、他は変わらず。集中投資のリスクと恩恵を考えましょう。'},
+  {id:'ratup',   title:'🏦 中央銀行が金利を引き上げ', body:'金利が上がりました。',                       impact:{bank:.07,bond:-.03,game:-.05,world:-.03},           lesson:'金利上昇は銀行株に有利ですが、成長株には不利になることがあります。'},
+  {id:'boom',    title:'🌍 世界経済が好調！',        body:'世界中の景気が良くなっています。',             impact:{game:.08,world:.06,bank:.04,bond:-.01},             lesson:'景気が良いと株全体が上がりやすくなります。インデックスはその恩恵を受けます。'},
+  {id:'nisa',    title:'📰 NISAが注目を集める',      body:'積立NISAの利用者が急増しています。',           impact:{world:.04},                                         lesson:'NISAは利益に税金がかからない国の制度。インデックス投資と組み合わせると最強！'},
+  {id:'divup',   title:'💰 増配ラッシュ！',          body:'多くの会社が配当金を増やすと発表しました。',   impact:{bank:.05,game:.03},                                 lesson:'配当金は保有しているだけでもらえるお金。配当が多い株は安定投資に向いています。'},
+];
+
+const TIPS = [
+  {icon:'🌐', text:'複数の種類の資産に分散するとリスクが下がります（分散投資）'},
+  {icon:'📅', text:'毎月少しずつ買い続けると平均の買値が安定します（ドルコスト平均法）'},
+  {icon:'🕐', text:'長く持ち続けるほど一時的な価格変動の影響が小さくなります（長期投資）'},
+  {icon:'⚖️', text:'リターンが大きい資産はリスクも大きい。自分に合ったバランスを見つけよう'},
+  {icon:'🏦', text:'NISAを使うと投資の利益に税金がかかりません（実際の日本の制度）'},
+];
+
+// ===== ゲーム状態 =====
+let prices = {};
+let priceHistory = {};
+let holdings = {};
+let cash = 1000000;
+let turn = 0;
+let marketPhase = 'neutral';
+let phaseRemaining = 4;
+let portfolioHistory = [1000000];
+let indexOnlyUnits = 0;
+let chartPeriod = 3;
+let selectedAsset = null;
+let lastDividend = 0;
+let lastEvent = null;
+
+function randNormal(){
+  let u;
+  do { u = Math.random(); } while(u === 0);
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random());
+}
+
+function fmtY(n){return '¥'+Math.round(n).toLocaleString('ja-JP');}
+function fmtPct(n){const s=n>=0?'+':'';return s+(n*100).toFixed(1)+'%';}
+function fmtChg(n){return '<span class="'+(n>=0?'up':'down')+'">'+fmtPct(n)+'</span>';}
+
+// ===== 初期化 =====
+function startGame(){
+  cash = 1000000;
+  holdings = {};
+  turn = 1;
+  marketPhase = 'neutral';
+  phaseRemaining = 4;
+  lastDividend = 0;
+  lastEvent = null;
+  priceHistory = {};
+  ASSETS.forEach(a=>{
+    prices[a.id] = a.initPrice;
+    priceHistory[a.id] = [a.initPrice];
+  });
+  portfolioHistory = [1000000];
+  indexOnlyUnits = Math.floor(1000000 / ASSETS.find(a=>a.id==='world').initPrice);
+  chartPeriod = 3;
+  showScreen('screen-game');
+  renderGame();
+}
+
+function resetGame(){
+  showScreen('screen-title');
+}
+
+// ===== 画面切り替え =====
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function showDetail(assetId){
+  selectedAsset = ASSETS.find(a=>a.id===assetId);
+  const a = selectedAsset;
+  document.getElementById('detail-emoji').textContent = a.emoji;
+  document.getElementById('detail-name').textContent = a.name;
+  document.getElementById('detail-price').textContent = fmtY(prices[a.id]);
+  const hist = priceHistory[a.id];
+  const prev = hist.length>1?hist[hist.length-2]:hist[0];
+  const chg = (prices[a.id]-prev)/prev;
+  document.getElementById('detail-change').innerHTML = fmtChg(chg);
+  document.getElementById('detail-desc').textContent = a.desc;
+  // risk dots
+  const rd = document.getElementById('detail-risk');
+  rd.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const d=document.createElement('div');
+    d.className='risk-dot'+(i<=a.risk?' filled':'');
+    rd.appendChild(d);
+  }
+  document.getElementById('detail-div').textContent = a.div>0?(a.div*100).toFixed(1)+'%':'なし';
+  // holding info
+  const h = holdings[a.id];
+  const hi = document.getElementById('holding-info');
+  if(h && h.units>0){
+    hi.style.display='';
+    const cur = prices[a.id]*h.units;
+    const cost = h.avgCost*h.units;
+    const pl = cur-cost;
+    const plpct = pl/cost;
+    document.getElementById('holding-detail').innerHTML =
+      `<div class="holding-row"><span>保有口数</span><strong>${h.units}口</strong></div>
+       <div class="holding-row"><span>平均取得単価</span><strong>${fmtY(h.avgCost)}</strong></div>
+       <div class="holding-row"><span>評価額</span><strong>${fmtY(cur)}</strong></div>
+       <div class="holding-row"><span>含み損益</span><strong class="${pl>=0?'up':'down'}">${fmtY(pl)} (${fmtPct(plpct)})</strong></div>`;
+  } else { hi.style.display='none'; }
+  document.getElementById('detail-qty').value=1;
+  updateTradeSummary();
+  chartPeriod=3;
+  document.querySelectorAll('.period-tab').forEach((t,i)=>{t.classList.toggle('active',i===0);});
+  drawChart();
+  showScreen('screen-detail');
+}
+
+
+// ===== チャート =====
+function drawChart(){
+  if(!selectedAsset) return;
+  const canvas = document.getElementById('price-chart');
+  const data = priceHistory[selectedAsset.id];
+  const slice = chartPeriod>0 ? data.slice(-chartPeriod-1) : data;
+  if(slice.length<2){return;}
+  const dpr = window.devicePixelRatio||1;
+  const W = canvas.offsetWidth||460;
+  const H = 130;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const PAD={t:8,b:22,l:52,r:8};
+  const dW=W-PAD.l-PAD.r, dH=H-PAD.t-PAD.b;
+  const mn=Math.min(...slice)*.98, mx=Math.max(...slice)*1.02;
+  const tx=i=>PAD.l+i/(slice.length-1)*dW;
+  const ty=v=>PAD.t+(1-(v-mn)/(mx-mn))*dH;
+  const isUp=slice[slice.length-1]>=slice[0];
+  const lc=isUp?'#4a9b8a':'#e8734a';
+  ctx.clearRect(0,0,W,H);
+  // gradient
+  const grad=ctx.createLinearGradient(0,PAD.t,0,H-PAD.b);
+  grad.addColorStop(0,isUp?'rgba(74,155,138,.22)':'rgba(232,115,74,.22)');
+  grad.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath();
+  slice.forEach((v,i)=>i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v)));
+  ctx.lineTo(tx(slice.length-1),H-PAD.b);
+  ctx.lineTo(tx(0),H-PAD.b);
+  ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+  // line
+  ctx.beginPath(); ctx.strokeStyle=lc; ctx.lineWidth=2;
+  slice.forEach((v,i)=>i===0?ctx.moveTo(tx(i),ty(v)):ctx.lineTo(tx(i),ty(v)));
+  ctx.stroke();
+  // y labels
+  ctx.fillStyle='#9b8ab8'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+  [[mn,'b'],[mx,'t']].forEach(([v])=>ctx.fillText('¥'+Math.round(v).toLocaleString(),PAD.l-3,ty(v)+4));
+  // current dot
+  const lx=tx(slice.length-1),ly=ty(slice[slice.length-1]);
+  ctx.beginPath(); ctx.arc(lx,ly,4,0,Math.PI*2);
+  ctx.fillStyle=lc; ctx.fill();
+}
+
+function setPeriod(p,el){
+  chartPeriod=p;
+  document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  drawChart();
+}
+
+// ===== 売買 =====
+function changeQty(d){
+  const el=document.getElementById('detail-qty');
+  el.value=Math.max(1,(parseInt(el.value)||1)+d);
+  updateTradeSummary();
+}
+
+function updateTradeSummary(){
+  if(!selectedAsset) return;
+  const qty=parseInt(document.getElementById('detail-qty').value)||1;
+  const a=selectedAsset;
+  const total=prices[a.id]*qty;
+  const h=holdings[a.id];
+  const owned=h?h.units:0;
+  document.getElementById('trade-summary').innerHTML=
+    `<div>1口の値段: <span>${fmtY(prices[a.id])}</span></div>
+     <div>合計金額: <span>${fmtY(total)}</span></div>
+     <div>手持ち現金: <span>${fmtY(cash)}</span></div>
+     <div>保有口数: <span>${owned}口</span></div>`;
+  const wm=document.getElementById('warn-msg');
+  if(total>cash*0.6 && owned===0){
+    wm.style.display='';
+    wm.textContent='⚠️ 1つの資産に集中するとリスクが高くなります。分散投資を考えてみよう！';
+  } else { wm.style.display='none'; }
+}
+
+function executeTrade(action){
+  if(!selectedAsset) return;
+  const qty=parseInt(document.getElementById('detail-qty').value)||1;
+  const a=selectedAsset;
+  const price=prices[a.id];
+  if(action==='buy'){
+    const cost=price*qty;
+    if(cost>cash){alert('お金が足りません！\n必要額: '+fmtY(cost)+'\n手持ち: '+fmtY(cash));return;}
+    cash-=cost;
+    if(!holdings[a.id]) holdings[a.id]={units:0,avgCost:price};
+    const h=holdings[a.id];
+    const tot=h.units+qty;
+    h.avgCost=(h.avgCost*h.units+price*qty)/tot;
+    h.units=tot;
+    alert('✅ '+a.name+'を'+qty+'口 買いました！\n合計: '+fmtY(cost));
+  } else {
+    const h=holdings[a.id];
+    if(!h||h.units<qty){alert('保有口数が足りません！\n保有: '+(h?h.units:0)+'口');return;}
+    const proceeds=price*qty;
+    const pl=(price-h.avgCost)*qty;
+    cash+=proceeds;
+    h.units-=qty;
+    if(h.units===0) delete holdings[a.id];
+    alert('💰 '+a.name+'を'+qty+'口 売りました！\n売却額: '+fmtY(proceeds)+'\n損益: '+(pl>=0?'+':'')+fmtY(pl));
+  }
+  showDetail(a.id);
+  renderGame();
+}
+
+// ===== ターン進行 =====
+function nextTurn(){
+  if(turn>12) return;
+  // マーケットフェーズ更新
+  phaseRemaining--;
+  if(phaseRemaining<=0){
+    const r=Math.random();
+    if(r<.45){marketPhase='bull';phaseRemaining=3+Math.floor(Math.random()*4);}
+    else if(r<.75){marketPhase='neutral';phaseRemaining=2+Math.floor(Math.random()*4);}
+    else{marketPhase='bear';phaseRemaining=2+Math.floor(Math.random()*3);}
+  }
+  const pm={bull:1.6,neutral:1.0,bear:.1}[marketPhase];
+  // イベント選択
+  lastEvent = Math.random()<.25 ? EVENTS[Math.floor(Math.random()*EVENTS.length)] : null;
+  // 価格更新
+  ASSETS.forEach(a=>{
+    const chg=a.drift*pm+a.vol*randNormal();
+    const evImp=lastEvent&&lastEvent.impact[a.id]?lastEvent.impact[a.id]:0;
+    prices[a.id]=Math.max(prices[a.id]*(1+chg+evImp), a.initPrice*.08);
+    priceHistory[a.id].push(Math.round(prices[a.id]));
+  });
+  // 配当 (3ターンごと)
+  lastDividend=0;
+  if(turn%3===0){
+    ASSETS.forEach(a=>{
+      if(!a.div||!holdings[a.id]||!holdings[a.id].units) return;
+      const d=Math.floor(prices[a.id]*a.div/4*holdings[a.id].units);
+      cash+=d; lastDividend+=d;
+    });
+  }
+  portfolioHistory.push(calcTotal());
+  turn++;
+  renderGame();
+  showNewsModal();
+  if(turn>12) setTimeout(showResult,300);
+}
+
+function calcTotal(){
+  let t=cash;
+  ASSETS.forEach(a=>{if(holdings[a.id]) t+=prices[a.id]*holdings[a.id].units;});
+  return t;
+}
+
+
+// ===== 画面描画 =====
+function renderGame(){
+  // ターンバー
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const yr=2025+Math.floor((turn-1)/12);
+  const mn=months[(turn-1)%12];
+  document.getElementById('turn-date').textContent=yr+'年'+mn;
+  document.getElementById('turn-count').textContent=turn+' / 12ヶ月目';
+  document.getElementById('btn-next').disabled=turn>12;
+  // 総資産
+  const total=calcTotal();
+  const startVal=1000000;
+  const chg=(total-startVal)/startVal;
+  document.getElementById('total-amount').textContent=fmtY(total);
+  const chgEl=document.getElementById('total-change');
+  if(turn===1&&portfolioHistory.length===1){chgEl.textContent='スタート';}
+  else{
+    const prev=portfolioHistory[portfolioHistory.length-2]||startVal;
+    const mc=(total-prev)/prev;
+    chgEl.innerHTML='今月 '+fmtChg(mc)+' ／ 通算 '+fmtChg(chg);
+  }
+  // フェーズバッジ
+  const pb=document.getElementById('phase-badge');
+  pb.className='badge phase-'+marketPhase;
+  pb.textContent={bull:'強気相場 🔥',bear:'弱気相場 ❄️',neutral:'通常相場'}[marketPhase];
+  // 配当通知
+  const dn=document.getElementById('div-notice');
+  if(lastDividend>0){dn.style.display='';dn.textContent='💰 配当金 '+fmtY(lastDividend)+' を受け取りました！（3ヶ月分）';}
+  else{dn.style.display='none';}
+  // 銘柄リスト
+  const al=document.getElementById('asset-list');
+  al.innerHTML='';
+  ASSETS.forEach(a=>{
+    const hist=priceHistory[a.id];
+    const prev=hist.length>1?hist[hist.length-2]:hist[0];
+    const chgRate=(prices[a.id]-prev)/prev;
+    const owned=holdings[a.id]&&holdings[a.id].units>0;
+    const el=document.createElement('div');
+    el.className='asset-card';
+    el.style.borderLeftColor=a.color;
+    el.innerHTML=
+      `<span class="asset-emoji">${a.emoji}</span>
+       <div class="asset-info">
+         <div class="asset-name">${a.name}${owned?'<span style="color:#4a9b8a;font-size:.7rem;margin-left:4px">●保有</span>':''}</div>
+         <span class="asset-type type-${a.type}">${a.typeLabel}</span>
+       </div>
+       <div class="asset-price-col">
+         <div class="asset-price">${fmtY(prices[a.id])}</div>
+         <div class="asset-change">${fmtChg(chgRate)}</div>
+       </div>`;
+    el.onclick=()=>showDetail(a.id);
+    al.appendChild(el);
+  });
+  // 保有一覧
+  const keys=Object.keys(holdings).filter(k=>holdings[k].units>0);
+  const hc=document.getElementById('holdings-card');
+  const hl=document.getElementById('holdings-list');
+  if(keys.length===0){hc.style.display='none';}
+  else{
+    hc.style.display='';
+    hl.innerHTML='';
+    keys.forEach(id=>{
+      const a=ASSETS.find(x=>x.id===id);
+      const h=holdings[id];
+      const cur=prices[id]*h.units;
+      const cost=h.avgCost*h.units;
+      const pl=cur-cost;
+      const plpct=pl/cost;
+      hl.innerHTML+=
+        `<div class="holding-row">
+           <div><div class="holding-name">${a.emoji} ${a.name}</div><div class="holding-units">${h.units}口</div></div>
+           <div class="holding-val">
+             <div class="holding-total">${fmtY(cur)}</div>
+             <div class="holding-pl ${pl>=0?'up':'down'}">${pl>=0?'+':''}${fmtY(pl)} (${fmtPct(plpct)})</div>
+           </div>
+         </div>`;
+    });
+  }
+}
+
+// ===== ニュースモーダル =====
+function showNewsModal(){
+  const ev=lastEvent;
+  if(ev){
+    document.getElementById('news-title').textContent=ev.title;
+    document.getElementById('news-body').textContent=ev.body;
+    const ll=document.getElementById('news-lesson');
+    ll.style.display='';
+    document.getElementById('news-lesson-text').textContent=ev.lesson;
+  } else {
+    const tips=TIPS;
+    const t=tips[(turn-1)%tips.length];
+    document.getElementById('news-title').textContent='💡 今月のヒント';
+    document.getElementById('news-body').textContent='';
+    const ll=document.getElementById('news-lesson');
+    ll.style.display='';
+    document.getElementById('news-lesson-text').textContent=t.text;
+  }
+  const di=document.getElementById('news-div-info');
+  if(lastDividend>0){di.style.display='';di.textContent='💰 配当金 '+fmtY(lastDividend)+' を受け取りました！';}
+  else{di.style.display='none';}
+  document.getElementById('modal-news').classList.add('open');
+}
+
+function closeNews(){
+  document.getElementById('modal-news').classList.remove('open');
+  if(turn>12) showResult();
+}
+
+// ===== 結果 =====
+function showResult(){
+  showScreen('screen-result');
+  const total=calcTotal();
+  const pl=total-1000000;
+  const plpct=pl/1000000;
+  const stars=plpct<0?'⭐':plpct<.1?'⭐⭐':plpct<.3?'⭐⭐⭐':plpct<.6?'⭐⭐⭐⭐':'⭐⭐⭐⭐⭐';
+  document.getElementById('result-stars').textContent=stars;
+  document.getElementById('result-amount').textContent=fmtY(total);
+  document.getElementById('result-pct').textContent='利益: '+(pl>=0?'+':'')+fmtY(pl)+' ('+fmtPct(plpct)+')';
+  // インデックス比較
+  const idxVal=indexOnlyUnits*prices['world'];
+  const idxPl=idxVal-1000000;
+  document.getElementById('compare-val').textContent=fmtY(idxVal)+' ('+fmtPct(idxPl/1000000)+')';
+  const diff=total-idxVal;
+  document.getElementById('compare-diff').textContent=
+    diff>=0?'あなたの方が '+fmtY(diff)+' 多い！':'インデックスの方が '+fmtY(-diff)+' 多い';
+  // ヒント
+  const tipsEl=document.getElementById('result-tips');
+  tipsEl.innerHTML=TIPS.map(t=>`<div class="tip-item"><span class="tip-icon">${t.icon}</span><span>${t.text}</span></div>`).join('');
+}
+
+// ===== 起動 =====
+document.addEventListener('DOMContentLoaded',()=>{
+  // タイトル画面表示のみ
+});
+</script>
+</body>
+</html>
