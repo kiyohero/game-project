@@ -519,6 +519,16 @@
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
     }
+
+    #hidden-input {
+      position: fixed;
+      top: -999px;
+      left: -999px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -602,6 +612,7 @@
   </div>
 
   <div id="vkbd"></div>
+  <input id="hidden-input" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true" tabindex="-1">
 </div>
 
 <!-- ========== COMPLETE OVERLAY ========== -->
@@ -1114,6 +1125,8 @@
       }
     }
     applyHighlight();
+  var _hi = document.getElementById('hidden-input');
+  if (_hi) { try { _hi.focus(); } catch(e) {} }
     updateCluePanel();
     updateClueListHighlight();
   }
@@ -1380,6 +1393,62 @@
   });
 
   // =====================================================================
+  // iOS SOFTWARE KEYBOARD SUPPORT (hidden input)
+  // =====================================================================
+  (function() {
+    var hi = document.getElementById('hidden-input');
+    if (!hi) return;
+    var composing = false;
+
+    hi.addEventListener('compositionstart', function() {
+      composing = true;
+    });
+
+    hi.addEventListener('compositionend', function(e) {
+      composing = false;
+      var text = e.data || '';
+      hi.value = '';
+      if (!$('game-screen').classList.contains('active')) return;
+      for (var i = 0; i < text.length; i++) {
+        var ch = text[i];
+        if (/[\u3041-\u3096ー]/.test(ch)) {
+          state.romajiBuffer = '';
+          inputKana(ch);
+        }
+      }
+    });
+
+    hi.addEventListener('input', function() {
+      if (composing) return;
+      if (!$('game-screen').classList.contains('active')) return;
+      var text = hi.value;
+      hi.value = '';
+      if (!text) return;
+      for (var i = 0; i < text.length; i++) {
+        var ch = text[i];
+        if (/[\u3041-\u3096ー]/.test(ch)) {
+          state.romajiBuffer = '';
+          inputKana(ch);
+        } else if (ch.length === 1) {
+          processRomajiKey(ch);
+        }
+      }
+    });
+
+    hi.addEventListener('keydown', function(e) {
+      if (!$('game-screen').classList.contains('active')) return;
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        state.romajiBuffer = '';
+        deleteChar();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        moveToNextWord(1);
+      }
+    });
+  })();
+
+  // =====================================================================
   // CHECK WORD
   // =====================================================================
   function checkWordComplete(wordId, callback) {
@@ -1598,7 +1667,8 @@
         var key = document.createElement('button');
         key.className = 'vkbd-key vkbd-delete';
         key.textContent = '← けす';
-        key.addEventListener('click', function() {
+        key.addEventListener('pointerdown', function(e) {
+          e.preventDefault();
           state.romajiBuffer = '';
           deleteChar();
         });
@@ -1611,8 +1681,9 @@
           } else {
             key.className = 'vkbd-key';
             key.textContent = ch;
-            key.addEventListener('click', (function(kana) {
-              return function() {
+            key.addEventListener('pointerdown', (function(kana) {
+              return function(e) {
+                e.preventDefault();
                 state.romajiBuffer = '';
                 inputKana(kana);
               };
