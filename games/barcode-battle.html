@@ -1123,13 +1123,14 @@
     // =====================
     // Battle utilities
     // =====================
-    function calcDamage(attacker, move, defender) {
+    function calcDamage(attacker, move, defender, isCpu) {
       const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][defender.type]) || 1;
-      const raw = Math.max(3, Math.round(
+      const raw = Math.max(5, Math.round(
         attacker.atk * move.power / 15 * eff - defender.def / 2 + (Math.random() * 6 - 3)
       ));
-      // 1発のダメージを最大HPの30%以下に制限（最低3ターン保証）
-      return Math.min(raw, Math.round(defender.maxHp * 0.30));
+      // プレイヤーは40%キャップ（強め）、CPUは15%キャップ（弱め）
+      const cap = isCpu ? 0.15 : 0.40;
+      return Math.min(raw, Math.round(defender.maxHp * cap));
     }
 
     function typeEffMsg(eff) {
@@ -1439,7 +1440,7 @@
 
       const move = playerChar.moves[moveIndex];
       const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][cpuChar.type]) || 1;
-      const dmg = calcDamage(playerChar, move, cpuChar);
+      const dmg = calcDamage(playerChar, move, cpuChar, false);
       cpuChar.hp = Math.max(0, cpuChar.hp - dmg);
 
       addLog(playerChar.name + ' の ' + move.name + '！', '#a8d8ff');
@@ -1475,7 +1476,7 @@
       let bestDmg = -1;
       cpuChar.moves.forEach(move => {
         const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][playerChar.type]) || 1;
-        const estDmg = Math.min(cpuChar.atk * move.power / 15 * eff - playerChar.def / 2, playerChar.maxHp * 0.30);
+        const estDmg = Math.min(cpuChar.atk * move.power / 15 * eff - playerChar.def / 2, playerChar.maxHp * 0.15);
         if (estDmg > bestDmg) {
           bestDmg = estDmg;
           bestMove = move;
@@ -1487,7 +1488,7 @@
     function doCpuAttack() {
       const move = selectCpuMove();
       const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][playerChar.type]) || 1;
-      const dmg = calcDamage(cpuChar, move, playerChar);
+      const dmg = calcDamage(cpuChar, move, playerChar, true);
       playerChar.hp = Math.max(0, playerChar.hp - dmg);
 
       addLog(cpuChar.name + ' の ' + move.name + '！', '#ffb3b3');
@@ -1608,7 +1609,7 @@
       if (resetHp === undefined) resetHp = true;
       cpuChar = generateCharacter(String(Date.now() + Math.floor(Math.random() * 99999)));
       // CPUは攻撃力を抑えて複数ターン続くように調整
-      cpuChar.atk = Math.max(5, Math.round(cpuChar.atk * 0.65));
+      cpuChar.atk = Math.max(4, Math.round(cpuChar.atk * 0.45));
       if (resetHp) playerChar.hp = playerChar.maxHp;
       cpuChar.hp = cpuChar.maxHp;
       turnCount = 0;
