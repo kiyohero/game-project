@@ -246,7 +246,103 @@
       font-size: 1.1rem;
       font-weight: bold;
       color: #6b5b7a;
-      margin: 12px 0;
+      margin: 8px 0 4px;
+    }
+
+    /* スタミナ表示 */
+    .stamina-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 6px 0 10px;
+      font-size: 0.85rem;
+      color: #6b5b7a;
+      font-weight: bold;
+    }
+    .stamina-icon {
+      font-size: 1.2rem;
+      transition: opacity 0.3s;
+    }
+    .stamina-icon.empty { opacity: 0.25; filter: grayscale(1); }
+
+    /* 勝利/敗北アクション */
+    .result-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    .btn-continue {
+      background: linear-gradient(135deg, #e67e22, #f39c12);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-continue:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .btn-support {
+      background: linear-gradient(135deg, #8e44ad, #6c3483);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    /* サポートUI */
+    .support-ui-box {
+      background: #f8f0ff;
+      border-radius: 14px;
+      padding: 16px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .support-ui-box h3 {
+      color: #6b5b7a;
+      font-size: 1rem;
+      margin: 0 0 10px;
+      text-align: center;
+    }
+    .support-char-card {
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      margin: 10px 0;
+      border: 2px solid #9b8ab8;
+    }
+    .support-char-emoji { font-size: 2.5rem; display: block; }
+    .support-char-name { font-size: 0.9rem; font-weight: bold; color: #6b5b7a; margin: 4px 0; }
+    .support-buff-text {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #e67e22;
+      text-align: center;
+      margin: 6px 0;
+    }
+
+    /* バトル画面スタミナゲージ */
+    .battle-stamina {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #9b8ab8;
+      margin-bottom: 4px;
     }
 
     .wins-box {
@@ -398,31 +494,356 @@
     .shake {
       animation: shake 0.5s ease;
     }
+
+    /* ===========================
+       スキャン画面 ビックリマン演出
+       =========================== */
+
+    /* 星のキーフレーム */
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0)   rotate(0deg);   opacity: 0.7; }
+      100% { transform: translateY(-80px) rotate(20deg); opacity: 0; }
+    }
+    @keyframes rainbow {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes scanPulse {
+      0%, 100% { box-shadow: 0 0 12px 2px #ffd700, 0 0 30px 6px #ff8c00; }
+      50%       { box-shadow: 0 0 24px 6px #ffd700, 0 0 60px 16px #ff4500; }
+    }
+    @keyframes barFlicker {
+      0%, 100% { opacity: 1; }
+      45%       { opacity: 0.85; }
+      50%       { opacity: 1; }
+    }
+    @keyframes heroFloat {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-6px); }
+    }
+    @keyframes shine {
+      0%   { left: -100%; }
+      60%  { left: 130%; }
+      100% { left: 130%; }
+    }
+
+    /* スキャン画面ラッパー */
+    #screen-scan {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at top, #1a003a 0%, #0a0020 60%, #000014 100%);
+      margin: -10px;
+      padding: 12px 14px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 星パーティクル */
+    .stars-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--d, 2s) ease-in-out infinite;
+      animation-delay: var(--del, 0s);
+    }
+
+    /* フローティング絵文字 */
+    .float-chars {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .fchar {
+      position: absolute;
+      font-size: 1.4rem;
+      opacity: 0.6;
+      animation: floatUp 4s ease-in infinite;
+      animation-delay: var(--del, 0s);
+    }
+
+    /* 勝利数バッジ（スキャン画面用） */
+    #screen-scan .wins-box {
+      position: relative;
+      display: inline-flex;
+      gap: 10px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,215,0,0.4);
+      color: #ffd700;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      z-index: 10;
+      margin-bottom: 6px;
+    }
+
+    /* レインボータイトル */
+    .hero-title {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      margin: 0 0 4px;
+    }
+    .hero-title-main {
+      font-size: 2.1rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      background: linear-gradient(90deg, #ff0080, #ff8c00, #ffe600, #00e676, #00b0ff, #7c4dff, #ff0080);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: rainbow 3s ease infinite;
+      line-height: 1.1;
+      text-shadow: none;
+      filter: drop-shadow(0 0 8px rgba(255,220,0,0.7));
+    }
+    .hero-title-sub {
+      font-size: 0.75rem;
+      color: #ffd700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    /* キャラクターASCIIアート */
+    .ascii-stage {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      margin: 6px 0 4px;
+    }
+    .ascii-barcode {
+      font-family: 'Courier New', monospace;
+      font-size: 0.58rem;
+      line-height: 1;
+      color: #b0b8ff;
+      letter-spacing: 0.06em;
+      animation: barFlicker 4s ease infinite;
+      display: block;
+      text-align: center;
+    }
+    .ascii-hero-row {
+      font-size: 0.9rem;
+      letter-spacing: 0.15em;
+      animation: heroFloat 2.5s ease-in-out infinite;
+      display: block;
+      margin: 2px 0;
+    }
+    .ascii-hero-emoji {
+      font-size: 2.6rem;
+      animation: heroFloat 2.8s ease-in-out infinite;
+      display: inline-block;
+      filter: drop-shadow(0 0 10px rgba(255,200,0,0.9));
+    }
+    .vs-text {
+      font-size: 1rem;
+      font-weight: 900;
+      color: #ff4444;
+      text-shadow: 0 0 8px #ff0000;
+      letter-spacing: 0.15em;
+      animation: twinkle 1s ease-in-out infinite;
+    }
+    .catchcopy {
+      font-size: 0.8rem;
+      color: #ffe066;
+      text-align: center;
+      margin: 4px 0 8px;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 6px rgba(255,220,0,0.6);
+      position: relative;
+      z-index: 10;
+    }
+
+    /* スキャンボタン（でかい・光る） */
+    .scan-hero-btn {
+      position: relative;
+      z-index: 10;
+      display: block;
+      width: 100%;
+      padding: 18px 0;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #1a001a;
+      background: linear-gradient(135deg, #ffd700 0%, #ff8c00 50%, #ffd700 100%);
+      background-size: 200% 200%;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      animation: rainbow 2s ease infinite, scanPulse 2s ease-in-out infinite;
+      overflow: hidden;
+    }
+    .scan-hero-btn::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      animation: shine 2.5s ease-in-out infinite;
+    }
+    .scan-hero-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* または区切り */
+    .or-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 8px;
+      position: relative;
+      z-index: 10;
+    }
+    .or-row::before, .or-row::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.2);
+    }
+    .or-row span {
+      color: rgba(255,255,255,0.45);
+      font-size: 0.75rem;
+    }
+
+    /* 手入力エリア */
+    .manual-row {
+      display: flex;
+      gap: 8px;
+      position: relative;
+      z-index: 10;
+    }
+    .manual-row input {
+      flex: 1;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      color: #fff;
+      outline: none;
+    }
+    .manual-row input::placeholder { color: rgba(255,255,255,0.4); }
+    .manual-row input:focus { border-color: rgba(255,215,0,0.6); }
+    .manual-row button {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .manual-row button:active { opacity: 0.7; }
+
+    .hint-dark {
+      text-align: center;
+      color: rgba(255,255,255,0.35);
+      font-size: 0.7rem;
+      margin: 8px 0 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 8px 0;
+      position: relative;
+      z-index: 10;
+    }
+    .camera-error-dark {
+      color: #ff6b6b;
+      font-size: 0.82rem;
+      text-align: center;
+      margin: 6px 0;
+      position: relative;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Screen 1: スキャン画面 -->
-  <div id="screen-scan" style="display:block; position:relative;">
+  <!-- Screen 1: スキャン画面 (ビックリマン世界観) -->
+  <div id="screen-scan" style="display:block;">
+
+    <!-- 星パーティクル -->
+    <div class="stars-layer" id="starsLayer"></div>
+    <!-- フローティングキャラ -->
+    <div class="float-chars" id="floatChars"></div>
+
+    <!-- 勝利数・レベル -->
     <div class="wins-box" id="wins-box">
-      🏆 <span id="wins-count">0</span>勝
+      🏆 <span id="wins-count">0</span>勝　⭐ Lv.<span id="player-level">0</span>
     </div>
-    <h1>📦 バーコードバトル</h1>
 
-    <div class="card">
-      <button class="btn-primary" id="startCameraBtn">📷 カメラでスキャン</button>
-      <div id="reader" style="display:none;"></div>
-      <div id="camera-error" class="error-msg" style="display:none;"></div>
+    <!-- レインボータイトル -->
+    <div class="hero-title">
+      <div class="hero-title-sub">◆ BARCODE BATTLE ◆</div>
+      <div class="hero-title-main">バーコード<br>バトル！！</div>
+    </div>
 
-      <div class="or-divider">または</div>
-
-      <div class="manual-input-row">
-        <input type="text" id="manualInput" placeholder="バーコードの数字を入力..." inputmode="numeric">
-        <button class="btn-secondary" id="manualBtn">🎮 この数字で遊ぶ</button>
+    <!-- ASCIIアートステージ -->
+    <div class="ascii-stage">
+      <span class="ascii-barcode">
+║│║║│║│║│║║║│║║║│║║║│║║│║║║│║║║│║║│║║║│║║║│║║
+║│║║│║│║│║║║│║║║│║║║│║║│║║║│║║║│║║│║║║│║║║│║║
+║│║║│║│║│║║║│║║║│║║║│║║│║║║│║║║│║║│║║║│║║║│║║
+      </span>
+      <br>
+      <span style="color:rgba(180,180,255,0.5); font-size:0.65rem; letter-spacing:0.2em;">↑ スキャンするとよみがえる ↑</span>
+      <br>
+      <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin:4px 0;">
+        <span class="ascii-hero-emoji">⚔️</span>
+        <span class="ascii-hero-emoji" style="font-size:3rem;">👾</span>
+        <span class="ascii-hero-emoji">⚔️</span>
       </div>
-
-      <p class="hint-text">商品のバーコードをスキャンしよう！同じバーコードからは同じキャラが生まれるよ</p>
+      <span class="vs-text">VS</span>
+      <div style="display:flex; justify-content:center; gap:10px; font-size:1.6rem; margin:2px 0;">
+        <span style="animation: heroFloat 2.2s ease-in-out infinite; display:inline-block;">🦛</span>
+        <span style="animation: heroFloat 2.6s ease-in-out 0.4s infinite; display:inline-block;">🐉</span>
+        <span style="animation: heroFloat 2.4s ease-in-out 0.8s infinite; display:inline-block;">🦄</span>
+        <span style="animation: heroFloat 2.8s ease-in-out 0.2s infinite; display:inline-block;">🤖</span>
+        <span style="animation: heroFloat 2.3s ease-in-out 0.6s infinite; display:inline-block;">👹</span>
+      </div>
     </div>
+
+    <p class="catchcopy">
+      ✦ バーコードの なかに　つわものが ねむっている ✦<br>
+      <span style="font-size:0.7rem; opacity:0.8;">おなじバーコード → おなじキャラが うまれる！</span>
+    </p>
+
+    <!-- メインスキャンボタン -->
+    <button class="scan-hero-btn" id="startCameraBtn">📷　カメラで　スキャン！</button>
+    <div id="reader" style="display:none;"></div>
+    <div id="camera-error" class="camera-error-dark" style="display:none;"></div>
+
+    <!-- 手入力 -->
+    <div class="or-row"><span>または　数字を　手入力</span></div>
+    <div class="manual-row">
+      <input type="text" id="manualInput" placeholder="バーコードの数字を入力…" inputmode="numeric">
+      <button id="manualBtn">🎮 遊ぶ</button>
+    </div>
+
+    <p class="hint-dark">商品パッケージ・本・お菓子など何でもOK！</p>
   </div>
 
   <!-- Screen 2: キャラクター確認画面 -->
@@ -462,7 +883,13 @@
 
   <!-- Screen 3: バトル画面 -->
   <div id="screen-battle" style="display:none;">
-    <h1>⚔️ バトル！</h1>
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:4px;">
+      <h1 style="margin:0;">⚔️ バトル！</h1>
+      <div class="battle-stamina" id="battle-stamina-display">
+        <span style="font-size:0.7rem;">スタミナ</span>
+        <span id="bst1">⚡</span><span id="bst2">⚡</span><span id="bst3">⚡</span>
+      </div>
+    </div>
     <div class="battle-area">
       <!-- CPU area -->
       <div class="fighter-area">
@@ -509,12 +936,69 @@
 
   <!-- Result Overlay -->
   <div class="result-overlay" id="result-overlay">
-    <div class="result-overlay-emoji" id="result-emoji">🎉</div>
-    <h2 id="result-title">けっか</h2>
-    <p id="result-sub">サブテキスト</p>
-    <p class="result-wins-text" id="result-wins">通算 0 勝</p>
-    <button class="btn-primary" id="resultRescanBtn" style="max-width:300px;">🔄 もう一度スキャン</button>
-    <button class="btn-secondary" id="resultRankingBtn" style="margin-top:8px;">🏆 ランキング</button>
+
+    <!-- 通常表示エリア -->
+    <div id="result-main">
+      <div class="result-overlay-emoji" id="result-emoji">🎉</div>
+      <h2 id="result-title">けっか</h2>
+      <p id="result-sub">サブテキスト</p>
+      <p class="result-wins-text" id="result-wins">通算 0 勝</p>
+      <p id="result-exp" style="display:none; color:#e67e22; font-weight:bold; font-size:0.95rem; margin:4px 0 8px;"></p>
+
+      <!-- スタミナ -->
+      <div class="stamina-row" id="stamina-row" style="display:none; justify-content:center;">
+        <span style="font-size:0.8rem; color:#9b8ab8;">スタミナ</span>
+        <span class="stamina-icon" id="st1">⚡</span>
+        <span class="stamina-icon" id="st2">⚡</span>
+        <span class="stamina-icon" id="st3">⚡</span>
+      </div>
+
+      <!-- 勝利時アクション -->
+      <div class="result-actions" id="win-actions" style="display:none;">
+        <button class="btn-continue" id="continueBtn">⚔️ このまま戦いつづける！</button>
+        <button class="btn-support" id="supportBtn">💎 サポートバーコードを追加</button>
+        <button class="btn-secondary" id="resultRescanBtn">🔄 スキャンしなおす</button>
+      </div>
+
+      <!-- 敗北時アクション -->
+      <div class="result-actions" id="lose-actions" style="display:none;">
+        <button class="btn-primary" id="resultRescanBtnLose" style="max-width:300px;">🔄 もう一度スキャン</button>
+      </div>
+
+      <button class="btn-secondary" id="resultRankingBtn" style="margin-top:8px; max-width:300px;">🏆 ランキング</button>
+    </div>
+
+    <!-- サポートスキャンUI -->
+    <div id="support-ui" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <div class="support-ui-box">
+        <h3>💎 サポートキャラを召喚！</h3>
+        <p style="font-size:0.78rem; color:#9b8ab8; text-align:center; margin:0 0 10px;">
+          別のバーコードをスキャンするとサポートキャラが現れて強化してくれるよ！<br>
+          スタミナも1回復するよ⚡
+        </p>
+        <button class="btn-primary" id="supportCameraBtn" style="font-size:0.95rem; padding:12px;">📷 スキャン</button>
+        <div id="support-reader" style="display:none;"></div>
+        <div class="or-divider" style="margin:8px 0;">または</div>
+        <div class="manual-input-row">
+          <input type="text" id="supportInput" placeholder="数字を入力..." inputmode="numeric">
+          <button class="btn-secondary" id="supportManualBtn">決定</button>
+        </div>
+
+        <!-- サポートキャラ結果 -->
+        <div id="support-result" style="display:none;">
+          <div class="support-char-card">
+            <span class="support-char-emoji" id="support-emoji">⭐</span>
+            <div class="support-char-name" id="support-name">サポートキャラ</div>
+            <span class="type-badge" id="support-type-badge">タイプ</span>
+          </div>
+          <p class="support-buff-text" id="support-buff-desc">効果説明</p>
+          <button class="btn-continue" id="applySupportBtn">✨ 強化して戦う！</button>
+        </div>
+
+        <button class="btn-secondary" id="cancelSupportBtn" style="margin-top:8px; width:100%;">← もどる</button>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -573,38 +1057,38 @@
     };
 
     const MOVES = [
-      {name:'ひのたま',type:'ほのお',power:30},
-      {name:'ほのおのいき',type:'ほのお',power:25},
-      {name:'かえんほうしゃ',type:'ほのお',power:40},
-      {name:'だいもんじ',type:'ほのお',power:35},
-      {name:'ほのおのパンチ',type:'ほのお',power:20},
-      {name:'みずでっぽう',type:'みず',power:25},
-      {name:'たきのぼり',type:'みず',power:30},
-      {name:'なみのり',type:'みず',power:35},
-      {name:'あわ',type:'みず',power:20},
-      {name:'うずしお',type:'みず',power:40},
-      {name:'はっぱカッター',type:'くさ',power:25},
-      {name:'たねマシンガン',type:'くさ',power:20},
-      {name:'ソーラービーム',type:'くさ',power:40},
-      {name:'くさのぼうず',type:'くさ',power:30},
-      {name:'つるのムチ',type:'くさ',power:25},
-      {name:'かみなり',type:'でんき',power:35},
-      {name:'でんきショック',type:'でんき',power:25},
-      {name:'１０まんボルト',type:'でんき',power:30},
-      {name:'かみなりのひらめき',type:'でんき',power:40},
-      {name:'スパーク',type:'でんき',power:20},
-      {name:'サイコキネシス',type:'エスパー',power:35},
-      {name:'ねんりき',type:'エスパー',power:20},
-      {name:'ミラクルアイ',type:'エスパー',power:25},
-      {name:'ふわふわのかぜ',type:'エスパー',power:30},
-      {name:'ゆめくい',type:'エスパー',power:40},
-      {name:'たいあたり',type:'ノーマル',power:20},
-      {name:'ひっかく',type:'ノーマル',power:25},
-      {name:'ずつき',type:'ノーマル',power:30},
-      {name:'ハイパーボイス',type:'ノーマル',power:35},
-      {name:'ギガインパクト',type:'ノーマル',power:40},
-      {name:'まるくなる',type:'ノーマル',power:15},
-      {name:'おたけび',type:'ノーマル',power:25}
+      {name:'ひのたま',type:'ほのお',power:25},
+      {name:'ほのおのいき',type:'ほのお',power:20},
+      {name:'かえんほうしゃ',type:'ほのお',power:30},
+      {name:'だいもんじ',type:'ほのお',power:28},
+      {name:'ほのおのパンチ',type:'ほのお',power:18},
+      {name:'みずでっぽう',type:'みず',power:20},
+      {name:'たきのぼり',type:'みず',power:25},
+      {name:'なみのり',type:'みず',power:28},
+      {name:'あわ',type:'みず',power:16},
+      {name:'うずしお',type:'みず',power:30},
+      {name:'はっぱカッター',type:'くさ',power:20},
+      {name:'たねマシンガン',type:'くさ',power:16},
+      {name:'ソーラービーム',type:'くさ',power:30},
+      {name:'くさのぼうず',type:'くさ',power:25},
+      {name:'つるのムチ',type:'くさ',power:20},
+      {name:'かみなり',type:'でんき',power:28},
+      {name:'でんきショック',type:'でんき',power:20},
+      {name:'１０まんボルト',type:'でんき',power:25},
+      {name:'かみなりのひらめき',type:'でんき',power:30},
+      {name:'スパーク',type:'でんき',power:16},
+      {name:'サイコキネシス',type:'エスパー',power:28},
+      {name:'ねんりき',type:'エスパー',power:16},
+      {name:'ミラクルアイ',type:'エスパー',power:20},
+      {name:'ふわふわのかぜ',type:'エスパー',power:25},
+      {name:'ゆめくい',type:'エスパー',power:30},
+      {name:'たいあたり',type:'ノーマル',power:16},
+      {name:'ひっかく',type:'ノーマル',power:20},
+      {name:'ずつき',type:'ノーマル',power:25},
+      {name:'ハイパーボイス',type:'ノーマル',power:28},
+      {name:'ギガインパクト',type:'ノーマル',power:30},
+      {name:'まるくなる',type:'ノーマル',power:12},
+      {name:'おたけび',type:'ノーマル',power:20}
     ];
 
     // =====================
@@ -615,7 +1099,7 @@
       const adj = ADJECTIVES[Math.floor(rng() * ADJECTIVES.length)];
       const creature = CREATURES[Math.floor(rng() * CREATURES.length)];
       const type = TYPES[Math.floor(rng() * TYPES.length)];
-      const maxHp = 60 + Math.floor(rng() * 9) * 10;
+      const maxHp = 100 + Math.floor(rng() * 9) * 10;
       const atk = 10 + Math.floor(rng() * 21);
       const def = 5 + Math.floor(rng() * 16);
       const spd = 5 + Math.floor(rng() * 21);
@@ -639,11 +1123,14 @@
     // =====================
     // Battle utilities
     // =====================
-    function calcDamage(attacker, move, defender) {
+    function calcDamage(attacker, move, defender, isCpu) {
       const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][defender.type]) || 1;
-      return Math.max(1, Math.round(
+      const raw = Math.max(5, Math.round(
         attacker.atk * move.power / 15 * eff - defender.def / 2 + (Math.random() * 6 - 3)
       ));
+      // プレイヤーは40%キャップ（強め）、CPUは15%キャップ（弱め）
+      const cap = isCpu ? 0.15 : 0.40;
+      return Math.min(raw, Math.round(defender.maxHp * cap));
     }
 
     function typeEffMsg(eff) {
@@ -699,12 +1186,124 @@
     }
 
     // =====================
+    // EXP / Level system
+    // =====================
+    const EXP_TABLE = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000];
+    const MAX_LEVEL = EXP_TABLE.length - 1;
+
+    function getPlayerExp() {
+      return parseInt(localStorage.getItem('barcode-battle-exp') || '0');
+    }
+
+    function getPlayerLevel() {
+      const exp = getPlayerExp();
+      let level = 0;
+      for (let i = EXP_TABLE.length - 1; i >= 0; i--) {
+        if (exp >= EXP_TABLE[i]) { level = i; break; }
+      }
+      return Math.min(level, MAX_LEVEL);
+    }
+
+    function getExpToNext(level) {
+      if (level >= MAX_LEVEL) return 0;
+      return EXP_TABLE[level + 1] - getPlayerExp();
+    }
+
+    function updateLevelDisplay() {
+      const lvEl = document.getElementById('player-level');
+      if (lvEl) lvEl.textContent = getPlayerLevel();
+    }
+
+    // =====================
     // State
     // =====================
     let playerChar = null;
     let cpuChar = null;
     let html5QrCode = null;
+    let html5QrCodeSupport = null;
     let battleBusy = false;
+    let turnCount = 0;
+    let playerStamina = 3;       // 残スタミナ（最大3）
+    let consecutiveWins = 0;     // 今の連続勝利数
+    let pendingSupportBuff = null; // {type, desc, apply: fn} 次戦に適用するサポートバフ
+
+    // =====================
+    // Stamina helpers
+    // =====================
+    const MAX_STAMINA = 3;
+
+    function updateStaminaUI() {
+      const icons = ['st1','st2','st3'];
+      const battleIcons = ['bst1','bst2','bst3'];
+      [...icons, ...battleIcons].forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const idx = i % 3;
+        if (idx < playerStamina) {
+          el.textContent = '⚡';
+          el.classList.remove('empty');
+        } else {
+          el.textContent = '⚡';
+          el.classList.add('empty');
+        }
+      });
+      // continueBtn の状態
+      const btn = document.getElementById('continueBtn');
+      if (btn) {
+        btn.disabled = playerStamina <= 0;
+        btn.textContent = playerStamina > 0
+          ? '⚔️ このまま戦いつづける！（スタミナ ' + playerStamina + '）'
+          : '⚔️ スタミナ切れ…（スキャンが必要）';
+      }
+    }
+
+    // =====================
+    // Support buff system
+    // =====================
+    const SUPPORT_BUFFS = {
+      'ほのお':   { desc: '🔥 こうげき +30%！', apply: (c) => { c.atk = Math.round(c.atk * 1.3); } },
+      'みず':     { desc: '💧 HP全回復！',      apply: (c) => { c.hp = c.maxHp; } },
+      'くさ':     { desc: '🌿 HP +60回復！',    apply: (c) => { c.hp = Math.min(c.maxHp, c.hp + 60); } },
+      'でんき':   { desc: '⚡ すばやさ +40%！', apply: (c) => { c.spd = Math.round(c.spd * 1.4); } },
+      'エスパー': { desc: '🔮 ぼうぎょ +30%！', apply: (c) => { c.def = Math.round(c.def * 1.3); } },
+      'ノーマル': { desc: '⭐ HP+30 ＆ こうげき+10%！', apply: (c) => { c.hp = Math.min(c.maxHp, c.hp + 30); c.atk = Math.round(c.atk * 1.1); } }
+    };
+
+    function scanSupportBarcode(barcodeStr) {
+      const supportChar = generateCharacter(barcodeStr);
+      const buff = SUPPORT_BUFFS[supportChar.type] || SUPPORT_BUFFS['ノーマル'];
+      pendingSupportBuff = { char: supportChar, ...buff };
+
+      document.getElementById('support-emoji').textContent = supportChar.emoji;
+      document.getElementById('support-name').textContent = supportChar.name;
+      const tb = document.getElementById('support-type-badge');
+      tb.textContent = supportChar.typeEmoji + ' ' + supportChar.type;
+      tb.style.background = supportChar.typeColor;
+      document.getElementById('support-buff-desc').textContent = buff.desc;
+      document.getElementById('support-result').style.display = 'block';
+    }
+
+    function stopSupportCamera() {
+      if (html5QrCodeSupport) {
+        try { html5QrCodeSupport.stop().catch(() => {}); } catch(e) {}
+        html5QrCodeSupport = null;
+      }
+      document.getElementById('support-reader').style.display = 'none';
+    }
+
+    function showSupportUI() {
+      document.getElementById('result-main').style.display = 'none';
+      const sui = document.getElementById('support-ui');
+      sui.style.display = 'flex';
+      document.getElementById('support-result').style.display = 'none';
+      document.getElementById('support-reader').style.display = 'none';
+    }
+
+    function hideSupportUI() {
+      stopSupportCamera();
+      document.getElementById('support-ui').style.display = 'none';
+      document.getElementById('result-main').style.display = 'block';
+    }
 
     // =====================
     // Wins counter
@@ -715,6 +1314,7 @@
 
     function updateWinsDisplay() {
       document.getElementById('wins-count').textContent = getWins();
+      updateLevelDisplay();
     }
 
     // =====================
@@ -776,7 +1376,23 @@
     function onBarcodeScanned(barcode) {
       barcode = String(barcode).trim();
       if (!barcode) return;
+
+      // 新規スキャン → スタミナ・連勝をリセット
+      playerStamina = MAX_STAMINA;
+      consecutiveWins = 0;
+      pendingSupportBuff = null;
+
       playerChar = generateCharacter(barcode);
+
+      // レベルによるステータス補正（CPUには適用しない）
+      const level = getPlayerLevel();
+      if (level > 0) {
+        const boost = 1 + level * 0.08;
+        playerChar.maxHp = Math.round(playerChar.maxHp * boost);
+        playerChar.hp    = playerChar.maxHp;
+        playerChar.atk   = Math.round(playerChar.atk * boost);
+        playerChar.def   = Math.round(playerChar.def * boost);
+      }
 
       document.getElementById('char-emoji').textContent = playerChar.emoji;
       document.getElementById('char-name').textContent = playerChar.name;
@@ -819,11 +1435,12 @@
     function doPlayerAttack(moveIndex) {
       if (battleBusy) return;
       battleBusy = true;
+      turnCount++;
       setMoveBtnsDisabled(true);
 
       const move = playerChar.moves[moveIndex];
       const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][cpuChar.type]) || 1;
-      const dmg = calcDamage(playerChar, move, cpuChar);
+      const dmg = calcDamage(playerChar, move, cpuChar, false);
       cpuChar.hp = Math.max(0, cpuChar.hp - dmg);
 
       addLog(playerChar.name + ' の ' + move.name + '！', '#a8d8ff');
@@ -859,7 +1476,7 @@
       let bestDmg = -1;
       cpuChar.moves.forEach(move => {
         const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][playerChar.type]) || 1;
-        const estDmg = cpuChar.atk * move.power / 15 * eff - playerChar.def / 2;
+        const estDmg = Math.min(cpuChar.atk * move.power / 15 * eff - playerChar.def / 2, playerChar.maxHp * 0.15);
         if (estDmg > bestDmg) {
           bestDmg = estDmg;
           bestMove = move;
@@ -871,7 +1488,7 @@
     function doCpuAttack() {
       const move = selectCpuMove();
       const eff = (TYPE_CHART[move.type] && TYPE_CHART[move.type][playerChar.type]) || 1;
-      const dmg = calcDamage(cpuChar, move, playerChar);
+      const dmg = calcDamage(cpuChar, move, playerChar, true);
       playerChar.hp = Math.max(0, playerChar.hp - dmg);
 
       addLog(cpuChar.name + ' の ' + move.name + '！', '#ffb3b3');
@@ -909,16 +1526,50 @@
       const subEl = document.getElementById('result-sub');
       const winsEl = document.getElementById('result-wins');
 
+      // 常にメインエリアを表示、サポートUIを隠す
+      document.getElementById('result-main').style.display = 'block';
+      document.getElementById('support-ui').style.display = 'none';
+
       if (playerWon) {
+        consecutiveWins++;
+        playerStamina = Math.max(0, playerStamina - 1);
+
         let wins = getWins() + 1;
         localStorage.setItem('barcode-battle-wins', wins);
+
+        // EXP獲得
+        const baseExp = 50;
+        const turnBonus = Math.min(turnCount * 5, 50);
+        const expGained = baseExp + turnBonus;
+        const oldLevel = getPlayerLevel();
+        const newTotalExp = getPlayerExp() + expGained;
+        localStorage.setItem('barcode-battle-exp', newTotalExp);
+        const newLevel = getPlayerLevel();
+        const leveledUp = newLevel > oldLevel;
         updateWinsDisplay();
 
-        emojiEl.textContent = '🎉';
-        titleEl.textContent = 'かった！';
+        emojiEl.textContent = consecutiveWins >= 3 ? '🏆' : '🎉';
+        titleEl.textContent = consecutiveWins >= 3 ? '連勝中！' : 'かった！';
         titleEl.style.color = '#e67e22';
-        subEl.textContent = cpuChar.name + ' をたおした！';
+        subEl.textContent = cpuChar.name + ' をたおした！（' + consecutiveWins + '連勝）';
         winsEl.textContent = '通算 ' + wins + ' 勝';
+
+        const expEl = document.getElementById('result-exp');
+        if (expEl) {
+          let expText = '＋' + expGained + ' EXP';
+          if (leveledUp) expText += '　🆙 Lv.' + oldLevel + ' → Lv.' + newLevel + '！';
+          else if (newLevel < MAX_LEVEL) expText += '　（次Lv.まで ' + getExpToNext(newLevel) + ' EXP）';
+          expEl.textContent = expText;
+          expEl.style.display = 'block';
+        }
+
+        // スタミナ表示
+        document.getElementById('stamina-row').style.display = 'flex';
+        updateStaminaUI();
+
+        // 勝利アクション表示
+        document.getElementById('win-actions').style.display = 'flex';
+        document.getElementById('lose-actions').style.display = 'none';
 
         overlay.classList.add('show');
 
@@ -930,11 +1581,22 @@
           } catch (e) {}
         }, 600);
       } else {
+        // 敗北 → スタミナ・連勝リセット
+        playerStamina = MAX_STAMINA;
+        consecutiveWins = 0;
+        pendingSupportBuff = null;
+
         emojiEl.textContent = '😢';
         titleEl.textContent = 'まけた…';
         titleEl.style.color = '#6b5b7a';
         subEl.textContent = playerChar.name + ' はたおれた…';
         winsEl.textContent = '通算 ' + getWins() + ' 勝';
+
+        const expEl = document.getElementById('result-exp');
+        if (expEl) expEl.style.display = 'none';
+        document.getElementById('stamina-row').style.display = 'none';
+        document.getElementById('win-actions').style.display = 'none';
+        document.getElementById('lose-actions').style.display = 'flex';
 
         overlay.classList.add('show');
       }
@@ -943,10 +1605,15 @@
     // =====================
     // startBattle
     // =====================
-    function startBattle() {
+    function startBattle(resetHp) {
+      if (resetHp === undefined) resetHp = true;
       cpuChar = generateCharacter(String(Date.now() + Math.floor(Math.random() * 99999)));
-      playerChar.hp = playerChar.maxHp;
+      // CPUは攻撃力を抑えて複数ターン続くように調整
+      cpuChar.atk = Math.max(4, Math.round(cpuChar.atk * 0.45));
+      if (resetHp) playerChar.hp = playerChar.maxHp;
       cpuChar.hp = cpuChar.maxHp;
+      turnCount = 0;
+      updateStaminaUI();
 
       showScreen('screen-battle');
 
@@ -1038,11 +1705,100 @@
       })(i);
     }
 
+    // 勝利 → スキャンしなおす
     document.getElementById('resultRescanBtn').addEventListener('click', function() {
+      document.getElementById('result-overlay').classList.remove('show');
+      playerStamina = MAX_STAMINA;
+      consecutiveWins = 0;
+      pendingSupportBuff = null;
+      stopCamera();
+      showScreen('screen-scan');
+      updateWinsDisplay();
+    });
+
+    // 敗北 → スキャンしなおす
+    document.getElementById('resultRescanBtnLose').addEventListener('click', function() {
       document.getElementById('result-overlay').classList.remove('show');
       stopCamera();
       showScreen('screen-scan');
       updateWinsDisplay();
+    });
+
+    // 連戦ボタン
+    document.getElementById('continueBtn').addEventListener('click', function() {
+      if (playerStamina <= 0) return;
+      document.getElementById('result-overlay').classList.remove('show');
+
+      // サポートバフを適用
+      if (pendingSupportBuff) {
+        addLog('💎 ' + pendingSupportBuff.char.name + ' のサポート効果！', '#9b59b6');
+        pendingSupportBuff.apply(playerChar);
+        pendingSupportBuff = null;
+        // バフ後のHPバーを更新
+        updateHpBar('player', playerChar.hp, playerChar.maxHp);
+      }
+
+      startBattle(false); // HP持越し
+    });
+
+    // サポートを追加ボタン
+    document.getElementById('supportBtn').addEventListener('click', showSupportUI);
+
+    // サポートキャンセル
+    document.getElementById('cancelSupportBtn').addEventListener('click', hideSupportUI);
+
+    // サポートカメラ
+    document.getElementById('supportCameraBtn').addEventListener('click', function() {
+      const readerEl = document.getElementById('support-reader');
+      readerEl.style.display = 'block';
+      try {
+        if (!window.Html5Qrcode) throw new Error('not loaded');
+        html5QrCodeSupport = new Html5Qrcode('support-reader');
+        html5QrCodeSupport.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 220, height: 130 } },
+          function(decodedText) {
+            html5QrCodeSupport.stop().then(() => {
+              html5QrCodeSupport = null;
+              readerEl.style.display = 'none';
+              scanSupportBarcode(decodedText);
+            }).catch(() => {
+              html5QrCodeSupport = null;
+              readerEl.style.display = 'none';
+              scanSupportBarcode(decodedText);
+            });
+          },
+          function() {}
+        ).catch(function() {
+          readerEl.style.display = 'none';
+          html5QrCodeSupport = null;
+        });
+      } catch(e) {
+        readerEl.style.display = 'none';
+        html5QrCodeSupport = null;
+      }
+    });
+
+    // サポート手入力
+    document.getElementById('supportManualBtn').addEventListener('click', function() {
+      const val = document.getElementById('supportInput').value.trim();
+      if (val) { stopSupportCamera(); scanSupportBarcode(val); }
+    });
+    document.getElementById('supportInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const val = this.value.trim();
+        if (val) { stopSupportCamera(); scanSupportBarcode(val); }
+      }
+    });
+
+    // サポート適用して戦闘へ
+    document.getElementById('applySupportBtn').addEventListener('click', function() {
+      if (!pendingSupportBuff) return;
+      // スタミナを1回復（サポートで補充）
+      playerStamina = Math.min(MAX_STAMINA, playerStamina + 1);
+      hideSupportUI();
+      document.getElementById('result-overlay').classList.remove('show');
+      startBattle(false); // HP持越し
     });
 
     document.getElementById('resultRankingBtn').addEventListener('click', function() {
@@ -1057,6 +1813,45 @@
     // Init
     // =====================
     updateWinsDisplay();
+
+    // 星パーティクル生成
+    (function() {
+      const layer = document.getElementById('starsLayer');
+      if (!layer) return;
+      for (let i = 0; i < 55; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.cssText = [
+          'left:' + (Math.random() * 100) + '%',
+          'top:' + (Math.random() * 100) + '%',
+          '--d:' + (1.2 + Math.random() * 2.8) + 's',
+          '--del:' + (Math.random() * 3) + 's',
+          'width:' + (1 + Math.random() * 3) + 'px',
+          'height:' + (1 + Math.random() * 3) + 'px',
+          'opacity:' + (0.2 + Math.random() * 0.8)
+        ].join(';');
+        layer.appendChild(s);
+      }
+    })();
+
+    // フローティングキャラ絵文字生成
+    (function() {
+      const layer = document.getElementById('floatChars');
+      if (!layer) return;
+      const chars = ['⚡','✨','💫','🌟','⭐','🔥','💥','🌀','🎯','👊','🗡️','🛡️'];
+      for (let i = 0; i < 14; i++) {
+        const el = document.createElement('div');
+        el.className = 'fchar';
+        el.textContent = chars[i % chars.length];
+        el.style.cssText = [
+          'left:' + (5 + Math.random() * 90) + '%',
+          'bottom:' + (Math.random() * 60) + '%',
+          '--del:' + (Math.random() * 4) + 's',
+          'animation-duration:' + (3 + Math.random() * 3) + 's'
+        ].join(';');
+        layer.appendChild(el);
+      }
+    })();
   </script>
 </body>
 </html>
