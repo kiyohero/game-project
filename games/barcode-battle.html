@@ -423,6 +423,7 @@
 
       <p class="hint-text">商品のバーコードをスキャンしよう！同じバーコードからは同じキャラが生まれるよ</p>
     </div>
+    <button class="btn-secondary" id="captureHistoryBtn" style="margin-top:4px;">👾 みんなのキャラ</button>
   </div>
 
   <!-- Screen 2: キャラクター確認画面 -->
@@ -925,7 +926,7 @@
         setTimeout(() => {
           try {
             if (window.Ranking && typeof Ranking.showSubmitModal === 'function') {
-              Ranking.showSubmitModal('barcode-battle', wins);
+              Ranking.showSubmitModal('barcode-battle', wins, playerChar);
             }
           } catch (e) {}
         }, 600);
@@ -1049,6 +1050,14 @@
       try {
         if (window.Ranking && typeof Ranking.showRankingModal === 'function') {
           Ranking.showRankingModal('barcode-battle');
+        }
+      } catch (e) {}
+    });
+
+    document.getElementById('captureHistoryBtn').addEventListener('click', function() {
+      try {
+        if (window.Ranking && typeof Ranking.showCaptureModal === 'function') {
+          Ranking.showCaptureModal('barcode-battle');
         }
       } catch (e) {}
     });
