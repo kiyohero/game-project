@@ -99,6 +99,20 @@
     .phase-neutral{background:#e8e0f0;color:#6b5b7a}
     section-title{display:block;font-size:.8rem;font-weight:700;color:#9b8ab8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
     .divider{height:1px;background:#e8e0f0;margin:12px 0}
+    /* easy mode */
+    .mode-btns{display:flex;flex-direction:column;gap:10px}
+    .btn-easy{background:linear-gradient(135deg,#f0c040,#e8a020);color:#fff;border:none;border-radius:14px;padding:18px;font-size:1.1rem;font-weight:800;cursor:pointer;width:100%;box-shadow:0 4px 16px rgba(240,192,64,.4)}
+    .btn-easy:active{transform:scale(.96)}
+    .easy-mode-note{font-size:.78rem;color:#9b8ab8;text-align:center;margin:-4px 0 0}
+    .progress-bar{font-size:1.2rem;letter-spacing:3px}
+    .price-arrows{background:#faf8ff;border-radius:12px;padding:12px;margin:12px 0;font-size:1.3rem;letter-spacing:6px;text-align:center;min-height:48px;word-break:break-all}
+    .easy-trade-section{margin-top:12px}
+    .easy-trade-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn-buy-1{background:#4a9b8a;color:#fff;border:none;border-radius:12px;padding:16px 10px;font-size:1rem;font-weight:800;cursor:pointer}
+    .btn-sell-1{background:#e8734a;color:#fff;border:none;border-radius:12px;padding:16px 10px;font-size:1rem;font-weight:800;cursor:pointer}
+    .btn-buy-1:disabled,.btn-sell-1:disabled{background:#ccc;color:#999;cursor:not-allowed}
+    .trade-feedback{margin-top:10px;font-size:.92rem;font-weight:700;text-align:center;min-height:22px}
+    .lesson-card{background:#fff;border-radius:12px;padding:12px 14px;font-size:.88rem;color:#4a3560;border-left:4px solid #9b8ab8;margin-bottom:8px;line-height:1.6}
   </style>
 </head>
 <body>
@@ -133,7 +147,11 @@
       🥇 金ファンド … 株が下がると上がりやすい
     </div>
   </details>
-  <button class="btn btn-primary" onclick="startGame()">▶ はじめる</button>
+  <div class="mode-btns">
+    <button class="btn-easy" onclick="startGame('easy')">⭐ かんたんモード</button>
+    <p class="easy-mode-note">小学2〜3年生から遊べる！おみせにとうしするゲーム</p>
+    <button class="btn btn-primary" onclick="startGame('normal')" style="padding:13px">📈 ふつうモード（投資シミュレーター）</button>
+  </div>
 </div>
 
 <!-- SCREEN: GAME -->
@@ -181,9 +199,10 @@
     <span class="detail-chg" id="d-chg"></span>
   </div>
   <div id="d-avgcost" style="font-size:.8rem;color:#9b8ab8;margin-bottom:4px"></div>
-  <div class="chart-wrap">
+  <div class="chart-wrap" id="chart-wrap">
     <canvas id="price-chart" height="120"></canvas>
   </div>
+  <div id="price-arrows" class="price-arrows" style="display:none"></div>
   <div class="card" style="padding:12px 16px">
     <div style="font-size:.78rem;color:#9b8ab8;font-weight:700;margin-bottom:4px">リスク</div>
     <div class="risk-bar" id="d-risk"></div>
@@ -202,9 +221,16 @@
     <div id="warn-concentrate" class="warn-box" style="display:none">
       ⚠️ 1銘柄への集中投資はリスクが高い！分散投資を心がけよう。
     </div>
-    <div class="trade-btns">
+    <div id="normal-trade-btns" class="trade-btns">
       <button class="btn-buy" onclick="executeBuy()">🛒 買う</button>
       <button class="btn-sell" onclick="executeSell()">💰 売る</button>
+    </div>
+    <div id="easy-trade-section" class="easy-trade-section" style="display:none">
+      <div class="easy-trade-btns">
+        <button class="btn-buy-1" id="btn-buy-1" onclick="executeBuy1()">🛒 1つ買う</button>
+        <button class="btn-sell-1" id="btn-sell-1" onclick="executeSell1()">💰 1つ売る</button>
+      </div>
+      <div id="trade-feedback" class="trade-feedback"></div>
     </div>
   </div>
 </div>
@@ -213,7 +239,7 @@
 <div id="screen-result" class="screen">
   <div style="text-align:center;padding:20px 0 8px">
     <div style="font-size:2.5rem">🎉</div>
-    <h1>1年間お疲れさま！</h1>
+    <h1 id="r-title">1年間お疲れさま！</h1>
   </div>
   <div class="card" style="text-align:center">
     <div class="result-score" id="r-stars">⭐⭐⭐</div>
@@ -221,7 +247,7 @@
     <div class="result-total" id="r-total">¥10,000</div>
     <div class="result-pct" id="r-pct">±0円 (0.00%)</div>
   </div>
-  <div class="compare-box">
+  <div id="r-compare-box" class="compare-box">
     <div class="compare-label">🌍 もし世界株インデックスだけ買っていたら…</div>
     <div class="compare-val" id="r-index">¥10,000</div>
     <div style="font-size:.78rem;color:#4a9b8a;margin-top:2px" id="r-index-pct"></div>
@@ -229,6 +255,7 @@
   <div class="card">
     <div style="font-size:.85rem;font-weight:700;color:#6b5b7a;margin-bottom:10px">📚 今回学んだこと</div>
     <ul class="tips-list" id="r-tips"></ul>
+    <div id="r-lessons" style="display:none"></div>
   </div>
   <button class="btn btn-primary" onclick="resetGame()" style="margin-top:4px">🔄 もう一度プレイ</button>
 </div>
@@ -236,6 +263,7 @@
 <!-- MODAL: NEWS -->
 <div id="modal-news" class="modal-overlay" style="display:none" onclick="closeNewsOnOutside(event)">
   <div class="modal-box">
+    <div id="news-emoji" style="text-align:center;font-size:3rem;margin-bottom:4px;display:none"></div>
     <div class="modal-title" id="news-title">📰 今月のニュース</div>
     <div class="modal-body" id="news-body"></div>
     <div class="lesson-box" id="news-lesson"></div>
@@ -267,29 +295,58 @@ const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','
 const MAX_TURNS = 12;
 const START_CASH = 10_000;
 
+// ======== EASY MODE DATA ========
+const EASY_ASSETS = [
+  {id:'fruit', name:'くだもの屋さん', emoji:'🍎', initPrice:100, vol:.04,  drift:.005, risk:'😊 やさしい',  desc:'くだものは毎日売れるよ！ねだんがあまり変わらないから安心！'},
+  {id:'game',  name:'ゲーム屋さん',   emoji:'🎮', initPrice:80,  vol:.11,  drift:.006, risk:'😨 むずかしい', desc:'ゲームがおおヒットするとたくさんもうかるよ！でも下がることもあるよ。'},
+  {id:'ice',   name:'アイスクリーム屋さん', emoji:'🌸', initPrice:120, vol:.07, drift:.004, risk:'😐 ふつう',   desc:'あついとよく売れるよ！きせつによってねだんが変わるよ。'},
+];
+
+const EASY_EVENTS = [
+  {id:'sunny',   emoji:'☀️', title:'☀️ きょうはあつい！',       body:'きょうはとってもあついね！アイスがいっぱい売れそう！',    impact:{ice:.18, fruit:.04},            lesson:'あついとアイスがよく売れて、おみせのねだんが上がったね！'},
+  {id:'rain',    emoji:'🌧️', title:'🌧️ あめがふったよ…',        body:'きょうはあめ。そとにでる人がへって、くだものやアイスはあまり売れなかったね。',  impact:{game:.08, fruit:-.06, ice:-.08}, lesson:'あめだとそとのおみせはきびしいね。ゲームはそとにでなくてもたのしめるから売れたよ！'},
+  {id:'gamehit', emoji:'🎮', title:'🎮 ゲームがおおヒット！',    body:'しんしょうひんがでて、みんながゲームをかいにきたよ！',  impact:{game:.22},                       lesson:'ゲームがはやると、ゲーム屋さんのねだんがぐーんとあがるよ！でもずっとはつづかないよ。'},
+  {id:'summer',  emoji:'🌸', title:'🌸 なつやすみはじまった！', body:'なつやすみになったよ！みんなそとであそんだり、アイスを食べたりしているね。', impact:{ice:.12, fruit:.10},            lesson:'なつやすみはおみせがにぎわうね。たのしいきせつはおみせがもうかるよ！'},
+  {id:'storm',   emoji:'⛈️', title:'⛈️ おおあめで大あれ！',    body:'おおあめでたいへんだよ！くだものやアイスのはたけやおみせがひがいをうけたよ。', impact:{fruit:-.10, ice:-.12},         lesson:'おおあめなどのわるいてんきは、たべもののおみせにダメージをあたえることがあるよ。'},
+  {id:'holiday', emoji:'🎉', title:'🎉 おまつり！',             body:'まちでおまつりがはじまったよ！みんなたのしくかいものをしているね。',    impact:{fruit:.08, game:.10, ice:.06},   lesson:'おまつりのときはいろんなおみせがにぎわうよ。みんないっしょにもうかったね！'},
+];
+
+const EASY_SEASONS = ['はるターン','なつターン①','なつターン②','あきターン①','あきターン②','ふゆターン'];
+const EASY_MAX_TURNS = 6;
+const EASY_START_CASH = 1000;
+
 // ======== STATE ========
 let gs = {};
+
+function getAssets() {
+  return gs.mode === 'easy' ? EASY_ASSETS : ASSETS;
+}
+
 function initState() {
+  const mode = gs.mode || 'normal';
+  const assets = mode === 'easy' ? EASY_ASSETS : ASSETS;
+  const startCash = mode === 'easy' ? EASY_START_CASH : START_CASH;
   const prices = {};
   const priceHistory = {};
-  ASSETS.forEach(a => {
+  assets.forEach(a => {
     prices[a.id] = a.initPrice;
     priceHistory[a.id] = [a.initPrice];
   });
   gs = {
+    mode,
     turn: 1,
-    cash: START_CASH,
+    cash: startCash,
     holdings: {},
     prices,
     priceHistory,
-    portfolioHistory: [START_CASH],
+    portfolioHistory: [startCash],
     marketPhase: 'neutral',
     marketPhaseRemaining: 3,
     pendingEvent: null,
     dividendsTotal: 0,
     selectedAsset: null,
     eventsLearned: new Set(),
-    indexOnlyUnits: Math.floor(START_CASH / ASSETS.find(a=>a.id==='world').initPrice),
+    indexOnlyUnits: mode === 'normal' ? Math.floor(startCash / ASSETS.find(a=>a.id==='world').initPrice) : 0,
     game: 'active',
   };
 }
@@ -311,27 +368,32 @@ function updateMarketPhase() {
 }
 
 function pickEvent() {
+  if (gs.mode === 'easy') {
+    if (Math.random() > .6) return null;
+    return EASY_EVENTS[Math.floor(Math.random()*EASY_EVENTS.length)];
+  }
   if (Math.random() > .3) return null;
   return EVENTS[Math.floor(Math.random()*EVENTS.length)];
 }
 
 function simulateTurn() {
-  updateMarketPhase();
+  if (gs.mode !== 'easy') updateMarketPhase();
   const event = pickEvent();
-  const pm = {bull:1.6, neutral:1.0, bear:-.4}[gs.marketPhase];
+  const pm = gs.mode === 'easy' ? 1.0 : {bull:1.6, neutral:1.0, bear:-.4}[gs.marketPhase];
 
-  ASSETS.forEach(a => {
+  getAssets().forEach(a => {
     const prev = gs.prices[a.id];
     const change = a.drift * pm + a.vol * boxMuller();
     const evImpact = event?.impact?.[a.id] || 0;
-    const np = Math.max(prev * (1 + change + evImpact), Math.max(a.initPrice * 0.1, 1));
+    const floor = gs.mode === 'easy' ? Math.max(a.initPrice * 0.4, 1) : Math.max(a.initPrice * 0.1, 1);
+    const np = Math.max(prev * (1 + change + evImpact), floor);
     gs.prices[a.id] = Math.round(np);
     gs.priceHistory[a.id].push(Math.round(np));
   });
 
-  // dividends every 3 turns
+  // dividends every 3 turns (normal mode only)
   let divTotal = 0;
-  if (gs.turn % 3 === 0) {
+  if (gs.mode !== 'easy' && gs.turn % 3 === 0) {
     ASSETS.forEach(a => {
       if (!a.div || !gs.holdings[a.id]) return;
       const h = gs.holdings[a.id];
@@ -350,7 +412,7 @@ function simulateTurn() {
 
 function calcTotal() {
   let t = gs.cash;
-  ASSETS.forEach(a => {
+  getAssets().forEach(a => {
     if (gs.holdings[a.id]) t += gs.prices[a.id] * gs.holdings[a.id].units;
   });
   return t;
@@ -362,7 +424,7 @@ function calcIndexOnly() {
 
 // ======== BUY / SELL ========
 function buyAsset(assetId, units) {
-  const a = ASSETS.find(x=>x.id===assetId);
+  const a = getAssets().find(x=>x.id===assetId);
   const price = gs.prices[assetId];
   const cost = price * units;
   if (cost > gs.cash) return {error:'現金が足りません'};
@@ -393,7 +455,8 @@ function showScreen(id) {
   window.scrollTo(0,0);
 }
 
-function startGame() {
+function startGame(mode = 'normal') {
+  gs = { mode };
   initState();
   renderGame();
   showScreen('screen-game');
@@ -405,46 +468,83 @@ function resetGame() {
 
 // ======== RENDER GAME ========
 function renderGame() {
+  const isEasy = gs.mode === 'easy';
+  const startCash = isEasy ? EASY_START_CASH : START_CASH;
+  const maxTurns = isEasy ? EASY_MAX_TURNS : MAX_TURNS;
   const total = calcTotal();
-  const profit = total - START_CASH;
-  const pct = (profit / START_CASH * 100).toFixed(2);
+  const profit = total - startCash;
   const sign = profit >= 0 ? '+' : '';
 
-  document.getElementById('g-month').textContent = '2025年' + MONTHS[gs.turn-1];
-  document.getElementById('g-turn').textContent = gs.turn + ' / ' + MAX_TURNS + 'ヶ月目';
+  // turn label
+  if (isEasy) {
+    document.getElementById('g-month').textContent = EASY_SEASONS[gs.turn - 1] || '';
+    const filled = '🌟'.repeat(gs.turn - 1);
+    const empty = '⬜'.repeat(maxTurns - (gs.turn - 1));
+    document.getElementById('g-turn').innerHTML = `<span class="progress-bar">${filled}${empty}</span>`;
+  } else {
+    document.getElementById('g-month').textContent = '2025年' + MONTHS[gs.turn - 1];
+    document.getElementById('g-turn').textContent = gs.turn + ' / ' + maxTurns + 'ヶ月目';
+  }
+
   document.getElementById('g-total').textContent = '¥' + total.toLocaleString();
   const chgEl = document.getElementById('g-change');
-  chgEl.textContent = sign + profit.toLocaleString() + '円 (' + sign + pct + '%)';
+  if (isEasy) {
+    chgEl.textContent = profit >= 0 ? `+¥${profit.toLocaleString()} もうかった！` : `-¥${Math.abs(profit).toLocaleString()} へったよ…`;
+  } else {
+    const pct = (profit / startCash * 100).toFixed(2);
+    chgEl.textContent = sign + profit.toLocaleString() + '円 (' + sign + pct + '%)';
+  }
   chgEl.className = 'assets-change ' + (profit>0?'up':profit<0?'down':'neutral');
-  document.getElementById('g-cash').textContent = '現金: ¥' + gs.cash.toLocaleString();
+  document.getElementById('g-cash').textContent = isEasy ? 'もってるおかね: ¥' + gs.cash.toLocaleString() : '現金: ¥' + gs.cash.toLocaleString();
 
   // phase badge
   const badge = document.getElementById('g-phase-badge');
-  const phaseInfo = {bull:['強気相場🔥','phase-bull'], bear:['弱気相場❄️','phase-bear'], neutral:['通常相場','phase-neutral']}[gs.marketPhase];
-  badge.textContent = phaseInfo[0];
-  badge.className = 'market-phase ' + phaseInfo[1];
+  if (isEasy) {
+    badge.style.display = 'none';
+  } else {
+    badge.style.display = '';
+    const phaseInfo = {bull:['強気相場🔥','phase-bull'], bear:['弱気相場❄️','phase-bear'], neutral:['通常相場','phase-neutral']}[gs.marketPhase];
+    badge.textContent = phaseInfo[0];
+    badge.className = 'market-phase ' + phaseInfo[1];
+  }
 
   // asset list
   const list = document.getElementById('asset-list');
   list.innerHTML = '';
-  ASSETS.forEach(a => {
-    const prev = gs.priceHistory[a.id][gs.priceHistory[a.id].length-2] || a.initPrice;
+  const assets = getAssets();
+  assets.forEach(a => {
+    const hist = gs.priceHistory[a.id];
+    const prev = hist[hist.length - 2] || a.initPrice;
     const cur = gs.prices[a.id];
-    const chg = ((cur-prev)/prev*100).toFixed(1);
     const isUp = cur >= prev;
     const owned = gs.holdings[a.id]?.units || 0;
     const item = document.createElement('div');
     item.className = 'asset-item';
     item.onclick = () => showDetail(a.id);
-    item.innerHTML = `
-      <div class="asset-emoji">${a.emoji}</div>
-      <div class="asset-info">
-        <div class="asset-name">${a.name}<span class="asset-type type-${a.type}">${{stock:'株式',index:'インデックス',bond:'債券',gold:'金'}[a.type]}</span>${owned>0?'<span style="font-size:.7rem;background:#9b8ab8;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">保有中</span>':''}</div>
-      </div>
-      <div class="asset-price">
-        <div class="price-val">¥${cur.toLocaleString()}</div>
-        <div class="price-chg ${isUp?'up':'down'}">${isUp?'▲':'▼'} ${Math.abs(chg)}%</div>
-      </div>`;
+    if (isEasy) {
+      const diff = cur - prev;
+      const diffStr = diff === 0 ? '— ¥0' : (diff > 0 ? '▲ ¥' + diff : '▼ ¥' + Math.abs(diff));
+      item.innerHTML = `
+        <div class="asset-emoji">${a.emoji}</div>
+        <div class="asset-info">
+          <div class="asset-name">${a.name}${owned>0?`<span style="font-size:.7rem;background:#9b8ab8;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">もってる: ${owned}つ</span>`:''}</div>
+        </div>
+        <div class="asset-price">
+          <div class="price-val">¥${cur.toLocaleString()}</div>
+          <div class="price-chg ${isUp?'up':'down'}">${diffStr}</div>
+        </div>`;
+    } else {
+      const chg = ((cur-prev)/prev*100).toFixed(1);
+      item.innerHTML = `
+        <div class="asset-emoji">${a.emoji}</div>
+        <div class="asset-info">
+          <div class="asset-name">${a.name}<span class="asset-type type-${a.type}">${{stock:'株式',index:'インデックス',bond:'債券',gold:'金'}[a.type]}</span>${owned>0?'<span style="font-size:.7rem;background:#9b8ab8;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px">保有中</span>':''}</div>
+        </div>
+        <div class="asset-price">
+          <div class="price-val">¥${cur.toLocaleString()}</div>
+          <div class="price-chg ${isUp?'up':'down'}">${isUp?'▲':'▼'} ${Math.abs(chg)}%</div>
+        </div>`;
+    }
     list.appendChild(item);
   });
 
@@ -456,27 +556,43 @@ function renderGame() {
   hCard.style.display='';
   hList.innerHTML = '';
   hKeys.forEach(id => {
-    const a = ASSETS.find(x=>x.id===id);
+    const a = getAssets().find(x=>x.id===id);
+    if (!a) return;
     const h = gs.holdings[id];
     const curVal = gs.prices[id] * h.units;
     const costVal = h.avgCost * h.units;
     const pl = curVal - costVal;
-    const plPct = (pl/costVal*100).toFixed(1);
-    const sign = pl>=0?'+':'';
+    const sign2 = pl>=0?'+':'';
     const item = document.createElement('div');
     item.className = 'holding-item';
-    item.innerHTML = `
-      <div class="holding-left">
-        <div class="holding-emoji">${a.emoji}</div>
-        <div>
-          <div class="holding-name">${a.name}</div>
-          <div class="holding-units">${h.units}口 × ¥${gs.prices[id].toLocaleString()}</div>
+    if (isEasy) {
+      item.innerHTML = `
+        <div class="holding-left">
+          <div class="holding-emoji">${a.emoji}</div>
+          <div>
+            <div class="holding-name">${a.name}</div>
+            <div class="holding-units">${h.units}つ × ¥${gs.prices[id].toLocaleString()}</div>
+          </div>
         </div>
-      </div>
-      <div class="holding-right">
-        <div class="holding-val">¥${curVal.toLocaleString()}</div>
-        <div class="holding-pl ${pl>=0?'up':'down'}">${sign}${pl.toLocaleString()}円 (${sign}${plPct}%)</div>
-      </div>`;
+        <div class="holding-right">
+          <div class="holding-val">¥${curVal.toLocaleString()}</div>
+          <div class="holding-pl ${pl>=0?'up':'down'}">${pl>=0?'+¥':'−¥'}${Math.abs(pl).toLocaleString()}</div>
+        </div>`;
+    } else {
+      const plPct = (pl/costVal*100).toFixed(1);
+      item.innerHTML = `
+        <div class="holding-left">
+          <div class="holding-emoji">${a.emoji}</div>
+          <div>
+            <div class="holding-name">${a.name}</div>
+            <div class="holding-units">${h.units}口 × ¥${gs.prices[id].toLocaleString()}</div>
+          </div>
+        </div>
+        <div class="holding-right">
+          <div class="holding-val">¥${curVal.toLocaleString()}</div>
+          <div class="holding-pl ${pl>=0?'up':'down'}">${sign2}${pl.toLocaleString()}円 (${sign2}${plPct}%)</div>
+        </div>`;
+    }
     hList.appendChild(item);
   });
 }
@@ -484,49 +600,109 @@ function renderGame() {
 // ======== RENDER DETAIL ========
 function showDetail(assetId) {
   gs.selectedAsset = assetId;
-  const a = ASSETS.find(x=>x.id===assetId);
-  const prev = gs.priceHistory[assetId][gs.priceHistory[assetId].length-2] || a.initPrice;
+  const isEasy = gs.mode === 'easy';
+  const a = getAssets().find(x=>x.id===assetId);
+  const hist = gs.priceHistory[assetId];
+  const prev = hist[hist.length - 2] || a.initPrice;
   const cur = gs.prices[assetId];
-  const chg = ((cur-prev)/prev*100).toFixed(1);
   const isUp = cur >= prev;
 
   document.getElementById('d-name').textContent = a.emoji + ' ' + a.name;
   document.getElementById('d-price').textContent = '¥' + cur.toLocaleString();
   const chgEl = document.getElementById('d-chg');
-  chgEl.textContent = (isUp?'▲ +':'▼ ') + Math.abs(chg) + '%';
-  chgEl.className = 'detail-chg ' + (isUp?'up':'down');
+  if (isEasy) {
+    const diff = cur - prev;
+    chgEl.textContent = diff === 0 ? '' : (diff > 0 ? '▲ +¥' + diff : '▼ −¥' + Math.abs(diff));
+  } else {
+    const chg = ((cur - prev) / prev * 100).toFixed(1);
+    chgEl.textContent = (isUp ? '▲ +' : '▼ ') + Math.abs(chg) + '%';
+  }
+  chgEl.className = 'detail-chg ' + (isUp ? 'up' : 'down');
 
   const h = gs.holdings[assetId];
   const avgEl = document.getElementById('d-avgcost');
   if (h && h.units > 0) {
-    const pl = ((cur - h.avgCost)/h.avgCost*100).toFixed(1);
-    const sign = pl>=0?'+':'';
-    avgEl.textContent = `取得単価: ¥${Math.round(h.avgCost).toLocaleString()} (含み損益 ${sign}${pl}%)`;
+    if (isEasy) {
+      const pl = (cur - h.avgCost) * h.units;
+      avgEl.textContent = `もってる: ${h.units}つ　いまうったら: ${pl >= 0 ? '+' : '−'}¥${Math.abs(Math.round(pl)).toLocaleString()}`;
+    } else {
+      const pl = ((cur - h.avgCost)/h.avgCost*100).toFixed(1);
+      const sign = pl>=0?'+':'';
+      avgEl.textContent = `取得単価: ¥${Math.round(h.avgCost).toLocaleString()} (含み損益 ${sign}${pl}%)`;
+    }
   } else {
     avgEl.textContent = '';
   }
 
-  // risk dots
+  // risk display
   const riskEl = document.getElementById('d-risk');
   riskEl.innerHTML = '';
-  for (let i=1;i<=5;i++) {
-    const d = document.createElement('div');
-    d.className = 'risk-dot';
-    d.style.background = i<=a.risk ? '#e8734a' : '#e8e0f0';
-    riskEl.appendChild(d);
+  if (isEasy) {
+    riskEl.textContent = a.risk;
+    riskEl.style.fontSize = '1.1rem';
+  } else {
+    riskEl.style.fontSize = '';
+    for (let i=1;i<=5;i++) {
+      const d = document.createElement('div');
+      d.className = 'risk-dot';
+      d.style.background = i<=a.risk ? '#e8734a' : '#e8e0f0';
+      riskEl.appendChild(d);
+    }
   }
   document.getElementById('d-desc').textContent = a.desc;
 
-  // calc
-  document.getElementById('qty-input').value = 1;
-  updateCalc();
+  // chart vs arrows
+  const chartWrap = document.getElementById('chart-wrap');
+  const arrowsEl = document.getElementById('price-arrows');
+  if (isEasy) {
+    chartWrap.style.display = 'none';
+    arrowsEl.style.display = '';
+    const arrows = hist.slice(1).map((v, i) => {
+      const p = hist[i];
+      return v > p ? '▲' : v < p ? '▼' : '—';
+    });
+    arrowsEl.textContent = arrows.length ? arrows.join(' ') : '—';
+  } else {
+    chartWrap.style.display = '';
+    arrowsEl.style.display = 'none';
+    const canvas = document.getElementById('price-chart');
+    canvas.width = canvas.offsetWidth || 300;
+    drawChart(canvas, assetId);
+  }
 
-  // chart
-  const canvas = document.getElementById('price-chart');
-  canvas.width = canvas.offsetWidth || 300;
-  drawChart(canvas, assetId);
+  // trade UI
+  const qtyRow = document.querySelector('.qty-row');
+  const tradeCalc = document.getElementById('trade-calc');
+  const warnBox = document.getElementById('warn-concentrate');
+  const normalBtns = document.getElementById('normal-trade-btns');
+  const easySection = document.getElementById('easy-trade-section');
+  if (isEasy) {
+    qtyRow.style.display = 'none';
+    tradeCalc.style.display = 'none';
+    warnBox.style.display = 'none';
+    normalBtns.style.display = 'none';
+    easySection.style.display = '';
+    document.getElementById('trade-feedback').textContent = '';
+    updateEasyBtns();
+  } else {
+    qtyRow.style.display = '';
+    tradeCalc.style.display = '';
+    normalBtns.style.display = '';
+    easySection.style.display = 'none';
+    document.getElementById('qty-input').value = 1;
+    updateCalc();
+  }
 
   showScreen('screen-detail');
+}
+
+function updateEasyBtns() {
+  const assetId = gs.selectedAsset;
+  const price = gs.prices[assetId];
+  const canBuy = gs.cash >= price;
+  const canSell = (gs.holdings[assetId]?.units || 0) > 0;
+  document.getElementById('btn-buy-1').disabled = !canBuy;
+  document.getElementById('btn-sell-1').disabled = !canSell;
 }
 
 function changeQty(delta) {
@@ -566,6 +742,47 @@ function executeSell() {
   showDetail(assetId);
 }
 
+function executeBuy1() {
+  const assetId = gs.selectedAsset;
+  const price = gs.prices[assetId];
+  if (gs.cash < price) {
+    document.getElementById('trade-feedback').textContent = '😢 おかねがたりないよ！';
+    return;
+  }
+  buyAsset(assetId, 1);
+  renderGame();
+  document.getElementById('trade-feedback').textContent = `✅ 1つ買ったよ！¥${price.toLocaleString()} つかった。`;
+  updateEasyBtns();
+  // update price/holding display
+  const a = getAssets().find(x=>x.id===assetId);
+  const h = gs.holdings[assetId];
+  if (h) {
+    const pl = (gs.prices[assetId] - h.avgCost) * h.units;
+    document.getElementById('d-avgcost').textContent = `もってる: ${h.units}つ　いまうったら: ${pl >= 0 ? '+' : '−'}¥${Math.abs(Math.round(pl)).toLocaleString()}`;
+  }
+}
+
+function executeSell1() {
+  const assetId = gs.selectedAsset;
+  const h = gs.holdings[assetId];
+  if (!h || h.units < 1) {
+    document.getElementById('trade-feedback').textContent = '😢 もってないよ！';
+    return;
+  }
+  const price = gs.prices[assetId];
+  sellAsset(assetId, 1);
+  renderGame();
+  document.getElementById('trade-feedback').textContent = `💰 1つ売ったよ！¥${price.toLocaleString()} もらった。`;
+  updateEasyBtns();
+  const hAfter = gs.holdings[assetId];
+  if (hAfter && hAfter.units > 0) {
+    const pl = (gs.prices[assetId] - hAfter.avgCost) * hAfter.units;
+    document.getElementById('d-avgcost').textContent = `もってる: ${hAfter.units}つ　いまうったら: ${pl >= 0 ? '+' : '−'}¥${Math.abs(Math.round(pl)).toLocaleString()}`;
+  } else {
+    document.getElementById('d-avgcost').textContent = '';
+  }
+}
+
 // ======== CHART ========
 function drawChart(canvas, assetId) {
   const data = gs.priceHistory[assetId];
@@ -599,10 +816,11 @@ function drawChart(canvas, assetId) {
 // ======== NEXT TURN ========
 function nextTurn() {
   if (gs.game !== 'active') return;
+  const maxTurns = gs.mode === 'easy' ? EASY_MAX_TURNS : MAX_TURNS;
   document.getElementById('btn-next').disabled = true;
   simulateTurn();
   gs.turn++;
-  if (gs.turn > MAX_TURNS) {
+  if (gs.turn > maxTurns) {
     showNews(() => showResult());
   } else {
     renderGame();
@@ -615,33 +833,57 @@ function nextTurn() {
 // ======== NEWS MODAL ========
 function showNews(callback) {
   window._newsCallback = callback;
+  const isEasy = gs.mode === 'easy';
   const ev = gs.pendingEvent;
   const div = gs.pendingDividend || 0;
 
-  let title = '📊 今月の市場';
-  let body = '特に大きなニュースはありませんでした。相場は静かに動いています。';
-  let lesson = '毎月コツコツ積み立てることが長期投資の基本です。';
-
-  if (ev) {
-    title = ev.title;
-    body = ev.body;
-    lesson = ev.lesson;
-    gs.eventsLearned.add(ev.id);
+  let title, body, lesson;
+  if (isEasy) {
+    title = '📢 おしらせ';
+    body = 'とくにおおきなできごとはなかったよ。ねだんはすこしずつかわったよ。';
+    lesson = 'まいターンおみせのねだんをかくにんしてみよう！';
+    if (ev) {
+      title = ev.title;
+      body = ev.body;
+      lesson = ev.lesson;
+      gs.eventsLearned.add(ev.id);
+    }
+  } else {
+    title = '📊 今月の市場';
+    body = '特に大きなニュースはありませんでした。相場は静かに動いています。';
+    lesson = '毎月コツコツ積み立てることが長期投資の基本です。';
+    if (ev) {
+      title = ev.title;
+      body = ev.body;
+      lesson = ev.lesson;
+      gs.eventsLearned.add(ev.id);
+    }
+    if (div > 0) {
+      body += `\n💰 配当金 ¥${div.toLocaleString()} を受け取りました！`;
+    }
   }
 
-  if (div > 0) {
-    body += `\n💰 配当金 ¥${div.toLocaleString()} を受け取りました！`;
+  // news emoji (easy mode)
+  const emojiEl = document.getElementById('news-emoji');
+  if (isEasy && ev?.emoji) {
+    emojiEl.textContent = ev.emoji;
+    emojiEl.style.display = '';
+  } else {
+    emojiEl.style.display = 'none';
   }
-
-  // market phase commentary
-  const phaseMsg = {bull:'📈 現在は強気相場です。株価が上がりやすい状況です。', bear:'📉 現在は弱気相場です。慎重に行動しましょう。', neutral:''}[gs.marketPhase];
 
   document.getElementById('news-title').textContent = title;
   document.getElementById('news-body').textContent = body;
   document.getElementById('news-lesson').textContent = '💡 ' + lesson;
+
   const divEl = document.getElementById('news-div-info');
-  if (phaseMsg) { divEl.textContent = phaseMsg; divEl.style.display=''; }
-  else divEl.style.display='none';
+  if (!isEasy) {
+    const phaseMsg = {bull:'📈 現在は強気相場です。株価が上がりやすい状況です。', bear:'📉 現在は弱気相場です。慎重に行動しましょう。', neutral:''}[gs.marketPhase];
+    if (phaseMsg) { divEl.textContent = phaseMsg; divEl.style.display=''; }
+    else divEl.style.display='none';
+  } else {
+    divEl.style.display = 'none';
+  }
 
   document.getElementById('modal-news').style.display='flex';
 }
@@ -657,51 +899,91 @@ function closeNewsOnOutside(e) {
 
 // ======== RESULT ========
 function showResult() {
+  const isEasy = gs.mode === 'easy';
+  const startCash = isEasy ? EASY_START_CASH : START_CASH;
+  document.getElementById('r-title').textContent = isEasy ? '6ターン、よくがんばったね！' : '1年間お疲れさま！';
   const total = calcTotal();
-  const profit = total - START_CASH;
-  const pct = (profit/START_CASH*100).toFixed(1);
+  const profit = total - startCash;
   const sign = profit>=0?'+':'';
 
   // stars
-  const rate = profit/START_CASH;
+  const rate = profit/startCash;
   const stars = rate>=.6?'⭐⭐⭐⭐⭐':rate>=.3?'⭐⭐⭐⭐':rate>=.1?'⭐⭐⭐':rate>=0?'⭐⭐':'⭐';
 
   document.getElementById('r-stars').textContent = stars;
   document.getElementById('r-total').textContent = '¥' + total.toLocaleString();
   const pctEl = document.getElementById('r-pct');
-  pctEl.textContent = sign + profit.toLocaleString() + '円 (' + sign + pct + '%)';
+  if (isEasy) {
+    pctEl.textContent = profit >= 0
+      ? `+¥${profit.toLocaleString()} もうかった！🎉`
+      : `−¥${Math.abs(profit).toLocaleString()} へっちゃった…`;
+  } else {
+    const pct = (profit/startCash*100).toFixed(1);
+    pctEl.textContent = sign + profit.toLocaleString() + '円 (' + sign + pct + '%)';
+  }
   pctEl.className = 'result-pct ' + (profit>=0?'up':'down');
 
-  // index comparison
-  const idxVal = calcIndexOnly();
-  const idxProfit = idxVal - START_CASH;
-  const idxPct = (idxProfit/START_CASH*100).toFixed(1);
-  const idxSign = idxProfit>=0?'+':'';
-  document.getElementById('r-index').textContent = '¥' + idxVal.toLocaleString();
-  document.getElementById('r-index-pct').textContent = idxSign + idxPct + '% (' + idxSign + idxProfit.toLocaleString() + '円)';
+  // index comparison (normal mode only)
+  const compareBox = document.getElementById('r-compare-box');
+  if (isEasy) {
+    compareBox.style.display = 'none';
+  } else {
+    compareBox.style.display = '';
+    const idxVal = calcIndexOnly();
+    const idxProfit = idxVal - startCash;
+    const idxPct = (idxProfit/startCash*100).toFixed(1);
+    const idxSign = idxProfit>=0?'+':'';
+    document.getElementById('r-index').textContent = '¥' + idxVal.toLocaleString();
+    document.getElementById('r-index-pct').textContent = idxSign + idxPct + '% (' + idxSign + idxProfit.toLocaleString() + '円)';
+  }
 
   // tips
-  const tips = [
-    '分散投資でリスクを下げよう。株・インデックス・債券・金を組み合わせると安定します。',
-    'インデックスファンドは世界中の会社に自動分散投資できる便利な商品です。',
-    '長期で持ち続けると、短期の価格変動に左右されにくくなります。',
-    '配当金は保有しているだけでもらえるお金。複利で再投資するとさらに増えます。',
-    'NISAを使えば利益に税金がかかりません。18歳になったら積極活用しよう！',
-  ];
   const tipsList = document.getElementById('r-tips');
-  tipsList.innerHTML = '';
-  // show relevant tips based on what happened
-  const shown = new Set();
-  if (gs.dividendsTotal > 0) shown.add(3);
-  if (gs.eventsLearned.has('crash')) shown.add(0);
-  if (gs.eventsLearned.has('boom') || gs.eventsLearned.has('nisa')) shown.add(1);
-  shown.add(2);
-  if (shown.size < 3) shown.add(4);
-  [...shown].slice(0,3).forEach(i => {
-    const li = document.createElement('li');
-    li.textContent = tips[i];
-    tipsList.appendChild(li);
-  });
+  const lessonsEl = document.getElementById('r-lessons');
+  if (isEasy) {
+    tipsList.style.display = 'none';
+    lessonsEl.style.display = '';
+    lessonsEl.innerHTML = '';
+    const easyLessons = [
+      '🌈 いろんなおみせにわけると、1つがさがってもだいじょうぶ！',
+      '⭐ ニュースをみるとねだんのかわりかたがわかるよ！',
+      '🎮 きけんなおみせはもうかることもあるけど、さがることもあるよ！',
+    ];
+    // show event-relevant lessons first
+    const shown = new Set();
+    if (gs.eventsLearned.has('rain') || gs.eventsLearned.has('storm')) shown.add(0);
+    if (gs.eventsLearned.has('sunny') || gs.eventsLearned.has('summer')) shown.add(1);
+    if (gs.eventsLearned.has('gamehit')) shown.add(2);
+    shown.add(0); shown.add(1); shown.add(2);
+    [...shown].slice(0, 3).forEach(i => {
+      const div = document.createElement('div');
+      div.className = 'lesson-card';
+      div.textContent = easyLessons[i];
+      lessonsEl.appendChild(div);
+    });
+  } else {
+    tipsList.style.display = '';
+    lessonsEl.style.display = 'none';
+    tipsList.innerHTML = '';
+    const tips = [
+      '分散投資でリスクを下げよう。株・インデックス・債券・金を組み合わせると安定します。',
+      'インデックスファンドは世界中の会社に自動分散投資できる便利な商品です。',
+      '長期で持ち続けると、短期の価格変動に左右されにくくなります。',
+      '配当金は保有しているだけでもらえるお金。複利で再投資するとさらに増えます。',
+      'NISAを使えば利益に税金がかかりません。18歳になったら積極活用しよう！',
+    ];
+    const shown = new Set();
+    if (gs.dividendsTotal > 0) shown.add(3);
+    if (gs.eventsLearned.has('crash')) shown.add(0);
+    if (gs.eventsLearned.has('boom') || gs.eventsLearned.has('nisa')) shown.add(1);
+    shown.add(2);
+    if (shown.size < 3) shown.add(4);
+    [...shown].slice(0,3).forEach(i => {
+      const li = document.createElement('li');
+      li.textContent = tips[i];
+      tipsList.appendChild(li);
+    });
+  }
 
   gs.game = 'done';
   showScreen('screen-result');
