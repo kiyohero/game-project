@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>神経衰弱</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    h1 { font-size: 2rem; margin-bottom: 8px; }
+
+    /* 難易度ボタン */
+    .difficulty-select {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      justify-content: center;
+    }
+    .diff-btn {
+      background: #d4c8e0;
+      color: #6b5b7a;
+      border: none;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-size: 0.88rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .diff-btn:hover { background: #c4b4d4; transform: scale(1.05); }
+    .diff-btn.active {
+      background: #7a6b8a;
+      color: #fff;
+    }
+
+    /* 統計バー */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      background: #e8e0f0;
+      border-radius: 10px;
+      padding: 10px 20px;
+      margin-bottom: 14px;
+      font-size: 0.92rem;
+      color: #6b5b7a;
+      font-weight: bold;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: #9b8ab8;
+      font-weight: normal;
+    }
+    .stat-value {
+      font-size: 1.1rem;
+    }
+
+    /* ゲームボード */
+    .board-wrapper {
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 14px;
+    }
+    .board {
+      display: grid;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    /* カード */
+    .card {
+      width: 70px;
+      height: 70px;
+      cursor: pointer;
+      perspective: 600px;
+    }
+    .card.small {
+      width: 60px;
+      height: 60px;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      transition: transform 0.4s;
+    }
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 2px 6px rgba(107, 91, 122, 0.2);
+    }
+    .card-back-face {
+      background: linear-gradient(135deg, #9b8ab8, #7a6b8a);
+      color: white;
+      font-size: 1.4rem;
+    }
+    .card-front-face {
+      background: #fff;
+      transform: rotateY(180deg);
+      font-size: 2.2rem;
+    }
+    .card.small .card-front-face {
+      font-size: 1.8rem;
+    }
+    .card:hover:not(.flipped):not(.matched) .card-inner {
+      transform: scale(1.08);
+    }
+    .card.matched .card-inner {
+      opacity: 0.5;
+    }
+    .card.matched .card-front-face {
+      background: #e8e0f0;
+    }
+    .card.matched {
+      cursor: default;
+    }
+    .card.no-hover {
+      cursor: default;
+    }
+
+    /* リセットボタン */
+    .reset-btn {
+      background: linear-gradient(135deg, #a78bbd, #8b6fa8);
+      color: white;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 22px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 3px 10px rgba(107, 91, 122, 0.3);
+      margin-bottom: 20px;
+    }
+    .reset-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 14px rgba(107, 91, 122, 0.4);
+    }
+    .reset-btn:active { transform: scale(0.96); }
+
+    /* ベストタイム表示 */
+    .best-time-row {
+      font-size: 0.82rem;
+      color: #9b8ab8;
+      margin-bottom: 10px;
+    }
+
+    /* 勝利オーバーレイ */
+    .win-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(250, 245, 255, 0.93);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .win-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .win-overlay h2 {
+      font-size: 2.5rem;
+      color: #6b5b7a;
+      margin-bottom: 16px;
+    }
+    .win-stats {
+      background: #e8e0f0;
+      border-radius: 12px;
+      padding: 18px 28px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    .win-stats p {
+      color: #6b5b7a;
+      font-size: 1rem;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    .win-stats .best-record {
+      color: #a870d0;
+      font-size: 0.88rem;
+      margin-top: 8px;
+      font-weight: normal;
+    }
+    .win-btn {
+      background: linear-gradient(135deg, #a78bbd, #8b6fa8);
+      color: white;
+      border: none;
+      padding: 12px 34px;
+      border-radius: 24px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.15s;
+      box-shadow: 0 3px 12px rgba(107, 91, 122, 0.35);
+    }
+    .win-btn:hover { transform: scale(1.06); }
+    .win-btn:active { transform: scale(0.96); }
+
+    /* あそびかた */
+    .how-to-play { max-width: 460px; }
+
+    @media (max-width: 400px) {
+      .card { width: 58px; height: 58px; }
+      .card.small { width: 48px; height: 48px; }
+      .card-front-face { font-size: 1.6rem; }
+      .card.small .card-front-face { font-size: 1.3rem; }
+      .card-back-face { font-size: 1.1rem; }
+      .board { gap: 5px; }
+      .stats-bar { gap: 10px; padding: 8px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 神経衰弱</h1>
+
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
+    <ul>
+      <li>カードをクリックしてめくろう</li>
+      <li>同じ絵柄のカードを2枚そろえよう</li>
+      <li>そろえたカードは消えるよ</li>
+      <li>全部そろえたらクリア！</li>
+      <li>少ないターン数で早くクリアしよう</li>
+    </ul>
+  </details>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-label">タイム</span>
+      <span class="stat-value" id="timer">0:00</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">ターン</span>
+      <span class="stat-value" id="turns">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">スコア</span>
+      <span class="stat-value" id="score">0</span>
+    </div>
+  </div>
+
+  <div class="difficulty-select">
+    <button class="diff-btn active" data-diff="easy">イージー</button>
+    <button class="diff-btn" data-diff="normal">ノーマル</button>
+    <button class="diff-btn" data-diff="hard">ハード</button>
+  </div>
+
+  <div class="best-time-row" id="bestTimeRow">ベストタイム: --</div>
+
+  <div class="board-wrapper">
+    <div class="board" id="board"></div>
+  </div>
+
+  <button class="reset-btn" id="resetBtn">🔄 もう一度</button>
+
+  <!-- 勝利オーバーレイ -->
+  <div class="win-overlay" id="winOverlay">
+    <h2>クリア！🎉</h2>
+    <div class="win-stats" id="winStats"></div>
+    <button class="win-btn" id="winBtn">もう一度</button>
+  </div>
+
+  <script>
+    const EMOJIS = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐙','🦋'];
+
+    const DIFFICULTIES = {
+      easy:   { cols: 4, pairs: 8,  label: 'イージー' },
+      normal: { cols: 4, pairs: 10, label: 'ノーマル' },
+      hard:   { cols: 5, pairs: 15, label: 'ハード'   }
+    };
+
+    let cards = [];
+    let flipped = [];
+    let matched = 0;
+    let turns = 0;
+    let score = 0;
+    let startTime = null;
+    let timerInterval = null;
+    let isLocked = false;
+    let difficulty = 'easy';
+    let gameStarted = false;
+
+    // --- Fisher-Yates shuffle ---
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // --- Timer ---
+    function startTimer() {
+      startTime = Date.now();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimerDisplay, 500);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function elapsedSeconds() {
+      if (!startTime) return 0;
+      return Math.floor((Date.now() - startTime) / 1000);
+    }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      return m + ':' + String(s).padStart(2, '0');
+    }
+
+    function updateTimerDisplay() {
+      document.getElementById('timer').textContent = formatTime(elapsedSeconds());
+    }
+
+    // --- Stats UI ---
+    function updateStats() {
+      document.getElementById('turns').textContent = turns;
+      document.getElementById('score').textContent = score;
+    }
+
+    // --- Best time ---
+    function bestTimeKey() {
+      return 'memoryGame_bestTime_' + difficulty;
+    }
+
+    function getBestTime() {
+      const v = localStorage.getItem(bestTimeKey());
+      return v !== null ? parseInt(v, 10) : null;
+    }
+
+    function saveBestTime(secs) {
+      const current = getBestTime();
+      if (current === null || secs < current) {
+        localStorage.setItem(bestTimeKey(), secs);
+        return true;
+      }
+      return false;
+    }
+
+    function updateBestTimeDisplay() {
+      const best = getBestTime();
+      const el = document.getElementById('bestTimeRow');
+      el.textContent = 'ベストタイム: ' + (best !== null ? formatTime(best) : '--');
+    }
+
+    // --- Init / Create board ---
+    function initGame() {
+      stopTimer();
+      cards = [];
+      flipped = [];
+      matched = 0;
+      turns = 0;
+      score = 0;
+      startTime = null;
+      isLocked = false;
+      gameStarted = false;
+
+      document.getElementById('timer').textContent = '0:00';
+      updateStats();
+      updateBestTimeDisplay();
+      hideWinOverlay();
+      createBoard();
+    }
+
+    function createBoard() {
+      const cfg = DIFFICULTIES[difficulty];
+      const selectedEmojis = shuffle(EMOJIS).slice(0, cfg.pairs);
+      const deck = shuffle([...selectedEmojis, ...selectedEmojis]);
+
+      cards = deck.map((emoji, i) => ({ id: i, emoji, flipped: false, matched: false }));
+
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+      board.style.gridTemplateColumns = 'repeat(' + cfg.cols + ', 1fr)';
+
+      const isHard = difficulty === 'hard';
+
+      cards.forEach((card, i) => {
+        const el = document.createElement('div');
+        el.className = 'card' + (isHard ? ' small' : '');
+        el.dataset.index = i;
+        el.innerHTML = `
+          <div class="card-inner">
+            <div class="card-face card-back-face">🂠</div>
+            <div class="card-face card-front-face">${card.emoji}</div>
+          </div>
+        `;
+        el.addEventListener('click', () => handleCardClick(i));
+        board.appendChild(el);
+      });
+    }
+
+    // --- Card click handler ---
+    function handleCardClick(index) {
+      if (isLocked) return;
+      if (cards[index].matched) return;
+      if (cards[index].flipped) return;
+      if (flipped.length >= 2) return;
+      if (flipped.includes(index)) return;
+
+      // Start timer on first click
+      if (!gameStarted) {
+        gameStarted = true;
+        startTimer();
+      }
+
+      // Flip this card
+      cards[index].flipped = true;
+      flipped.push(index);
+
+      const cardEl = document.querySelector('.card[data-index="' + index + '"]');
+      cardEl.classList.add('flipped');
+
+      if (flipped.length === 2) {
+        isLocked = true;
+        turns++;
+        updateStats();
+        setTimeout(checkMatch, 800);
+      }
+    }
+
+    // --- Check match ---
+    function checkMatch() {
+      const [a, b] = flipped;
+      const cardA = cards[a];
+      const cardB = cards[b];
+
+      if (cardA.emoji === cardB.emoji) {
+        // Match!
+        cardA.matched = true;
+        cardB.matched = true;
+        matched++;
+        score += 100;
+
+        const elA = document.querySelector('.card[data-index="' + a + '"]');
+        const elB = document.querySelector('.card[data-index="' + b + '"]');
+        elA.classList.add('matched');
+        elB.classList.add('matched');
+
+        flipped = [];
+        isLocked = false;
+        updateStats();
+        checkWin();
+      } else {
+        // No match — flip back
+        score = Math.max(0, score - 10);
+        flipBack();
+      }
+    }
+
+    function flipBack() {
+      const [a, b] = flipped;
+      cards[a].flipped = false;
+      cards[b].flipped = false;
+
+      const elA = document.querySelector('.card[data-index="' + a + '"]');
+      const elB = document.querySelector('.card[data-index="' + b + '"]');
+      elA.classList.remove('flipped');
+      elB.classList.remove('flipped');
+
+      flipped = [];
+      isLocked = false;
+      updateStats();
+    }
+
+    // --- Win condition ---
+    function checkWin() {
+      const cfg = DIFFICULTIES[difficulty];
+      if (matched === cfg.pairs) {
+        stopTimer();
+        updateTimerDisplay();
+        const secs = elapsedSeconds();
+        const isNewBest = saveBestTime(secs);
+        setTimeout(() => showWinOverlay(secs, isNewBest), 300);
+      }
+    }
+
+    function showWinOverlay(secs, isNewBest) {
+      const best = getBestTime();
+      const statsEl = document.getElementById('winStats');
+      statsEl.innerHTML =
+        '<p>タイム: ' + formatTime(secs) + '</p>' +
+        '<p>ターン数: ' + turns + '</p>' +
+        '<p>スコア: ' + score + '</p>' +
+        (isNewBest
+          ? '<p class="best-record">🏆 新記録達成！</p>'
+          : '<p class="best-record">ベストタイム: ' + formatTime(best) + '</p>');
+      document.getElementById('winOverlay').classList.add('show');
+      updateBestTimeDisplay();
+    }
+
+    function hideWinOverlay() {
+      document.getElementById('winOverlay').classList.remove('show');
+    }
+
+    // --- Difficulty buttons ---
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        difficulty = btn.dataset.diff;
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        initGame();
+      });
+    });
+
+    // --- Reset button ---
+    document.getElementById('resetBtn').addEventListener('click', initGame);
+    document.getElementById('winBtn').addEventListener('click', initGame);
+
+    // --- Start ---
+    initGame();
+  </script>
+</body>
+</html>
