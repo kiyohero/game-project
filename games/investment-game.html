@@ -108,11 +108,11 @@
   <div style="text-align:center;padding:24px 0 8px">
     <div style="font-size:3rem">📈</div>
     <h1>投資シミュレーター</h1>
-    <p class="subtitle">100万円を1年間運用しよう！</p>
+    <p class="subtitle">1万円を1年間運用しよう！</p>
   </div>
   <div class="card">
     <div style="font-size:.88rem;color:#6b5b7a;line-height:1.7">
-      仮想の100万円で実際の投資体験！<br>
+      仮想の1万円で実際の投資体験！<br>
       株・インデックスファンド・国債・金の中から選んで、
       1年間（12ヶ月）運用してみよう。<br>
       毎月ニュースが届き、価格が変わる。
@@ -152,9 +152,9 @@
   <!-- total assets -->
   <div class="assets-card">
     <div class="assets-label">総資産</div>
-    <div class="assets-total" id="g-total">¥1,000,000</div>
+    <div class="assets-total" id="g-total">¥10,000</div>
     <div id="g-change" class="assets-change neutral">±0円 (0.00%)</div>
-    <div class="assets-cash" id="g-cash">現金: ¥1,000,000</div>
+    <div class="assets-cash" id="g-cash">現金: ¥10,000</div>
   </div>
 
   <!-- asset list -->
@@ -218,12 +218,12 @@
   <div class="card" style="text-align:center">
     <div class="result-score" id="r-stars">⭐⭐⭐</div>
     <div style="font-size:.85rem;color:#9b8ab8;margin-bottom:4px">最終資産</div>
-    <div class="result-total" id="r-total">¥1,000,000</div>
+    <div class="result-total" id="r-total">¥10,000</div>
     <div class="result-pct" id="r-pct">±0円 (0.00%)</div>
   </div>
   <div class="compare-box">
     <div class="compare-label">🌍 もし世界株インデックスだけ買っていたら…</div>
-    <div class="compare-val" id="r-index">¥1,000,000</div>
+    <div class="compare-val" id="r-index">¥10,000</div>
     <div style="font-size:.78rem;color:#4a9b8a;margin-top:2px" id="r-index-pct"></div>
   </div>
   <div class="card">
@@ -247,11 +247,11 @@
 <script>
 // ======== DATA ========
 const ASSETS = [
-  {id:'game',  name:'ゲーム株',          emoji:'🎮', type:'stock', initPrice:5000,  vol:.08,  drift:.004,  div:.01,  risk:4, color:'#e8734a', desc:'人気ゲームが出ると大きく上がるが、失敗すると急落する。'},
-  {id:'bank',  name:'銀行株',            emoji:'🏦', type:'stock', initPrice:2000,  vol:.04,  drift:.002,  div:.03,  risk:2, color:'#e8734a', desc:'安定しているが成長は緩やか。配当が多い。'},
-  {id:'world', name:'世界株インデックス', emoji:'🌍', type:'index', initPrice:20000, vol:.035, drift:.005,  div:.015, risk:2, color:'#4a9b8a', desc:'世界中の会社に分散投資。長期投資の王道。'},
-  {id:'bond',  name:'国債ファンド',       emoji:'📋', type:'bond',  initPrice:10000, vol:.008, drift:.0015, div:.01,  risk:1, color:'#4a7ab8', desc:'ほぼ動かない安全資産。増えにくいが守れる。'},
-  {id:'gold',  name:'金ファンド',         emoji:'🥇', type:'gold',  initPrice:8000,  vol:.045, drift:.002,  div:0,    risk:3, color:'#c8a832', desc:'株が下がると上がることが多い守りの資産。'},
+  {id:'game',  name:'ゲーム株',          emoji:'🎮', type:'stock', initPrice:50,  vol:.08,  drift:.004,  div:.01,  risk:4, color:'#e8734a', desc:'人気ゲームが出ると大きく上がるが、失敗すると急落する。'},
+  {id:'bank',  name:'銀行株',            emoji:'🏦', type:'stock', initPrice:20,  vol:.04,  drift:.002,  div:.03,  risk:2, color:'#e8734a', desc:'安定しているが成長は緩やか。配当が多い。'},
+  {id:'world', name:'世界株インデックス', emoji:'🌍', type:'index', initPrice:200, vol:.035, drift:.005,  div:.015, risk:2, color:'#4a9b8a', desc:'世界中の会社に分散投資。長期投資の王道。'},
+  {id:'bond',  name:'国債ファンド',       emoji:'📋', type:'bond',  initPrice:100, vol:.008, drift:.0015, div:.01,  risk:1, color:'#4a7ab8', desc:'ほぼ動かない安全資産。増えにくいが守れる。'},
+  {id:'gold',  name:'金ファンド',         emoji:'🥇', type:'gold',  initPrice:80,  vol:.045, drift:.002,  div:0,    risk:3, color:'#c8a832', desc:'株が下がると上がることが多い守りの資産。'},
 ];
 
 const EVENTS = [
@@ -265,7 +265,7 @@ const EVENTS = [
 
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const MAX_TURNS = 12;
-const START_CASH = 1_000_000;
+const START_CASH = 10_000;
 
 // ======== STATE ========
 let gs = {};
@@ -324,7 +324,7 @@ function simulateTurn() {
     const prev = gs.prices[a.id];
     const change = a.drift * pm + a.vol * boxMuller();
     const evImpact = event?.impact?.[a.id] || 0;
-    const np = Math.max(prev * (1 + change + evImpact), a.initPrice * 0.1);
+    const np = Math.max(prev * (1 + change + evImpact), Math.max(a.initPrice * 0.1, 1));
     gs.prices[a.id] = Math.round(np);
     gs.priceHistory[a.id].push(Math.round(np));
   });
