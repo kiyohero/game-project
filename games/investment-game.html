@@ -113,6 +113,40 @@
     .btn-buy-1:disabled,.btn-sell-1:disabled{background:#ccc;color:#999;cursor:not-allowed}
     .trade-feedback{margin-top:10px;font-size:.92rem;font-weight:700;text-align:center;min-height:22px}
     .lesson-card{background:#fff;border-radius:12px;padding:12px 14px;font-size:.88rem;color:#4a3560;border-left:4px solid #9b8ab8;margin-bottom:8px;line-height:1.6}
+
+    /* ===== EASY INTRO SCREEN ===== */
+    #screen-easy-intro{background:linear-gradient(160deg,#fff9e6,#fef0ff)}
+    .intro-slide{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:24px 16px;text-align:center}
+    .intro-slide.active{display:flex}
+    .intro-mascot{font-size:4.5rem;margin-bottom:12px;animation:bounce 1.4s infinite}
+    @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .intro-title{font-size:1.4rem;font-weight:900;color:#6b5b7a;margin-bottom:10px}
+    .intro-body{font-size:1rem;color:#4a3560;line-height:1.85;margin-bottom:16px}
+    .intro-visual{font-size:2rem;letter-spacing:6px;margin:10px 0;font-weight:900}
+    .intro-dots{display:flex;gap:8px;justify-content:center;margin:16px 0 4px}
+    .intro-dot{width:10px;height:10px;border-radius:50%;background:#e8e0f0;transition:background .3s}
+    .intro-dot.active{background:#9b8ab8}
+    .btn-intro-next{background:linear-gradient(135deg,#f0c040,#e8a020);color:#fff;border:none;border-radius:14px;padding:16px 0;font-size:1.1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(240,192,64,.4);width:100%;margin-top:8px}
+    .btn-intro-next:active{transform:scale(.96)}
+    .shop-preview{display:flex;justify-content:center;gap:14px;margin:14px 0}
+    .shop-card-mini{background:#fff;border-radius:12px;padding:12px 14px;text-align:center;box-shadow:0 2px 8px rgba(107,91,122,.15);min-width:72px}
+    .shop-card-mini .s-emoji{font-size:2rem}
+    .shop-card-mini .s-name{font-size:.72rem;color:#6b5b7a;font-weight:700;margin-top:4px}
+
+    /* ===== TUTORIAL OVERLAY ===== */
+    #tutorial-overlay{position:fixed;bottom:0;left:0;right:0;z-index:300;display:flex;justify-content:center;pointer-events:none}
+    .tutorial-panel{background:rgba(75,45,100,.93);color:#fff;border-radius:20px 20px 0 0;padding:16px 20px 28px;max-width:480px;width:100%;pointer-events:all;box-shadow:0 -4px 24px rgba(75,45,100,.4)}
+    .tut-mascot{font-size:1.8rem;display:inline-block;margin-right:8px;vertical-align:middle}
+    .tut-text{font-size:1rem;font-weight:700;line-height:1.6;vertical-align:middle;display:inline}
+    .tut-skip{display:block;text-align:right;font-size:.78rem;color:rgba(255,255,255,.6);cursor:pointer;margin-top:6px;text-decoration:underline}
+
+    /* ===== SPOTLIGHT HIGHLIGHT ===== */
+    .tut-highlight{position:relative;z-index:200}
+    .tut-highlight::after{content:'';position:absolute;inset:-6px;border-radius:18px;border:3px solid #f0c040;animation:pulse-border 1.2s infinite;pointer-events:none}
+    @keyframes pulse-border{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(240,192,64,.6)}50%{opacity:.7;box-shadow:0 0 0 8px rgba(240,192,64,0)}}
+
+    /* ===== FREE-PLAY HINT BAR ===== */
+    #easy-hint-bar{background:#fff9e6;border-radius:10px;padding:8px 14px;font-size:.85rem;color:#856404;margin-bottom:10px;border-left:3px solid #f0c040;display:none}
   </style>
 </head>
 <body>
@@ -154,6 +188,67 @@
   </div>
 </div>
 
+<!-- SCREEN: EASY INTRO (tutorial slides) -->
+<div id="screen-easy-intro" class="screen">
+  <!-- Slide 1: Welcome -->
+  <div id="intro-slide-1" class="intro-slide active">
+    <div class="intro-mascot">🐷</div>
+    <div class="intro-title">とうしゲームへようこそ！</div>
+    <div class="intro-body">コブタといっしょに<br>おかねのふやしかたを<br>まなぼう！</div>
+    <button class="btn-intro-next" onclick="introNext()">つぎへ ▶</button>
+  </div>
+  <!-- Slide 2: You have ¥1000 -->
+  <div id="intro-slide-2" class="intro-slide">
+    <div class="intro-mascot">🐷</div>
+    <div class="intro-title">¥1000 もってるよ！</div>
+    <div class="intro-visual">🪙🪙🪙🪙🪙</div>
+    <div class="intro-body">きみには<b>¥1000</b>のおこづかいがあるよ。<br>このおかねをつかって<br>おみせを「かう」ことができるよ！</div>
+    <button class="btn-intro-next" onclick="introNext()">つぎへ ▶</button>
+  </div>
+  <!-- Slide 3: What is investment? -->
+  <div id="intro-slide-3" class="intro-slide">
+    <div class="intro-mascot">🐷</div>
+    <div class="intro-title">とうしってなに？</div>
+    <div class="intro-visual">🍎 → 💰</div>
+    <div class="intro-body">おみせのオーナーになると、<br>おみせがもうかったとき<br>きみのおかねもふえるよ！<br><br>これが<b>「とうし」</b>だよ✨</div>
+    <button class="btn-intro-next" onclick="introNext()">つぎへ ▶</button>
+  </div>
+  <!-- Slide 4: Prices go up and down -->
+  <div id="intro-slide-4" class="intro-slide">
+    <div class="intro-mascot">🐷</div>
+    <div class="intro-title">ねだんはかわるよ！</div>
+    <div class="intro-body">おみせのねだんは<br>まいターンかわるよ。</div>
+    <div class="intro-visual"><span class="up">▲ あがった！</span></div>
+    <div class="intro-visual"><span class="down">▼ さがった…</span></div>
+    <div class="intro-body" style="font-size:.9rem;margin-top:8px">うまくかったり、うったりして<br>おかねをふやしてみよう！</div>
+    <button class="btn-intro-next" onclick="introNext()">つぎへ ▶</button>
+  </div>
+  <!-- Slide 5: Meet the 3 shops -->
+  <div id="intro-slide-5" class="intro-slide">
+    <div class="intro-mascot">🐷</div>
+    <div class="intro-title">3つのおみせをしょうかい！</div>
+    <div class="shop-preview">
+      <div class="shop-card-mini"><div class="s-emoji">🍎</div><div class="s-name">くだもの屋</div></div>
+      <div class="shop-card-mini"><div class="s-emoji">🎮</div><div class="s-name">ゲーム屋</div></div>
+      <div class="shop-card-mini"><div class="s-emoji">🌸</div><div class="s-name">アイス屋</div></div>
+    </div>
+    <div class="intro-body" style="font-size:.9rem">
+      🍎 くだもの屋：ねだんがかわりにくい<br>
+      🎮 ゲーム屋：おおきくかわることも！<br>
+      🌸 アイス屋：きせつによってかわるよ
+    </div>
+    <button class="btn-intro-next" onclick="introStart()">ゲームをはじめる！ 🎉</button>
+  </div>
+  <!-- dot indicators -->
+  <div class="intro-dots">
+    <div class="intro-dot active" id="dot-1"></div>
+    <div class="intro-dot" id="dot-2"></div>
+    <div class="intro-dot" id="dot-3"></div>
+    <div class="intro-dot" id="dot-4"></div>
+    <div class="intro-dot" id="dot-5"></div>
+  </div>
+</div>
+
 <!-- SCREEN: GAME -->
 <div id="screen-game" class="screen">
   <div class="turn-bar">
@@ -167,6 +262,8 @@
     </div>
   </div>
 
+  <div id="easy-hint-bar">🐷 <span id="hint-bar-text"></span></div>
+
   <!-- total assets -->
   <div class="assets-card">
     <div class="assets-label">総資産</div>
@@ -176,7 +273,7 @@
   </div>
 
   <!-- asset list -->
-  <div class="card" style="padding:8px 16px">
+  <div id="g-asset-card" class="card" style="padding:8px 16px">
     <div style="font-size:.8rem;font-weight:700;color:#9b8ab8;margin-bottom:4px">銘柄一覧（タップで詳細）</div>
     <div id="asset-list"></div>
   </div>
@@ -191,7 +288,7 @@
 <!-- SCREEN: DETAIL -->
 <div id="screen-detail" class="screen">
   <div class="detail-header">
-    <button class="back-btn" onclick="showScreen('screen-game')">← 戻る</button>
+    <button class="back-btn" onclick="goBackFromDetail()">← 戻る</button>
     <span class="detail-name" id="d-name">銘柄名</span>
   </div>
   <div style="display:flex;align-items:baseline;gap:0;margin-bottom:4px">
@@ -272,6 +369,14 @@
   </div>
 </div>
 
+<!-- TUTORIAL OVERLAY (easy mode only) -->
+<div id="tutorial-overlay" style="display:none">
+  <div class="tutorial-panel">
+    <span class="tut-mascot">🐷</span><span class="tut-text" id="tut-text">テキスト</span>
+    <span class="tut-skip" onclick="skipTutorial()">スキップ</span>
+  </div>
+</div>
+
 <script>
 // ======== DATA ========
 const ASSETS = [
@@ -317,6 +422,11 @@ const EASY_START_CASH = 1000;
 
 // ======== STATE ========
 let gs = {};
+
+// ======== TUTORIAL STATE ========
+let tutorialStep = 0;   // 0=inactive, 1-8=guided steps
+let introSlide   = 1;   // current intro slide (1-5)
+const TUTORIAL_TOTAL = 8;
 
 function getAssets() {
   return gs.mode === 'easy' ? EASY_ASSETS : ASSETS;
@@ -458,12 +568,109 @@ function showScreen(id) {
 function startGame(mode = 'normal') {
   gs = { mode };
   initState();
-  renderGame();
-  showScreen('screen-game');
+  if (mode === 'easy') {
+    // reset intro slides
+    introSlide = 1;
+    tutorialStep = 0;
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById('intro-slide-' + i).classList.toggle('active', i === 1);
+      document.getElementById('dot-' + i).classList.toggle('active', i === 1);
+    }
+    showScreen('screen-easy-intro');
+  } else {
+    renderGame();
+    showScreen('screen-game');
+  }
 }
 
 function resetGame() {
+  tutorialStep = 0;
+  document.getElementById('tutorial-overlay').style.display = 'none';
+  document.getElementById('easy-hint-bar').style.display = 'none';
+  document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
   showScreen('screen-title');
+}
+
+// ======== INTRO SLIDES ========
+function introNext() {
+  document.getElementById('intro-slide-' + introSlide).classList.remove('active');
+  document.getElementById('dot-' + introSlide).classList.remove('active');
+  introSlide++;
+  document.getElementById('intro-slide-' + introSlide).classList.add('active');
+  document.getElementById('dot-' + introSlide).classList.add('active');
+}
+
+function introStart() {
+  tutorialStep = 1;
+  renderGame();
+  showScreen('screen-game');
+  showTutorialStep(1);
+}
+
+// ======== TUTORIAL STEPS ========
+function showTutorialStep(step) {
+  tutorialStep = step;
+  const overlay = document.getElementById('tutorial-overlay');
+  const hintBar = document.getElementById('easy-hint-bar');
+
+  // clear previous highlights
+  document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+
+  if (step === 0 || step > TUTORIAL_TOTAL) {
+    overlay.style.display = 'none';
+    updateFreePlayHint();
+    return;
+  }
+
+  const steps = {
+    1: { text:'どのおみせにとうしする？おみせをタップしてみよう！', target:'g-asset-card' },
+    2: { text:'「1つかう」をおそう！おみせのオーナーになろう！', target:'btn-buy-1' },
+    3: { text:'「つぎのきせつへ」をおそう！きせつがすすむよ！', target:'btn-next' },
+    4: { text:'なにかできごとがあったよ！よんでみよう 👀', target: null },
+    5: { text:'ほら、ねだんがかわったよ！おみせをタップしてたしかめよう！', target:'g-asset-card' },
+    6: { text:'もうひとつのおみせにもとうしすると あんしん！べつのおみせもタップしてみよう！', target:'g-asset-card' },
+    7: { text:'「つぎのきせつへ」をもう1かいおそう！', target:'btn-next' },
+    8: { text:'チュートリアルかんりょう！のこり4ターン、じゆうにあそぼう！🎉', target: null },
+  };
+
+  const s = steps[step];
+  document.getElementById('tut-text').textContent = s.text;
+  overlay.style.display = 'flex';
+  hintBar.style.display = 'none';
+
+  if (s.target) {
+    const el = document.getElementById(s.target);
+    if (el) el.classList.add('tut-highlight');
+  }
+
+  if (step === 8) {
+    setTimeout(() => showTutorialStep(0), 2500);
+  }
+}
+
+function skipTutorial() {
+  document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+  showTutorialStep(0);
+}
+
+function goBackFromDetail() {
+  showScreen('screen-game');
+  if (gs.mode === 'easy' && tutorialStep === 6) {
+    showTutorialStep(6);
+  }
+}
+
+function updateFreePlayHint() {
+  if (gs.mode !== 'easy' || tutorialStep !== 0) return;
+  const remaining = (gs.mode === 'easy' ? EASY_MAX_TURNS : MAX_TURNS) - gs.turn + 1;
+  const hints = [
+    'いろんなおみせにわけると、リスクがへるよ！',
+    'ねだんがたかいときにうると、もうかるよ！',
+    'さいごのターンまでがんばろう！',
+  ];
+  const idx = Math.min(Math.floor((EASY_MAX_TURNS - remaining) / 2), hints.length - 1);
+  document.getElementById('easy-hint-bar').style.display = '';
+  document.getElementById('hint-bar-text').textContent = 'のこり' + remaining + 'ターン！ ' + hints[Math.max(0, idx)];
 }
 
 // ======== RENDER GAME ========
@@ -595,6 +802,8 @@ function renderGame() {
     }
     hList.appendChild(item);
   });
+
+  if (isEasy && tutorialStep === 0) updateFreePlayHint();
 }
 
 // ======== RENDER DETAIL ========
@@ -693,6 +902,11 @@ function showDetail(assetId) {
     updateCalc();
   }
 
+  // tutorial advancement
+  if (gs.mode === 'easy') {
+    if (tutorialStep === 1) showTutorialStep(2);
+    else if (tutorialStep === 5) showTutorialStep(6);
+  }
   showScreen('screen-detail');
 }
 
@@ -760,6 +974,11 @@ function executeBuy1() {
     const pl = (gs.prices[assetId] - h.avgCost) * h.units;
     document.getElementById('d-avgcost').textContent = `もってる: ${h.units}つ　いまうったら: ${pl >= 0 ? '+' : '−'}¥${Math.abs(Math.round(pl)).toLocaleString()}`;
   }
+  // tutorial advancement
+  if (gs.mode === 'easy') {
+    if (tutorialStep === 2) { showScreen('screen-game'); showTutorialStep(3); }
+    else if (tutorialStep === 6) { showScreen('screen-game'); showTutorialStep(7); }
+  }
 }
 
 function executeSell1() {
@@ -817,6 +1036,8 @@ function drawChart(canvas, assetId) {
 function nextTurn() {
   if (gs.game !== 'active') return;
   const maxTurns = gs.mode === 'easy' ? EASY_MAX_TURNS : MAX_TURNS;
+  const isEasy = gs.mode === 'easy';
+  const stepAtPress = tutorialStep;  // capture before async changes
   document.getElementById('btn-next').disabled = true;
   simulateTurn();
   gs.turn++;
@@ -824,8 +1045,16 @@ function nextTurn() {
     showNews(() => showResult());
   } else {
     renderGame();
+    // tutorial: show "read news" message when news opens
+    if (isEasy && stepAtPress === 3) showTutorialStep(4);
     showNews(() => {
       document.getElementById('btn-next').disabled = false;
+      // tutorial: after news closed, advance
+      if (isEasy) {
+        if (stepAtPress === 3) showTutorialStep(5);
+        else if (stepAtPress === 7) showTutorialStep(8);
+        else if (tutorialStep === 0) updateFreePlayHint();
+      }
     });
   }
 }
