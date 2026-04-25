@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>算術堂へようこそ</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: #0f172a;
+      font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', serif;
+      color: #e8dcc8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+    }
+    #game-root { width: 100%; max-width: 420px; min-height: 100vh; display: flex; flex-direction: column; }
+    .screen { display: none; flex-direction: column; min-height: 100vh; padding: 20px 16px; animation: fadeIn 0.3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    h1 { font-size: 1.8rem; color: #d4a017; text-align: center; margin-bottom: 8px; }
+    h2 { font-size: 1.3rem; color: #d4a017; margin-bottom: 12px; }
+    p { line-height: 1.7; margin-bottom: 8px; }
+    .card { background: rgba(30,41,59,0.9); border: 1px solid rgba(212,160,23,0.4); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .card-gold { background: rgba(30,41,59,0.9); border: 2px solid #d4a017; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .btn-primary { background: #c0392b; color: #fff; border: 2px solid #d4a017; border-radius: 10px; padding: 14px 24px; font-size: 1.1rem; font-family: inherit; font-weight: 700; width: 100%; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+    .btn-primary:hover { background: #e74c3c; }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-secondary { background: rgba(30,41,59,0.8); color: #e8dcc8; border: 1px solid rgba(212,160,23,0.5); border-radius: 10px; padding: 12px 20px; font-size: 1rem; font-family: inherit; width: 100%; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+    .btn-secondary:hover { border-color: #d4a017; color: #d4a017; }
+    .btn-secondary:active { transform: scale(0.97); }
+    .btn-hint { background: rgba(30,41,59,0.6); color: #b0a090; border: 1px dashed rgba(176,160,144,0.5); border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-family: inherit; width: 100%; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+    .btn-hint:hover { color: #d4a017; border-color: #d4a017; }
+    .btn-hint:disabled { opacity: 0.4; cursor: not-allowed; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 16px; border-bottom: 1px solid rgba(212,160,23,0.2); margin-bottom: 16px; }
+    .topbar-title { font-size: 1.1rem; color: #d4a017; font-weight: 700; }
+    .coin-display { background: rgba(212,160,23,0.15); border: 1px solid rgba(212,160,23,0.4); border-radius: 20px; padding: 4px 12px; font-size: 0.95rem; color: #d4a017; font-weight: 700; }
+    .area-card { background: rgba(30,41,59,0.9); border: 1px solid rgba(212,160,23,0.3); border-radius: 14px; padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 14px; }
+    .area-card:hover { border-color: #d4a017; transform: translateX(4px); }
+    .area-card:active { transform: scale(0.98); }
+    .area-card.cleared { border-color: rgba(34,197,94,0.5); }
+    .area-emoji { font-size: 2rem; }
+    .area-info { flex: 1; }
+    .area-name { font-size: 1.1rem; font-weight: 700; color: #d4a017; }
+    .area-topic { font-size: 0.85rem; color: #b0a090; margin-top: 2px; }
+    .area-tool { font-size: 0.8rem; color: #b0a090; margin-top: 4px; }
+    .cleared-badge { font-size: 1.2rem; }
+    .dialogue-box { background: rgba(15,23,42,0.8); border: 1px solid rgba(176,160,144,0.3); border-radius: 12px; padding: 16px; min-height: 90px; line-height: 1.8; cursor: pointer; position: relative; white-space: pre-wrap; }
+    .dialogue-box::after { content: '▼'; position: absolute; bottom: 8px; right: 12px; color: #b0a090; font-size: 0.7rem; animation: blink 1.2s infinite; }
+    .dialogue-box.typing::after { display: none; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .speaker { font-size: 2rem; text-align: center; margin-bottom: 6px; }
+    .speaker-name { text-align: center; font-size: 0.85rem; color: #b0a090; margin-bottom: 12px; }
+    .question-card { background: rgba(15,23,42,0.9); border: 2px solid rgba(212,160,23,0.6); border-radius: 14px; padding: 20px; margin-bottom: 14px; font-size: 1.05rem; line-height: 1.8; white-space: pre-wrap; }
+    .answer-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .answer-input { background: rgba(30,41,59,0.8); border: 2px solid rgba(212,160,23,0.5); border-radius: 10px; padding: 12px 16px; font-size: 1.4rem; font-family: inherit; color: #e8dcc8; flex: 1; text-align: center; outline: none; transition: border-color 0.2s; }
+    .answer-input:focus { border-color: #d4a017; }
+    .hint-box { background: rgba(212,160,23,0.1); border: 1px solid rgba(212,160,23,0.3); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 0.9rem; color: #d4a017; display: none; white-space: pre-wrap; }
+    .hint-box.show { display: block; }
+    .timer-bar-wrap { background: rgba(30,41,59,0.6); border-radius: 8px; height: 10px; margin-bottom: 14px; overflow: hidden; }
+    .timer-bar { height: 100%; border-radius: 8px; background: #d4a017; transition: width 0.95s linear, background 0.3s; }
+    .timer-bar.urgent { background: #e74c3c; }
+    .timer-label { text-align: center; font-size: 1.3rem; font-weight: 700; color: #d4a017; margin-bottom: 8px; }
+    .timer-label.urgent { color: #e74c3c; }
+    .result-icon { font-size: 3rem; text-align: center; margin-bottom: 12px; }
+    .result-title { font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 12px; }
+    .result-title.correct { color: #22c55e; }
+    .result-title.wrong { color: #d4a017; }
+    .coin-change { text-align: center; font-size: 1.2rem; font-weight: 700; margin: 12px 0; }
+    .coin-plus { color: #22c55e; }
+    .coin-minus { color: #e74c3c; }
+    .progress-label { text-align: center; color: #b0a090; font-size: 0.9rem; margin-bottom: 12px; }
+    .tool-shelf { display: flex; justify-content: center; gap: 20px; margin: 16px 0; }
+    .tool-item { text-align: center; font-size: 1.8rem; opacity: 0.25; transition: opacity 0.4s; }
+    .tool-item.acquired { opacity: 1; }
+    .tool-label { font-size: 0.65rem; color: #b0a090; margin-top: 2px; }
+    .steps-list { list-style: none; padding: 0; margin: 8px 0; }
+    .steps-list li { padding: 5px 0 5px 20px; position: relative; font-size: 0.9rem; color: #d4a017; }
+    .steps-list li::before { content: '→'; position: absolute; left: 0; color: #b0a090; }
+    .ending-box { text-align: center; padding: 24px 0; }
+    .ending-trophy { font-size: 4rem; margin-bottom: 12px; }
+    .ending-title { font-size: 1.8rem; color: #d4a017; font-weight: 700; margin-bottom: 8px; }
+    .back-link { color: #d4a017 !important; background: rgba(15,23,42,0.8) !important; }
+  </style>
+</head>
+<body>
+<div id="game-root">
+
+  <!-- Screen 1: Title -->
+  <div id="screen-title" class="screen active">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 0;">
+      <div style="font-size:4rem;margin-bottom:16px;">🏮</div>
+      <h1>算術堂へ<br>ようこそ</h1>
+      <p style="color:#b0a090;font-size:0.9rem;margin-bottom:28px;">〜算術の不思議な店〜</p>
+      <div class="card" style="width:100%;margin-bottom:24px;text-align:left;">
+        <div style="font-size:1.4rem;margin-bottom:8px;">🏪</div>
+        <div style="font-size:0.85rem;color:#b0a090;line-height:1.7;">町はずれの不思議な駄菓子屋。<br>算術の道具を授けてくれる、謎の老人が住んでいる。</div>
+      </div>
+      <button class="btn-primary" onclick="enterShop()">「 入店する 」</button>
+      <div class="coin-display" style="margin-top:16px;" id="title-coins">🪙 0枚</div>
+    </div>
+  </div>
+
+  <!-- Screen 2: Home -->
+  <div id="screen-home" class="screen">
+    <div class="topbar"><span class="topbar-title">🏮 算術堂</span><span class="coin-display" id="home-coins">🪙 0枚</span></div>
+    <div class="speaker">🧙</div>
+    <div class="speaker-name">店主</div>
+    <div class="dialogue-box" id="home-dialogue" onclick="skipTypewriter()"><span id="home-dialogue-text"></span></div>
+    <div class="card" style="margin-top:12px;">
+      <div style="color:#b0a090;font-size:0.8rem;margin-bottom:8px;">📚 道具棚</div>
+      <div class="tool-shelf">
+        <div class="tool-item" id="tool-merchant"><div>🍬</div><div class="tool-label">一粒飴</div></div>
+        <div class="tool-item" id="tool-arena"><div>💎</div><div class="tool-label">瞬速ガム</div></div>
+        <div class="tool-item" id="tool-ruins"><div>🍭</div><div class="tool-label">天秤こんぺいとう</div></div>
+      </div>
+    </div>
+    <button class="btn-primary" style="margin-top:auto;" onclick="goToMap()">「 町へ出る 」</button>
+  </div>
+
+  <!-- Screen 3: Map -->
+  <div id="screen-map" class="screen">
+    <div class="topbar"><span class="topbar-title">🗺️ 町の地図</span><span class="coin-display" id="map-coins">🪙 0枚</span></div>
+    <p style="color:#b0a090;font-size:0.9rem;margin-bottom:16px;">どこへ行く？</p>
+    <div id="area-cards"></div>
+  </div>
+
+  <!-- Screen 4: Conversation -->
+  <div id="screen-conversation" class="screen">
+    <div class="topbar"><span class="topbar-title" id="conv-area-title">商店街</span><span class="coin-display" id="conv-coins">🪙 0枚</span></div>
+    <div class="speaker" id="conv-speaker">👩‍💼</div>
+    <div class="speaker-name" id="conv-speaker-name">マーチャン</div>
+    <div class="dialogue-box" id="conv-dialogue" onclick="skipTypewriter()"><span id="conv-dialogue-text"></span></div>
+    <div class="card" style="margin-top:12px;">
+      <div style="font-size:0.8rem;color:#b0a090;">授かりし道具：</div>
+      <div style="margin-top:4px;font-size:1rem;" id="conv-tool-display">🍬 一粒飴</div>
+    </div>
+    <button class="btn-primary" style="margin-top:auto;" id="conv-next-btn" onclick="goToTutorial()" disabled>「 話を聞く 」</button>
+  </div>
+
+  <!-- Screen 5: Tutorial -->
+  <div id="screen-tutorial" class="screen">
+    <div class="topbar"><span class="topbar-title" id="tut-title">帰一算とは？</span><span class="coin-display" id="tut-coins">🪙 0枚</span></div>
+    <div class="card-gold" id="tut-explanation"></div>
+    <div class="card">
+      <div style="color:#d4a017;font-size:0.85rem;margin-bottom:8px;">📝 例題</div>
+      <div id="tut-example-q" style="margin-bottom:8px;font-size:0.95rem;"></div>
+      <ul class="steps-list" id="tut-example-steps"></ul>
+      <div style="margin-top:8px;font-weight:700;color:#22c55e;" id="tut-example-ans"></div>
+    </div>
+    <button class="btn-primary" style="margin-top:auto;" onclick="startProblems()">「 問題に挑戦する！ 」</button>
+  </div>
+
+  <!-- Screen 6: Problem -->
+  <div id="screen-problem" class="screen">
+    <div class="topbar"><span class="topbar-title" id="prob-area-title">商店街</span><span class="coin-display" id="prob-coins">🪙 0枚</span></div>
+    <div class="progress-label" id="prob-progress">1 / 5 問目</div>
+    <div id="timer-section" style="display:none;">
+      <div class="timer-label" id="timer-label">⏱ 10</div>
+      <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%;"></div></div>
+    </div>
+    <div class="question-card" id="prob-question"></div>
+    <form onsubmit="submitAnswer(event)">
+      <input type="number" inputmode="numeric" class="answer-input" id="answer-input" placeholder="答えを入力" autocomplete="off">
+      <button type="submit" class="btn-primary" style="margin-top:10px;">「 答える 」</button>
+    </form>
+    <button class="btn-hint" id="hint-btn" onclick="useHint()">💡 ヒントを見る（報酬が半分になります）</button>
+    <div class="hint-box" id="hint-box"></div>
+  </div>
+
+  <!-- Screen 7: Result -->
+  <div id="screen-result" class="screen">
+    <div class="topbar"><span class="topbar-title" id="res-area-title">商店街</span><span class="coin-display" id="res-coins">🪙 0枚</span></div>
+    <div class="result-icon" id="res-icon">⭕</div>
+    <div class="result-title" id="res-title">正解！</div>
+    <div class="coin-change" id="res-coin-change"></div>
+    <div class="card-gold">
+      <div style="color:#b0a090;font-size:0.8rem;margin-bottom:6px;">📖 解説</div>
+      <div id="res-explanation" style="font-size:0.95rem;line-height:1.8;white-space:pre-wrap;"></div>
+    </div>
+    <button class="btn-primary" style="margin-top:auto;" id="res-next-btn" onclick="nextProblem()">「 次の問題へ 」</button>
+  </div>
+
+  <!-- Screen 8: Shopkeeper Return -->
+  <div id="screen-shopkeeper-return" class="screen">
+    <div class="topbar"><span class="topbar-title">🏮 算術堂</span><span class="coin-display" id="sr-coins">🪙 0枚</span></div>
+    <div class="speaker">🧙</div>
+    <div class="speaker-name">店主</div>
+    <div class="dialogue-box" id="sr-dialogue" onclick="skipTypewriter()"><span id="sr-dialogue-text"></span></div>
+    <div class="card" style="margin-top:12px;text-align:center;">
+      <div style="font-size:2rem;" id="sr-tool-emoji">🍬</div>
+      <div style="margin-top:4px;" id="sr-tool-name">一粒飴 を手に入れた！</div>
+    </div>
+    <button class="btn-primary" style="margin-top:auto;" id="sr-next-btn" onclick="goHome()">「 算術堂に戻る 」</button>
+  </div>
+
+  <!-- Screen 9: Ending -->
+  <div id="screen-ending" class="screen">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+      <div class="ending-trophy">🏆</div>
+      <div class="ending-title">算術マスター！</div>
+      <div class="coin-display" style="font-size:1.2rem;margin:16px 0;" id="ending-coins">🪙 0枚</div>
+      <div class="dialogue-box" id="ending-dialogue" onclick="skipTypewriter()" style="text-align:left;margin-bottom:20px;width:100%;"><span id="ending-dialogue-text"></span></div>
+      <div class="card" style="width:100%;text-align:center;">
+        <div style="font-size:1.5rem;">🍬 💎 🍭</div>
+        <div style="color:#d4a017;margin-top:8px;font-size:0.9rem;">三つの道具をすべて集めた</div>
+      </div>
+      <button class="btn-secondary" style="margin-top:16px;" onclick="resetGame()">もう一度挑戦する</button>
+    </div>
+  </div>
+
+</div><!-- #game-root -->
+<script>
+const SAVE_KEY = 'arithmetic-game-v1';
+const AREAS = {
+  merchant: {
+    id:'merchant', name:'商店街', emoji:'🏪',
+    tool:{emoji:'🍬',name:'一粒飴'},
+    character:{name:'マーチャン',role:'商店のお姉さん',emoji:'👩‍💼'},
+    topic:'帰一算', hasTimer:false,
+    conv_line:'あら、いらっしゃい！\nちょっと計算を手伝ってもらえないかしら？\nうちのお店、いつも損してる気がして……',
+    tut_title:'帰一算とは？',
+    tut_text:'まず「1つぶんのねだん」を求めてから、ほしい数をかけ算するよ。\n\n手順：\n①「÷」で1つぶんのねだんを求める\n②「×」でほしい数をかける',
+    tut_example:{q:'みかん3個で90円。5個では何円？',steps:['90 ÷ 3 = 30円（1個のねだん）','30 × 5 = 150円'],a:'答え：150円'},
+    problems:[
+      {q:'りんご4個で120円。\n7個では何円？',         a:210, hint:'120 ÷ 4 で1個のねだんを求めよう', exp:'120 ÷ 4 = 30円（1個）\n30 × 7 = 210円'},
+      {q:'えんぴつ6本で180円。\n9本では何円？',        a:270, hint:'180 ÷ 6 で1本のねだんを求めよう', exp:'180 ÷ 6 = 30円（1本）\n30 × 9 = 270円'},
+      {q:'クッキー5枚で200円。\n8枚では何円？',        a:320, hint:'200 ÷ 5 で1枚のねだんを求めよう', exp:'200 ÷ 5 = 40円（1枚）\n40 × 8 = 320円'},
+      {q:'ジュース3本で150円。\n7本では何円？',        a:350, hint:'150 ÷ 3 で1本のねだんを求めよう', exp:'150 ÷ 3 = 50円（1本）\n50 × 7 = 350円'},
+      {q:'ノート8冊で560円。\n3冊では何円？',          a:210, hint:'560 ÷ 8 で1冊のねだんを求めよう', exp:'560 ÷ 8 = 70円（1冊）\n70 × 3 = 210円'},
+    ]
+  },
+  arena: {
+    id:'arena', name:'競技場', emoji:'🏟️',
+    tool:{emoji:'💎',name:'瞬速ガム'},
+    character:{name:'ハヤト',role:'ライバル小学生',emoji:'🧒'},
+    topic:'インド式暗算', hasTimer:true, timerSec:10,
+    conv_line:'よう、来たか！\nおれとスピード勝負だ。\n10秒以内に答えられるかな？',
+    tut_title:'インド式暗算のコツ',
+    tut_text:'スピードで計算する3つの技を覚えよう！\n\n① ×5の技：×5は「÷2して×10」\n② ×11の技：ab × 11 → a (a+b) b\n③ 近似補正：99や98など100に近い数は\n   100で計算してから差を引く',
+    tut_example:{q:'14 × 5 = ?',steps:['14 ÷ 2 = 7','7 × 10 = 70'],a:'答え：70'},
+    problems:[
+      {q:'35 × 5 = ?',   a:175, hint:'35 ÷ 2 = 17.5 → × 10 = 175',          exp:'35 ÷ 2 = 17.5\n17.5 × 10 = 175'},
+      {q:'13 × 11 = ?',  a:143, hint:'1と3の間に 1+3=4 を入れると…',          exp:'ab×11 → 1 (1+3) 3\n→ 143'},
+      {q:'97 × 8 = ?',   a:776, hint:'(100 - 3) × 8 = 800 - 24',              exp:'100 × 8 = 800\n3 × 8 = 24\n800 - 24 = 776'},
+      {q:'25 × 8 = ?',   a:200, hint:'25 × 4 = 100。それを2倍にすると？',     exp:'25 × 4 = 100\n100 × 2 = 200'},
+      {q:'12 × 11 = ?',  a:132, hint:'1と2の間に 1+2=3 を入れると…',          exp:'ab×11 → 1 (1+2) 2\n→ 132'},
+    ]
+  },
+  ruins: {
+    id:'ruins', name:'遺跡', emoji:'🏛️',
+    tool:{emoji:'🍭',name:'天秤こんぺいとう'},
+    character:{name:'ハカセ',role:'謎の老人',emoji:'🧙‍♂️'},
+    topic:'鶴亀算', hasTimer:false,
+    conv_line:'おお……来たか、若者よ。\nこの遺跡には古い謎が残っておる。\n足の数を数えて、動物の数を当ててみなさい。',
+    tut_title:'鶴亀算のとき方',
+    tut_text:'「全部同じ」と仮定してから、ズレを補正する！\n\n手順：\n①全部を1種類と仮定して計算\n②実際の合計との差を出す\n③差 ÷ 1匹あたりの差 ＝ 片方の数',
+    tut_example:{q:'鶴と亀が5匹。足が16本。鶴は何羽？',steps:['全部亀なら 5×4=20本','差：20−16=4本','4 ÷ (4−2) = 2 → 鶴は2羽'],a:'答え：2羽'},
+    problems:[
+      {q:'2本足と4本足が\n合わせて10匹。\n足跡が28本。\n2本足は何匹？',           a:6, hint:'全部4本足なら10×4=40本。差は40−28=?', exp:'全部4本足なら40本\n差：40−28=12本\n12 ÷ (4−2) = 6匹'},
+      {q:'鶴と亀が\n合わせて8匹。\n足が24本。\n鶴は何羽？',                         a:4, hint:'全部亀なら8×4=32本。差は何本？',         exp:'全部亀なら32本\n差：32−24=8本\n8 ÷ (4−2) = 4羽'},
+      {q:'自転車（2輪）と三輪車（3輪）が\n合わせて7台。\nタイヤが17本。\n自転車は何台？', a:4, hint:'全部三輪車なら7×3=21本。差は？',     exp:'全部三輪車なら21本\n差：21−17=4本\n4 ÷ (3−2) = 4台'},
+      {q:'ニワトリ（2本足）と\nウサギ（4本足）が9匹。\n足が26本。\nニワトリは何羽？',   a:5, hint:'全部ウサギなら9×4=36本。差は？',     exp:'全部ウサギなら36本\n差：36−26=10本\n10 ÷ (4−2) = 5羽'},
+      {q:'鶴と亀が\n合わせて6匹。\n足が16本。\n亀は何匹？',                         a:2, hint:'全部鶴なら6×2=12本。差は何本？',         exp:'全部鶴なら12本\n差：16−12=4本\n4 ÷ (4−2) = 2匹'},
+    ]
+  }
+};
+const AREA_ORDER = ['merchant','arena','ruins'];
+
+// ===== STATE =====
+let state = {
+  screen: 'title',
+  coins: 100,
+  clearedAreas: [],
+  selectedAreaId: null,
+  problemQueue: [],
+  problemIndex: 0,
+  hintUsed: false,
+  timerValue: 10,
+  timerInterval: null,
+  twTimeout: null,
+  twTarget: '',
+  twEl: null,
+};
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+    if (typeof s.coins === 'number') state.coins = s.coins;
+    if (Array.isArray(s.clearedAreas)) state.clearedAreas = s.clearedAreas;
+  } catch(e) {}
+}
+
+function saveState() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({coins:state.coins, clearedAreas:state.clearedAreas})); } catch(e) {}
+}
+
+function showScreen(name) {
+  stopTimer();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  state.screen = name;
+}
+
+function updateCoins() {
+  const txt = '🪙 '+state.coins+'枚';
+  ['title-coins','home-coins','map-coins','conv-coins','tut-coins','prob-coins','res-coins','sr-coins','ending-coins']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.textContent=txt; });
+}
+
+function updateToolShelf() {
+  AREA_ORDER.forEach(aid => {
+    const el = document.getElementById('tool-'+aid);
+    if (el) el.classList.toggle('acquired', state.clearedAreas.includes(aid));
+  });
+}
+
+// ===== TYPEWRITER =====
+function typewrite(el, text, speed, onDone) {
+  stopTypewriter();
+  el.textContent = '';
+  el.parentElement.classList.add('typing');
+  state.twTarget = text;
+  state.twEl = el;
+  let i = 0;
+  function next() {
+    el.textContent = text.slice(0, ++i);
+    if (i < text.length) { state.twTimeout = setTimeout(next, speed); }
+    else { el.parentElement.classList.remove('typing'); if(onDone) onDone(); }
+  }
+  state.twTimeout = setTimeout(next, speed);
+}
+
+function stopTypewriter() {
+  if (state.twTimeout) { clearTimeout(state.twTimeout); state.twTimeout = null; }
+}
+
+function skipTypewriter() {
+  if (!state.twEl || !state.twTarget) return;
+  stopTypewriter();
+  state.twEl.textContent = state.twTarget;
+  state.twEl.parentElement.classList.remove('typing');
+  if (state.screen === 'conversation') document.getElementById('conv-next-btn').disabled = false;
+}
+
+// ===== TIMER =====
+function startTimer(sec) {
+  stopTimer();
+  state.timerValue = sec;
+  updateTimerUI();
+  state.timerInterval = setInterval(() => {
+    state.timerValue--;
+    updateTimerUI();
+    if (state.timerValue <= 0) { stopTimer(); handleTimerExpiry(); }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+}
+
+function updateTimerUI() {
+  const area = AREAS[state.selectedAreaId];
+  const lbl = document.getElementById('timer-label');
+  const bar = document.getElementById('timer-bar');
+  if (!lbl || !bar || !area) return;
+  const pct = Math.max(0, (state.timerValue / area.timerSec) * 100);
+  lbl.textContent = '⏱ ' + state.timerValue;
+  bar.style.width = pct + '%';
+  const urgent = state.timerValue <= 3;
+  lbl.className = 'timer-label' + (urgent ? ' urgent' : '');
+  bar.className = 'timer-bar' + (urgent ? ' urgent' : '');
+}
+
+function handleTimerExpiry() {
+  applyResult(false, true);
+}
+
+// ===== SCREEN FUNCTIONS =====
+function enterShop() {
+  updateCoins();
+  updateToolShelf();
+  let line;
+  if (state.clearedAreas.length === 3) {
+    line = 'やあやあ、戻ってきたねえ。\n君のことを、算術マスターと呼ぼう。\nいつでも来なさい。';
+  } else if (state.clearedAreas.length > 0) {
+    const lastArea = AREAS[state.clearedAreas[state.clearedAreas.length-1]];
+    line = 'おや、また来てくれたのかい。\n'+lastArea.name+'の'+lastArea.tool.name+'、役に立ったかい？\n次の道具も授けてあげよう。';
+  } else {
+    line = 'ふふ、よく来たねえ。\n算術堂へ、ようこそ。\n町に困っている人たちがいるようだよ。';
+  }
+  showScreen('home');
+  typewrite(document.getElementById('home-dialogue-text'), line, 45);
+}
+
+function goToMap() {
+  updateCoins();
+  const container = document.getElementById('area-cards');
+  container.innerHTML = '';
+  AREA_ORDER.forEach(aid => {
+    const area = AREAS[aid];
+    const cleared = state.clearedAreas.includes(aid);
+    const div = document.createElement('div');
+    div.className = 'area-card' + (cleared ? ' cleared' : '');
+    div.innerHTML =
+      '<div class="area-emoji">'+area.emoji+'</div>'+
+      '<div class="area-info">'+
+        '<div class="area-name">'+area.name+'</div>'+
+        '<div class="area-topic">'+area.topic+'</div>'+
+        '<div class="area-tool">'+area.tool.emoji+' '+area.tool.name+'</div>'+
+      '</div>'+
+      '<div class="cleared-badge">'+(cleared?'✅':'')+'</div>';
+    div.onclick = () => selectArea(aid);
+    container.appendChild(div);
+  });
+  showScreen('map');
+}
+
+function selectArea(aid) {
+  const area = AREAS[aid];
+  state.selectedAreaId = aid;
+  state.problemQueue = [...area.problems].sort(() => Math.random() - 0.5);
+  state.problemIndex = 0;
+  document.getElementById('conv-area-title').textContent = area.emoji+' '+area.name;
+  document.getElementById('conv-speaker').textContent = area.character.emoji;
+  document.getElementById('conv-speaker-name').textContent = area.character.name+'・'+area.character.role;
+  document.getElementById('conv-tool-display').textContent = area.tool.emoji+' '+area.tool.name;
+  document.getElementById('conv-next-btn').disabled = true;
+  updateCoins();
+  showScreen('conversation');
+  typewrite(document.getElementById('conv-dialogue-text'), area.conv_line, 50,
+    () => { document.getElementById('conv-next-btn').disabled = false; });
+}
+
+function goToTutorial() {
+  const area = AREAS[state.selectedAreaId];
+  document.getElementById('tut-title').textContent = area.tut_title;
+  document.getElementById('tut-explanation').innerHTML =
+    '<div style="white-space:pre-wrap;font-size:0.9rem;line-height:1.9;">'+area.tut_text+'</div>';
+  document.getElementById('tut-example-q').textContent = '問題：'+area.tut_example.q;
+  document.getElementById('tut-example-steps').innerHTML =
+    area.tut_example.steps.map(s=>'<li>'+s+'</li>').join('');
+  document.getElementById('tut-example-ans').textContent = area.tut_example.a;
+  updateCoins();
+  showScreen('tutorial');
+}
+
+function startProblems() { showProblem(); }
+
+function showProblem() {
+  const area = AREAS[state.selectedAreaId];
+  const prob = state.problemQueue[state.problemIndex];
+  state.hintUsed = false;
+  document.getElementById('prob-area-title').textContent = area.emoji+' '+area.name;
+  document.getElementById('prob-progress').textContent = (state.problemIndex+1)+' / 5 問目';
+  document.getElementById('prob-question').textContent = prob.q;
+  document.getElementById('answer-input').value = '';
+  const hintBtn = document.getElementById('hint-btn');
+  hintBtn.disabled = false;
+  hintBtn.textContent = '💡 ヒントを見る（報酬が半分になります）';
+  const hintBox = document.getElementById('hint-box');
+  hintBox.classList.remove('show');
+  hintBox.textContent = '';
+  const timerSec = document.getElementById('timer-section');
+  if (area.hasTimer) {
+    timerSec.style.display = 'block';
+    startTimer(area.timerSec);
+  } else {
+    timerSec.style.display = 'none';
+  }
+  updateCoins();
+  showScreen('problem');
+  setTimeout(() => document.getElementById('answer-input').focus(), 350);
+}
+
+function useHint() {
+  if (state.hintUsed) return;
+  state.hintUsed = true;
+  const prob = state.problemQueue[state.problemIndex];
+  const hintBox = document.getElementById('hint-box');
+  hintBox.textContent = prob.hint;
+  hintBox.classList.add('show');
+  const btn = document.getElementById('hint-btn');
+  btn.disabled = true;
+  btn.textContent = '💡 ヒント使用中（報酬半減）';
+}
+
+function submitAnswer(e) {
+  e.preventDefault();
+  const val = document.getElementById('answer-input').value.trim();
+  if (val === '') return;
+  stopTimer();
+  applyResult(parseInt(val, 10) === state.problemQueue[state.problemIndex].a, false);
+}
+
+function applyResult(correct, timedOut) {
+  stopTimer();
+  const area = AREAS[state.selectedAreaId];
+  const prob = state.problemQueue[state.problemIndex];
+  const earned = (correct) ? (state.hintUsed ? 25 : 50) : -10;
+  state.coins = Math.max(0, state.coins + earned);
+  saveState();
+  document.getElementById('res-area-title').textContent = area.emoji+' '+area.name;
+  const icon = document.getElementById('res-icon');
+  const title = document.getElementById('res-title');
+  if (correct) {
+    icon.textContent = '⭕'; title.textContent = '正解！'; title.className = 'result-title correct';
+  } else if (timedOut) {
+    icon.textContent = '⌛'; title.textContent = '時間切れ！'; title.className = 'result-title wrong';
+  } else {
+    icon.textContent = '❌'; title.textContent = 'おしい！次はきっとうまくいくよ'; title.className = 'result-title wrong';
+  }
+  const coinEl = document.getElementById('res-coin-change');
+  if (earned > 0) {
+    coinEl.innerHTML = '<span class="coin-plus">+'+earned+'枚</span> → 🪙 '+state.coins+'枚';
+  } else {
+    coinEl.innerHTML = '<span class="coin-minus">'+earned+'枚</span> → 🪙 '+state.coins+'枚';
+  }
+  document.getElementById('res-explanation').textContent = prob.exp;
+  const isLast = state.problemIndex >= 4;
+  const nextBtn = document.getElementById('res-next-btn');
+  nextBtn.textContent = isLast ? '「 算術堂に戻る 」' : '「 次の問題へ 」';
+  updateCoins();
+  showScreen('result');
+}
+
+function nextProblem() {
+  state.problemIndex++;
+  if (state.problemIndex >= 5) {
+    if (!state.clearedAreas.includes(state.selectedAreaId)) {
+      state.clearedAreas.push(state.selectedAreaId);
+      saveState();
+    }
+    showShopkeeperReturn();
+  } else {
+    showProblem();
+  }
+}
+
+function showShopkeeperReturn() {
+  const area = AREAS[state.selectedAreaId];
+  let line;
+  if (state.clearedAreas.length === 3) {
+    line = 'やあやあ、やり遂げたねえ。\n三つすべての道具を手に入れた。\n立派な算術マスターだよ。';
+  } else {
+    line = 'ほほう、'+area.name+'から戻ったか。\n'+area.tool.name+'の力は役に立ったかい？\nまた何かあれば来なさい。';
+  }
+  document.getElementById('sr-coins').textContent = '🪙 '+state.coins+'枚';
+  document.getElementById('sr-tool-emoji').textContent = area.tool.emoji;
+  document.getElementById('sr-tool-name').textContent = area.tool.name+' を手に入れた！';
+  const srBtn = document.getElementById('sr-next-btn');
+  if (state.clearedAreas.length === 3) {
+    srBtn.textContent = '「 エンディングへ 」';
+    srBtn.onclick = showEnding;
+  } else {
+    srBtn.textContent = '「 算術堂に戻る 」';
+    srBtn.onclick = goHome;
+  }
+  showScreen('shopkeeper-return');
+  typewrite(document.getElementById('sr-dialogue-text'), line, 45);
+}
+
+function goHome() { enterShop(); }
+
+function showEnding() {
+  updateCoins();
+  const line = 'ふふふ……よくぞすべての道具を集めた。\n算術の力は、君の中に宿ったよ。\nいつでも戻っておいで。';
+  showScreen('ending');
+  typewrite(document.getElementById('ending-dialogue-text'), line, 45);
+}
+
+function resetGame() {
+  state.coins = 100;
+  state.clearedAreas = [];
+  saveState();
+  updateCoins();
+  updateToolShelf();
+  showScreen('title');
+}
+
+// ===== INIT =====
+loadState();
+updateToolShelf();
+updateCoins();
+</script>
+</body>
+</html>
