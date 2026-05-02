@@ -98,8 +98,11 @@ game-project/
 ### ランキング機能について
 
 - **ranking.js / ranking.css**: Firebase Firestoreを使用したゲームのスコアランキング機能
-- **firebase-config.js**: Firebase認証とFirestore接続設定
+- **firebase-config.js**: 公開用スタブ。実運用のFirebase値はコミットしない
+- 共有ランキングを有効化する場合は、`window.GAME_PROJECT_FIREBASE_CONFIG` に実値を渡す
+- Firestoreルール例は `games/firestore.rules.example` を参照
 - 各ゲームは独立してランキングデータをFirestoreに保存・読み込み可能
+- Firebase未設定時はランキング機能が自動で停止し、ゲーム本体だけ遊べる
 
 ### ポケモンデータについて
 
@@ -118,6 +121,14 @@ game-project/
 <script src="firebase-config.js" defer></script>
 <script src="ranking.js" defer></script>
 ```
+
+### Firebase セキュリティ運用
+
+- `firebase-config.js` に本番の設定値を直接書いてコミットしない
+- Firestore Security Rules を必ず設定し、クライアントの匿名フルアクセスを許可しない
+- 共有ランキングを再開するときは `games/firestore.rules.example` をたたき台に調整する
+- 可能なら Firebase App Check も有効化する
+- 設定が未投入でもゲームは動くように実装されているため、公開時は「安全に無効」の状態を優先する
 
 ## デザイン
 

@@ -18,8 +18,56 @@ const Ranking = {
     'クジラ', 'シャチ', 'フグ', 'タツノオトシゴ', 'カニ'
   ],
 
+  isAvailable() {
+    return Boolean(window.FirebaseServices && window.FirebaseServices.enabled && window.db);
+  },
+
+  getDb() {
+    return this.isAvailable() ? window.db : null;
+  },
+
+  showInfoModal(title, message, buttonLabel = '閉じる', onClose = null) {
+    const existingModal = document.getElementById('rankingModal')
+      || document.getElementById('submitModal')
+      || document.getElementById('captureModal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'ranking-modal';
+    modal.id = 'rankingInfoModal';
+    modal.innerHTML = `
+      <div class="ranking-content">
+        <h3>${this.escapeHtml(title)}</h3>
+        <p style="margin: 16px 0; color: #6b5b7a; line-height: 1.7;">${this.escapeHtml(message)}</p>
+        <button class="ranking-close-btn">${this.escapeHtml(buttonLabel)}</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const close = () => {
+      modal.classList.remove('show');
+      setTimeout(() => {
+        modal.remove();
+        if (onClose) onClose();
+      }, 300);
+    };
+
+    modal.querySelector('.ranking-close-btn').addEventListener('click', close);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
+
+    requestAnimationFrame(() => {
+      modal.classList.add('show');
+    });
+  },
+
   // ランキングを取得（Top 10）
   async getTop10(gameId) {
+    const db = this.getDb();
+    if (!db) return [];
+
     try {
       const snapshot = await db.collection('rankings')
         .doc(gameId)
@@ -40,6 +88,9 @@ const Ranking = {
 
   // スコアを登録
   async submitScore(gameId, score, nickname = '') {
+    const db = this.getDb();
+    if (!db) return false;
+
     try {
       const sanitizedNickname = nickname.trim().slice(0, 10) || 'ななし';
 
@@ -61,6 +112,14 @@ const Ranking = {
 
   // ランキングモーダルを表示
   async showRankingModal(gameId, currentScore = null) {
+    if (!this.isAvailable()) {
+      this.showInfoModal(
+        'ランキング停止中',
+        'この公開版では共有ランキングをいったん停止しています。'
+      );
+      return;
+    }
+
     // 既存のモーダルがあれば削除
     const existingModal = document.getElementById('rankingModal');
     if (existingModal) {
@@ -126,6 +185,9 @@ const Ranking = {
 
   // キャプチャを保存
   async saveCapture(gameId, charData, nickname) {
+    const db = this.getDb();
+    if (!db) return false;
+
     try {
       await db.collection('captures')
         .doc(gameId)
@@ -149,6 +211,9 @@ const Ranking = {
 
   // 最近のキャプチャ履歴を取得
   async getRecentCaptures(gameId, limitCount = 20) {
+    const db = this.getDb();
+    if (!db) return [];
+
     try {
       const snapshot = await db.collection('captures')
         .doc(gameId)
@@ -169,6 +234,14 @@ const Ranking = {
 
   // キャプチャ履歴モーダルを表示
   async showCaptureModal(gameId) {
+    if (!this.isAvailable()) {
+      this.showInfoModal(
+        'みんなのキャラ停止中',
+        'この公開版では共有キャプチャ機能をいったん停止しています。'
+      );
+      return;
+    }
+
     const existingModal = document.getElementById('captureModal');
     if (existingModal) existingModal.remove();
 
@@ -239,6 +312,21 @@ const Ranking = {
 
   // スコア登録モーダルを表示
   showSubmitModal(gameId, score, charData, onComplete) {
+    if (typeof charData === 'function') {
+      onComplete = charData;
+      charData = null;
+    }
+
+    if (!this.isAvailable()) {
+      this.showInfoModal(
+        'ランキング停止中',
+        'この公開版では共有ランキングをいったん停止しています。',
+        'OK',
+        onComplete || null
+      );
+      return;
+    }
+
     // 既存のモーダルがあれば削除
     const existingModal = document.getElementById('submitModal');
     if (existingModal) {

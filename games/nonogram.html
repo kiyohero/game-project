@@ -554,8 +554,48 @@
       return 'p_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     }
 
+    function hasFirebasePersistence() {
+      return Boolean(window.FirebaseServices && window.FirebaseServices.enabled && window.db);
+    }
+
+    function getLocalProfileKey() {
+      return 'nonogram-player-profile:' + state.playerId;
+    }
+
+    function loadLocalProfile() {
+      try {
+        return JSON.parse(localStorage.getItem(getLocalProfileKey()) || 'null');
+      } catch (e) {
+        console.error('ローカルデータ読み込みエラー:', e);
+        return null;
+      }
+    }
+
+    function saveLocalProfile() {
+      try {
+        localStorage.setItem(getLocalProfileKey(), JSON.stringify({
+          nickname: state.nickname,
+          progress: state.progress
+        }));
+        return true;
+      } catch (e) {
+        console.error('ローカルデータ保存エラー:', e);
+        return false;
+      }
+    }
+
     // ===== Firebase =====
     async function loadPlayerData() {
+      if (!hasFirebasePersistence()) {
+        const localData = loadLocalProfile();
+        if (localData) {
+          state.nickname = localData.nickname || '';
+          state.progress = localData.progress || {};
+          return true;
+        }
+        return false;
+      }
+
       try {
         const doc = await db.collection('nonogram_players').doc(state.playerId).get();
         if (doc.exists) {
@@ -573,6 +613,11 @@
 
     async function registerPlayer(nickname) {
       state.nickname = nickname;
+      if (!hasFirebasePersistence()) {
+        state.progress = state.progress || {};
+        return saveLocalProfile();
+      }
+
       try {
         await db.collection('nonogram_players').doc(state.playerId).set({
           nickname: nickname,
@@ -595,6 +640,11 @@
         hintsUsed: isNewBest ? hintsUsed : existing.hintsUsed
       };
       state.progress[puzzleId] = progressData;
+      if (!hasFirebasePersistence()) {
+        saveLocalProfile();
+        return;
+      }
+
       try {
         await db.collection('nonogram_players').doc(state.playerId).update({
           ['progress.' + puzzleId]: progressData,
