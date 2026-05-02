@@ -1,14 +1,56 @@
 // Firebase設定 - Game Project
+//
+// 公開リポジトリには実運用のFirebase設定を含めません。
+// 共有ランキングを有効にする場合は、このファイル内で
+// `window.GAME_PROJECT_FIREBASE_CONFIG` を設定するか、
+// このファイルの `runtimeConfig` に実値を投入してください。
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBeOt-od3ZSxCjViTLwnEYjns0zTX0NJrQ",
-  authDomain: "game-project-1a04b.firebaseapp.com",
-  projectId: "game-project-1a04b",
-  storageBucket: "game-project-1a04b.firebasestorage.app",
-  messagingSenderId: "1002233402576",
-  appId: "1:1002233402576:web:0e847712cf54fd07253ad5"
-};
+(function () {
+  const runtimeConfig = window.GAME_PROJECT_FIREBASE_CONFIG || null;
+  const services = {
+    enabled: false,
+    firebase: window.firebase || null,
+    db: null,
+    reason: 'missing-config'
+  };
 
-// Firebase初期化
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+  function hasUsableConfig(config) {
+    return Boolean(
+      config &&
+      config.apiKey &&
+      config.authDomain &&
+      config.projectId &&
+      !String(config.apiKey).includes('YOUR_')
+    );
+  }
+
+  if (!window.firebase || typeof window.firebase.initializeApp !== 'function') {
+    services.reason = 'missing-sdk';
+    window.FirebaseServices = services;
+    window.db = null;
+    return;
+  }
+
+  if (!hasUsableConfig(runtimeConfig)) {
+    window.FirebaseServices = services;
+    window.db = null;
+    return;
+  }
+
+  try {
+    if (!window.firebase.apps || window.firebase.apps.length === 0) {
+      window.firebase.initializeApp(runtimeConfig);
+    }
+
+    services.enabled = true;
+    services.reason = 'enabled';
+    services.db = window.firebase.firestore();
+    window.FirebaseServices = services;
+    window.db = services.db;
+  } catch (error) {
+    console.warn('Firebase初期化をスキップしました:', error);
+    services.reason = 'init-failed';
+    window.FirebaseServices = services;
+    window.db = null;
+  }
+})();

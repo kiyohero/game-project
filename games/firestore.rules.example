@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSafeNickname(name) {
+      return name is string
+        && name.size() >= 1
+        && name.size() <= 10;
+    }
+
+    function isSafeScore(score) {
+      return score is int
+        && score >= 0
+        && score <= 9999999;
+    }
+
+    function isAllowedGameId(gameId) {
+      return gameId == '2048'
+        || gameId == 'invader'
+        || gameId == 'reversi'
+        || gameId == 'tictactoe'
+        || gameId == 'shogi'
+        || gameId == 'pokemon-shiritori'
+        || gameId == 'sliding-puzzle'
+        || gameId == 'barcode-battle';
+    }
+
+    match /rankings/{gameId}/scores/{scoreId} {
+      allow read: if isAllowedGameId(gameId);
+      allow create: if isAllowedGameId(gameId)
+        && request.resource.data.keys().hasOnly(['nickname', 'score', 'timestamp'])
+        && isSafeNickname(request.resource.data.nickname)
+        && isSafeScore(request.resource.data.score)
+        && request.resource.data.timestamp == request.time;
+      allow update, delete: if false;
+    }
+
+    match /captures/{gameId}/history/{captureId} {
+      allow read: if gameId == 'barcode-battle';
+      allow create: if gameId == 'barcode-battle'
+        && request.resource.data.keys().hasOnly([
+          'nickname',
+          'charEmoji',
+          'charName',
+          'charType',
+          'charTypeEmoji',
+          'charTypeColor',
+          'charBarcode',
+          'timestamp'
+        ])
+        && isSafeNickname(request.resource.data.nickname)
+        && request.resource.data.charEmoji is string
+        && request.resource.data.charEmoji.size() <= 8
+        && request.resource.data.charName is string
+        && request.resource.data.charName.size() >= 1
+        && request.resource.data.charName.size() <= 30
+        && request.resource.data.charType is string
+        && request.resource.data.charType.size() >= 1
+        && request.resource.data.charType.size() <= 20
+        && request.resource.data.charTypeEmoji is string
+        && request.resource.data.charTypeEmoji.size() <= 8
+        && request.resource.data.charTypeColor is string
+        && request.resource.data.charTypeColor.size() <= 20
+        && request.resource.data.charBarcode is string
+        && request.resource.data.charBarcode.size() >= 8
+        && request.resource.data.charBarcode.size() <= 20
+        && request.resource.data.timestamp == request.time;
+      allow update, delete: if false;
+    }
+
+    match /nonogram_players/{playerId} {
+      allow read, write: if false;
+    }
+  }
+}

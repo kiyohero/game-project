@@ -175,3 +175,20 @@ games/
 ## レビュー
 
 （実装後に記録）
+
+---
+
+# セキュリティ対応メモ（2026-05-02）
+
+## 実装タスク
+
+- [x] 公開リポジトリから実運用のFirebase設定を外す
+- [x] Firebase未設定でもランキング画面が安全に閉じるようにする
+- [x] ノノグラムをローカル保存へフォールバックさせる
+- [ ] Firestore Security Rules と App Check の実運用設定を別途確認する
+
+## レビュー
+
+- `games/firebase-config.js` は公開用スタブ化し、実値なしでは初期化しないようにした
+- `games/ranking.js` は Firebase 無効時に共有ランキング停止メッセージを出して継続できるようにした
+- `games/nonogram.html` は Firebase 無効時に localStorage 保存へ自動フォールバックするようにした
