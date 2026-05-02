@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>手相占い</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    body {
+      background: linear-gradient(160deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%);
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif;
+      padding: 60px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .screen { display: none; animation: fadeIn 0.4s ease; width: 100%; max-width: 440px; }
+    .screen.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(180, 140, 255, 0.3);
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    /* タイトル画面 */
+    .title-emoji {
+      font-size: 5rem;
+      text-align: center;
+      display: block;
+      margin-bottom: 12px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+    .title-main {
+      font-size: 1.8rem;
+      font-weight: 900;
+      text-align: center;
+      background: linear-gradient(135deg, #e0b8ff, #9b6dff, #c8a0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .title-desc {
+      text-align: center;
+      color: rgba(220, 200, 255, 0.85);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+
+    /* ボタン */
+    .btn-mystical {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #7b4daa, #5a2d82);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+      box-shadow: 0 4px 20px rgba(123, 77, 170, 0.5);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .btn-mystical:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(123, 77, 170, 0.7); }
+    .btn-mystical:active:not(:disabled) { transform: scale(0.97); }
+    .btn-mystical:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      color: rgba(220, 200, 255, 0.9);
+      border: 1px solid rgba(180, 140, 255, 0.35);
+      border-radius: 14px;
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+    /* カメラ画面 */
+    .detection-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+    }
+    .detection-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #888;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .detection-dot.searching { background: #ffaa44; animation: blink-dot 1s ease infinite; }
+    .detection-dot.detected  { background: #7eff7e; box-shadow: 0 0 8px #7eff7e; }
+    @keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .detection-label { color: rgba(220, 200, 255, 0.85); font-size: 0.85rem; }
+
+    #video-container {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    #webcam { width: 100%; display: block; border-radius: 16px; }
+    #canvas-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    #hand-guide {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 68%; height: 72%;
+      border: 2px dashed rgba(180, 140, 255, 0.55);
+      border-radius: 50% 40% 40% 40% / 55% 55% 40% 40%;
+      pointer-events: none;
+    }
+
+    /* アップロード画面 */
+    .upload-area {
+      display: block;
+      border: 2px dashed rgba(180, 140, 255, 0.5);
+      border-radius: 16px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 16px;
+    }
+    .upload-area:hover { border-color: rgba(180, 140, 255, 0.9); background: rgba(180, 140, 255, 0.06); }
+    .upload-area input { display: none; }
+    .upload-emoji { font-size: 3rem; display: block; margin-bottom: 8px; }
+    .upload-text { color: rgba(220, 200, 255, 0.8); font-size: 0.9rem; line-height: 1.6; }
+
+    #upload-preview { margin-bottom: 16px; }
+    #preview-img { width: 100%; border-radius: 12px; display: block; }
+
+    /* 分析中 */
+    .analyzing-wrap { text-align: center; padding: 48px 20px; }
+    .crystal-spin {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 20px;
+      animation: spin-glow 3s ease-in-out infinite;
+    }
+    @keyframes spin-glow {
+      0%   { transform: rotate(0deg) scale(1);    filter: drop-shadow(0 0 8px rgba(180,140,255,0.4)); }
+      50%  { transform: rotate(180deg) scale(1.1); filter: drop-shadow(0 0 20px rgba(180,140,255,0.9)); }
+      100% { transform: rotate(360deg) scale(1);   filter: drop-shadow(0 0 8px rgba(180,140,255,0.4)); }
+    }
+    .analyzing-text { color: rgba(220, 200, 255, 0.9); font-size: 1rem; margin-bottom: 10px; }
+    .dots span { animation: blink-dot 1.2s infinite; color: #c8a0ff; font-size: 1.2rem; }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+    .analyzing-sub { color: rgba(200,170,255,0.55); font-size: 0.78rem; margin-top: 18px; }
+
+    /* エラー */
+    .error-card {
+      background: rgba(255, 80, 80, 0.12);
+      border: 1px solid rgba(255, 100, 100, 0.35);
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .error-emoji { font-size: 3rem; display: block; margin-bottom: 10px; }
+    .error-msg { color: rgba(255, 200, 200, 0.9); font-size: 0.9rem; line-height: 1.7; white-space: pre-line; }
+
+    /* 結果 */
+    .result-header { text-align: center; margin-bottom: 24px; }
+    .result-header-emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
+    .result-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffd700, #ffaa00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+    }
+    .result-subtitle { color: rgba(220, 200, 255, 0.65); font-size: 0.82rem; }
+
+    .line-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(180, 140, 255, 0.2);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      animation: slideUp 0.5s ease both;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .line-card:nth-child(1) { animation-delay: 0.05s; }
+    .line-card:nth-child(2) { animation-delay: 0.15s; }
+    .line-card:nth-child(3) { animation-delay: 0.25s; }
+    .line-card:nth-child(4) { animation-delay: 0.35s; }
+    .line-card:nth-child(5) { animation-delay: 0.45s; }
+
+    .line-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .line-emoji  { font-size: 1.6rem; flex-shrink: 0; }
+    .line-name-wrap { flex: 1; min-width: 0; }
+    .line-name  { font-size: 1rem; font-weight: 700; color: #e0d0ff; }
+    .line-level { font-size: 0.75rem; color: rgba(200, 170, 255, 0.7); margin-top: 2px; }
+    .line-stars { font-size: 0.95rem; letter-spacing: 1px; flex-shrink: 0; }
+    .line-message { color: rgba(230, 220, 255, 0.88); font-size: 0.88rem; line-height: 1.8; }
+
+    /* 背景星 */
+    .stars-bg { position: fixed; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; }
+    .star-particle {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--d, 2s) ease-in-out infinite;
+      animation-delay: var(--del, 0s);
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.08; }
+      50%       { opacity: 0.7; }
+    }
+
+    @media (max-width: 440px) {
+      body { padding: 52px 10px 24px; }
+      .card { padding: 20px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="stars-bg" id="starsBg"></div>
+
+<div id="app" style="width:100%; max-width:440px;">
+
+  <!-- タイトル -->
+  <div id="screen-title" class="screen active">
+    <div class="card">
+      <span class="title-emoji">🔮</span>
+      <div class="title-main">手相占い</div>
+      <p class="title-desc">
+        手のひらをカメラに映すか、<br>
+        写真をアップロードすると<br>
+        あなたの運命を占います✨
+      </p>
+      <button class="btn-mystical" id="btn-use-camera">📷 カメラで占う</button>
+      <button class="btn-secondary" id="btn-use-upload">🖼️ 写真から占う</button>
+    </div>
+  </div>
+
+  <!-- カメラ -->
+  <div id="screen-camera" class="screen">
+    <div class="card">
+      <div class="detection-status">
+        <div class="detection-dot searching" id="detect-dot"></div>
+        <span class="detection-label" id="detect-label">手を探しています…</span>
+      </div>
+      <div id="video-container">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="canvas-overlay"></canvas>
+        <div id="hand-guide"></div>
+      </div>
+      <button class="btn-mystical" id="btn-capture" disabled>✨ 占う！</button>
+      <button class="btn-secondary" id="btn-camera-back">← もどる</button>
+    </div>
+  </div>
+
+  <!-- アップロード -->
+  <div id="screen-upload" class="screen">
+    <div class="card">
+      <label class="upload-area" id="upload-area">
+        <span class="upload-emoji">🖐️</span>
+        <span class="upload-text">タップして手のひらの<br>写真をえらんでね</span>
+        <input type="file" accept="image/*" id="file-input">
+      </label>
+      <div id="upload-preview" style="display:none;">
+        <img id="preview-img" alt="手のひらプレビュー">
+      </div>
+      <button class="btn-mystical" id="btn-analyze-upload" disabled>🔮 占い開始！</button>
+      <button class="btn-secondary" id="btn-upload-back">← もどる</button>
+    </div>
+  </div>
+
+  <!-- 分析中 -->
+  <div id="screen-analyzing" class="screen">
+    <div class="card analyzing-wrap">
+      <span class="crystal-spin">🔮</span>
+      <p class="analyzing-text">あなたの手相を読んでいます</p>
+      <div class="dots"><span>●</span><span>●</span><span>●</span></div>
+      <p class="analyzing-sub">AIが21個の手のポイントを分析中…</p>
+    </div>
+  </div>
+
+  <!-- エラー -->
+  <div id="screen-error" class="screen">
+    <div class="card">
+      <div class="error-card">
+        <span class="error-emoji" id="error-emoji">😓</span>
+        <p class="error-msg" id="error-msg">エラーが発生しました</p>
+      </div>
+      <button class="btn-mystical" id="btn-retry-camera">📷 カメラでもう一度試す</button>
+      <button class="btn-secondary" id="btn-retry-upload">🖼️ 写真で試す</button>
+      <button class="btn-secondary" id="btn-error-home">← はじめにもどる</button>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div id="screen-result" class="screen">
+    <div class="card">
+      <div class="result-header">
+        <span class="result-header-emoji">✨</span>
+        <div class="result-title">占い結果</div>
+        <div class="result-subtitle">5つの手相線があなたの運命を語ります</div>
+      </div>
+      <div id="result-lines"></div>
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn-mystical" id="btn-again">🔮 もう一度占う</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { HandLandmarker, FilesetResolver }
+  from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+
+// ===== 状態 =====
+let handLandmarker = null;
+let fortuneData = null;
+let stream = null;
+let animFrame = null;
+let detectedLandmarks = null;
+
+// ===== スクリーン管理 =====
+const SCREENS = ['title', 'camera', 'upload', 'analyzing', 'error', 'result'];
+function showScreen(name) {
+  SCREENS.forEach(id => {
+    document.getElementById('screen-' + id).classList.toggle('active', id === name);
+  });
+}
+
+// ===== MediaPipe 初期化 =====
+async function initHandLandmarker() {
+  if (handLandmarker) return handLandmarker;
+  const vision = await FilesetResolver.forVisionTasks(
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+  );
+  const opts = {
+    baseOptions: {
+      modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+    },
+    runningMode: 'IMAGE',
+    numHands: 1,
+  };
+  try {
+    opts.baseOptions.delegate = 'GPU';
+    handLandmarker = await HandLandmarker.createFromOptions(vision, opts);
+  } catch {
+    opts.baseOptions.delegate = 'CPU';
+    handLandmarker = await HandLandmarker.createFromOptions(vision, opts);
+  }
+  return handLandmarker;
+}
+
+// ===== データ読み込み =====
+async function loadFortuneData() {
+  if (fortuneData) return fortuneData;
+  const resp = await fetch('palm-reading-data.json');
+  fortuneData = await resp.json();
+  return fortuneData;
+}
+
+// ===== カメラ起動 =====
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    const video = document.getElementById('webcam');
+    video.srcObject = stream;
+    await new Promise(resolve => { video.onloadedmetadata = resolve; });
+    video.play();
+    startDetectionLoop();
+  } catch {
+    showError('👁️', 'カメラが使えませんでした。\n写真をアップロードして試してください。', true);
+  }
+}
+
+// ===== リアルタイム検出ループ =====
+function startDetectionLoop() {
+  const video  = document.getElementById('webcam');
+  const canvas = document.getElementById('canvas-overlay');
+  const ctx    = canvas.getContext('2d');
+  const dot    = document.getElementById('detect-dot');
+  const label  = document.getElementById('detect-label');
+  const btn    = document.getElementById('btn-capture');
+  let lastDetect = 0;
+
+  async function loop(ts) {
+    if (!document.getElementById('screen-camera').classList.contains('active')) return;
+
+    if (canvas.width !== video.videoWidth && video.videoWidth > 0) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (ts - lastDetect > 500 && handLandmarker && video.readyState >= 2 && video.videoWidth > 0) {
+      lastDetect = ts;
+      try {
+        const result = handLandmarker.detect(video);
+        if (result.landmarks && result.landmarks.length > 0) {
+          detectedLandmarks = result.landmarks[0];
+          dot.className = 'detection-dot detected';
+          label.textContent = '手を検出しました！';
+          btn.disabled = false;
+          drawLandmarks(ctx, result.landmarks[0], canvas.width, canvas.height);
+        } else {
+          detectedLandmarks = null;
+          dot.className = 'detection-dot searching';
+          label.textContent = '手を枠の中に入れてください';
+          btn.disabled = true;
+        }
+      } catch { /* 検出失敗は無視 */ }
+    } else if (detectedLandmarks) {
+      drawLandmarks(ctx, detectedLandmarks, canvas.width, canvas.height);
+    }
+
+    animFrame = requestAnimationFrame(loop);
+  }
+  animFrame = requestAnimationFrame(loop);
+}
+
+// ===== ランドマーク描画 =====
+function drawLandmarks(ctx, lm, w, h) {
+  const CONNECTIONS = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [5,9],[9,10],[10,11],[11,12],
+    [9,13],[13,14],[14,15],[15,16],
+    [13,17],[17,18],[18,19],[19,20],
+    [0,17]
+  ];
+  ctx.strokeStyle = 'rgba(180, 140, 255, 0.75)';
+  ctx.lineWidth = 2;
+  CONNECTIONS.forEach(([a, b]) => {
+    ctx.beginPath();
+    ctx.moveTo(lm[a].x * w, lm[a].y * h);
+    ctx.lineTo(lm[b].x * w, lm[b].y * h);
+    ctx.stroke();
+  });
+  lm.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(p.x * w, p.y * h, i === 0 ? 5 : 3, 0, Math.PI * 2);
+    ctx.fillStyle = i === 0 ? '#ffd700' : 'rgba(210, 170, 255, 0.95)';
+    ctx.fill();
+  });
+}
+
+// ===== カメラ停止 =====
+function stopCamera() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  detectedLandmarks = null;
+}
+
+// ===== 手相分析 =====
+function dist(a, b) {
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+function normalize(val, min, max) {
+  return Math.max(0, Math.min(1, (val - min) / (max - min)));
+}
+function level(norm) {
+  return norm >= 0.65 ? 'high' : norm >= 0.35 ? 'mid' : 'low';
+}
+
+function analyzePalm(lm) {
+  // 生命線: 親指長さ ÷ 手のひら幅
+  const life  = normalize(dist(lm[1], lm[4])  / dist(lm[5], lm[17]), 0.4, 1.2);
+  // 感情線: 手のひら幅 ÷ 手のひら縦
+  const heart = normalize(dist(lm[5], lm[17]) / dist(lm[0], lm[9]),  0.5, 0.9);
+  // 知能線: 人差し指 ÷ 中指
+  const head  = normalize(dist(lm[5], lm[8])  / dist(lm[9], lm[12]), 0.7, 1.1);
+  // 運命線: 縦 ÷ 横
+  const fate  = normalize(dist(lm[0], lm[9])  / dist(lm[5], lm[17]), 0.9, 1.8);
+  // 太陽線: 薬指 ÷ 中指
+  const sun   = normalize(dist(lm[13], lm[16]) / dist(lm[9], lm[12]), 0.7, 1.0);
+  return {
+    life:  { norm: life,  level: level(life) },
+    heart: { norm: heart, level: level(heart) },
+    head:  { norm: head,  level: level(head) },
+    fate:  { norm: fate,  level: level(fate) },
+    sun:   { norm: sun,   level: level(sun) },
+  };
+}
+
+// ===== 占い実行 =====
+async function runFortune(imageSource) {
+  showScreen('analyzing');
+  try {
+    const [hl, data] = await Promise.all([initHandLandmarker(), loadFortuneData()]);
+    await hl.setOptions({ runningMode: 'IMAGE' });
+    const result = hl.detect(imageSource);
+    if (!result.landmarks || result.landmarks.length === 0) {
+      showError('🤲', '手のひらが見つかりませんでした。\n手全体が大きく映るように調整してみてください。', false);
+      return;
+    }
+    showResult(analyzePalm(result.landmarks[0]), data);
+  } catch (err) {
+    console.error(err);
+    showError('⚠️', 'AIの読み込みに失敗しました。\nインターネット接続を確認してください。', false);
+  }
+}
+
+// ===== エラー表示 =====
+function showError(emoji, msg, cameraFailed) {
+  document.getElementById('error-emoji').textContent = emoji;
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('btn-retry-camera').style.display = cameraFailed ? 'none' : 'block';
+  showScreen('error');
+}
+
+// ===== 結果表示 =====
+function showResult(analysis, data) {
+  const container = document.getElementById('result-lines');
+  container.innerHTML = '';
+  ['life', 'heart', 'head', 'fate', 'sun'].forEach(key => {
+    const lineData  = data.lines[key];
+    const res       = analysis[key];
+    const levelData = lineData.levels[res.level];
+    const msg       = levelData.messages[Math.floor(Math.random() * levelData.messages.length)];
+    const stars     = '⭐'.repeat(levelData.stars) + '☆'.repeat(3 - levelData.stars);
+    const card = document.createElement('div');
+    card.className = 'line-card';
+    card.innerHTML =
+      '<div class="line-header">' +
+        '<span class="line-emoji">' + lineData.emoji + '</span>' +
+        '<div class="line-name-wrap">' +
+          '<div class="line-name">' + lineData.name + '</div>' +
+          '<div class="line-level">' + levelData.label + '</div>' +
+        '</div>' +
+        '<div class="line-stars">' + stars + '</div>' +
+      '</div>' +
+      '<p class="line-message">' + msg + '</p>';
+    container.appendChild(card);
+  });
+  showScreen('result');
+}
+
+// ===== イベントリスナー =====
+
+document.getElementById('btn-use-camera').addEventListener('click', async () => {
+  showScreen('camera');
+  document.getElementById('detect-dot').className = 'detection-dot searching';
+  document.getElementById('detect-label').textContent = '手を探しています…';
+  document.getElementById('btn-capture').disabled = true;
+  initHandLandmarker().catch(() => {});
+  await startCamera();
+});
+
+document.getElementById('btn-use-upload').addEventListener('click', () => {
+  showScreen('upload');
+});
+
+document.getElementById('btn-capture').addEventListener('click', async () => {
+  const video = document.getElementById('webcam');
+  const tmp = document.createElement('canvas');
+  tmp.width  = video.videoWidth;
+  tmp.height = video.videoHeight;
+  tmp.getContext('2d').drawImage(video, 0, 0);
+  stopCamera();
+  await runFortune(tmp);
+});
+
+document.getElementById('btn-camera-back').addEventListener('click', () => {
+  stopCamera();
+  showScreen('title');
+});
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('preview-img').src = ev.target.result;
+    document.getElementById('upload-preview').style.display = 'block';
+    document.getElementById('btn-analyze-upload').disabled = false;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btn-analyze-upload').addEventListener('click', async () => {
+  const src = document.getElementById('preview-img').src;
+  const img = new Image();
+  img.src = src;
+  await new Promise(resolve => { img.onload = resolve; });
+  await runFortune(img);
+});
+
+document.getElementById('btn-upload-back').addEventListener('click', () => {
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('btn-analyze-upload').disabled = true;
+  document.getElementById('file-input').value = '';
+  showScreen('title');
+});
+
+document.getElementById('btn-retry-camera').addEventListener('click', async () => {
+  showScreen('camera');
+  document.getElementById('detect-dot').className = 'detection-dot searching';
+  document.getElementById('detect-label').textContent = '手を探しています…';
+  document.getElementById('btn-capture').disabled = true;
+  await startCamera();
+});
+
+document.getElementById('btn-retry-upload').addEventListener('click', () => {
+  showScreen('upload');
+});
+
+document.getElementById('btn-error-home').addEventListener('click', () => {
+  showScreen('title');
+});
+
+document.getElementById('btn-again').addEventListener('click', () => {
+  stopCamera();
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('btn-analyze-upload').disabled = true;
+  document.getElementById('file-input').value = '';
+  showScreen('title');
+});
+
+// ===== 背景星パーティクル =====
+(function() {
+  const bg = document.getElementById('starsBg');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star-particle';
+    const size = 1 + Math.random() * 2.5;
+    s.style.cssText = [
+      'left:' + (Math.random() * 100) + '%',
+      'top:'  + (Math.random() * 100) + '%',
+      '--d:'  + (1.5 + Math.random() * 3) + 's',
+      '--del:' + (Math.random() * 4) + 's',
+      'width:' + size + 'px',
+      'height:' + size + 'px',
+    ].join(';');
+    bg.appendChild(s);
+  }
+})();
+</script>
+</body>
+</html>
