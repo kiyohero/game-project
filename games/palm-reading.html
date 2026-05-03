@@ -254,6 +254,111 @@
       50%       { opacity: 0.7; }
     }
 
+    /* 結果セクション */
+    .result-section {
+      margin-bottom: 20px;
+    }
+    .result-section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: rgba(200, 170, 255, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    /* 手型・季節バッジ */
+    .type-badge {
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(180, 140, 255, 0.3);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .type-badge-emoji { font-size: 2.2rem; flex-shrink: 0; }
+    .type-badge-body { flex: 1; min-width: 0; }
+    .type-badge-name { font-size: 1rem; font-weight: 700; color: #e0d0ff; margin-bottom: 4px; }
+    .type-badge-msg  { font-size: 0.83rem; color: rgba(230, 220, 255, 0.82); line-height: 1.7; }
+
+    /* ラッキーアドバイス */
+    .line-advice {
+      margin-top: 8px;
+      padding: 7px 10px;
+      background: rgba(255, 215, 0, 0.08);
+      border-left: 3px solid rgba(255, 215, 0, 0.5);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.8rem;
+      color: rgba(255, 230, 150, 0.9);
+      line-height: 1.5;
+    }
+
+    /* シェアセクション */
+    .share-section {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(180, 140, 255, 0.2);
+      text-align: center;
+    }
+    .share-section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #e0d0ff;
+      margin-bottom: 6px;
+    }
+    .share-section-desc {
+      font-size: 0.82rem;
+      color: rgba(200, 170, 255, 0.7);
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .share-card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      padding: 18px 16px;
+      margin-bottom: 14px;
+      text-align: left;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .share-card-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #4a2d7a;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .share-card-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 0.83rem;
+      color: #333;
+    }
+    .share-card-row .sc-emoji { font-size: 1rem; flex-shrink: 0; width: 22px; text-align: center; }
+    .share-card-label { color: #777; font-size: 0.75rem; width: 52px; flex-shrink: 0; }
+    .share-card-value { font-weight: 600; color: #222; }
+    .btn-share {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #ff6b9d, #c44dff);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 18px rgba(196, 77, 255, 0.45);
+      margin-bottom: 8px;
+    }
+    .btn-share:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(196, 77, 255, 0.65); }
+    .btn-share:active { transform: scale(0.97); }
+
     @media (max-width: 440px) {
       body { padding: 52px 10px 24px; }
       .card { padding: 20px 14px; }
@@ -320,7 +425,7 @@
       <span class="crystal-spin">🔮</span>
       <p class="analyzing-text">あなたの手相を読んでいます</p>
       <div class="dots"><span>●</span><span>●</span><span>●</span></div>
-      <p class="analyzing-sub">AIが21個の手のポイントを分析中…</p>
+      <p class="analyzing-sub">手型・5線・才能の丘を総合鑑定中…</p>
     </div>
   </div>
 
@@ -343,7 +448,7 @@
       <div class="result-header">
         <span class="result-header-emoji">✨</span>
         <div class="result-title">占い結果</div>
-        <div class="result-subtitle">5つの手相線があなたの運命を語ります</div>
+        <div class="result-subtitle">手型・5線・才能の丘をトータル鑑定✨</div>
       </div>
       <div id="result-lines"></div>
       <div style="text-align:center; margin-top:16px;">
@@ -499,34 +604,62 @@ function stopCamera() {
 }
 
 // ===== 手相分析 =====
-function dist(a, b) {
-  const dx = a.x - b.x, dy = a.y - b.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-function normalize(val, min, max) {
-  return Math.max(0, Math.min(1, (val - min) / (max - min)));
-}
-function level(norm) {
-  return norm >= 0.65 ? 'high' : norm >= 0.35 ? 'mid' : 'low';
-}
-
 function analyzePalm(lm) {
-  // 生命線: 親指長さ ÷ 手のひら幅
-  const life  = normalize(dist(lm[1], lm[4])  / dist(lm[5], lm[17]), 0.4, 1.2);
-  // 感情線: 手のひら幅 ÷ 手のひら縦
-  const heart = normalize(dist(lm[5], lm[17]) / dist(lm[0], lm[9]),  0.5, 0.9);
-  // 知能線: 人差し指 ÷ 中指
-  const head  = normalize(dist(lm[5], lm[8])  / dist(lm[9], lm[12]), 0.7, 1.1);
-  // 運命線: 縦 ÷ 横
-  const fate  = normalize(dist(lm[0], lm[9])  / dist(lm[5], lm[17]), 0.9, 1.8);
-  // 太陽線: 薬指 ÷ 中指
+  if (lm.length < 21) return null;
+
+  function dist(a, b) {
+    const dx = a.x - b.x, dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  function normalize(val, min, max) {
+    return Math.max(0, Math.min(1, (val - min) / (max - min)));
+  }
+  function level(norm) {
+    return norm >= 0.65 ? 'high' : norm >= 0.35 ? 'mid' : 'low';
+  }
+
+  // 5線
+  const life  = normalize(dist(lm[1], lm[4])   / dist(lm[5], lm[17]), 0.4, 1.2);
+  const heart = normalize(dist(lm[5], lm[17])  / dist(lm[0], lm[9]),  0.5, 0.9);
+  const head  = normalize(dist(lm[5], lm[8])   / dist(lm[9], lm[12]), 0.7, 1.1);
+  const fate  = normalize(dist(lm[0], lm[9])   / dist(lm[5], lm[17]), 0.9, 1.8);
   const sun   = normalize(dist(lm[13], lm[16]) / dist(lm[9], lm[12]), 0.7, 1.0);
+
+  // 手型（palmH / palmW の比率）
+  const palmH = dist(lm[0], lm[9]);
+  const palmW = dist(lm[5], lm[17]);
+  const ratio = palmH / palmW;
+  const handType = ratio < 1.0 ? 'wide' : ratio < 1.2 ? 'square' : ratio < 1.5 ? 'rectangle' : 'long';
+
+  // ドミナントマウント（最長の指 ÷ 中指長で正規化）
+  const middleLen = dist(lm[9], lm[12]);
+  const mountScores = {
+    venus:    dist(lm[1],  lm[4])  / middleLen,
+    jupiter:  dist(lm[5],  lm[8])  / middleLen,
+    saturn:   dist(lm[9],  lm[12]) / middleLen,
+    sunMount: dist(lm[13], lm[16]) / middleLen,
+    mercury:  dist(lm[17], lm[20]) / middleLen,
+  };
+  const dominantMount = Object.entries(mountScores).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+
+  // 季節
+  const month = new Date().getMonth(); // 0-11
+  const season = month >= 2 && month <= 4 ? 'spring'
+               : month >= 5 && month <= 7 ? 'summer'
+               : month >= 8 && month <= 10 ? 'autumn'
+               : 'winter';
+
   return {
-    life:  { norm: life,  level: level(life) },
-    heart: { norm: heart, level: level(heart) },
-    head:  { norm: head,  level: level(head) },
-    fate:  { norm: fate,  level: level(fate) },
-    sun:   { norm: sun,   level: level(sun) },
+    lines: {
+      life:  { norm: life,  level: level(life) },
+      heart: { norm: heart, level: level(heart) },
+      head:  { norm: head,  level: level(head) },
+      fate:  { norm: fate,  level: level(fate) },
+      sun:   { norm: sun,   level: level(sun) },
+    },
+    handType,
+    dominantMount,
+    season,
   };
 }
 
@@ -541,7 +674,12 @@ async function runFortune(imageSource) {
       showError('🤲', '手のひらが見つかりませんでした。\n手全体が大きく映るように調整してみてください。', false);
       return;
     }
-    showResult(analyzePalm(result.landmarks[0]), data);
+    const analysis = analyzePalm(result.landmarks[0]);
+    if (!analysis) {
+      showError('🤲', '手のひらがうまく読み取れませんでした。\n明るい場所でもう一度試してください。', false);
+      return;
+    }
+    showResult(analysis, data);
   } catch (err) {
     console.error(err);
     showError('⚠️', 'AIの読み込みに失敗しました。\nインターネット接続を確認してください。', false);
@@ -557,17 +695,91 @@ function showError(emoji, msg, cameraFailed) {
 }
 
 // ===== 結果表示 =====
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function buildShareText(analysis, data) {
+  const ht = data.handTypes[analysis.handType];
+  const se = data.seasons[analysis.season];
+  const mt = data.mounts[analysis.dominantMount];
+  const lineKeys = ['life', 'heart', 'head', 'fate', 'sun'];
+  const lineLines = lineKeys.map(k => {
+    const ld = data.lines[k];
+    const lv = ld.levels[analysis.lines[k].level];
+    return ld.emoji + ' ' + ld.name + '：' + lv.label;
+  }).join('\n');
+  return [
+    '🔮 手相占い結果',
+    '✋ 手型：' + ht.name + '（' + pickRandom(ht.messages).slice(0, 20) + '…）',
+    se.emoji + ' 今の時期：' + se.name + ' ' + se.period,
+    lineLines,
+    '🌟 才能の丘：' + mt.name + '（' + mt.talent + '）',
+    '📱 手相占い: https://kiyohero.github.io/game-project/games/palm-reading.html',
+  ].join('\n');
+}
+
+function shareResult(text) {
+  if (navigator.share) {
+    navigator.share({ title: '🔮 手相占い結果', text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('📋 結果をコピーしました！LINEやメモに貼り付けてね✨');
+    }).catch(() => {
+      alert('コピーに失敗しました。手動でコピーしてください。');
+    });
+  }
+}
+
 function showResult(analysis, data) {
   const container = document.getElementById('result-lines');
   container.innerHTML = '';
-  ['life', 'heart', 'head', 'fate', 'sun'].forEach(key => {
+
+  // Section 1: 手型
+  const ht = data.handTypes[analysis.handType];
+  const htMsg = pickRandom(ht.messages);
+  const sec1 = document.createElement('div');
+  sec1.className = 'result-section';
+  sec1.innerHTML =
+    '<div class="result-section-title">✋ あなたの手型</div>' +
+    '<div class="type-badge">' +
+      '<span class="type-badge-emoji">' + ht.emoji + '</span>' +
+      '<div class="type-badge-body">' +
+        '<div class="type-badge-name">' + ht.name + '</div>' +
+        '<div class="type-badge-msg">' + htMsg + '</div>' +
+      '</div>' +
+    '</div>';
+  container.appendChild(sec1);
+
+  // Section 2: 季節
+  const se = data.seasons[analysis.season];
+  const seMsg = pickRandom(se.messages);
+  const sec2 = document.createElement('div');
+  sec2.className = 'result-section';
+  sec2.innerHTML =
+    '<div class="result-section-title">' + se.emoji + ' 今のあなたの時期</div>' +
+    '<div class="type-badge">' +
+      '<span class="type-badge-emoji">' + se.emoji + '</span>' +
+      '<div class="type-badge-body">' +
+        '<div class="type-badge-name">' + se.name + '（' + se.period + '）</div>' +
+        '<div class="type-badge-msg">' + seMsg + '</div>' +
+      '</div>' +
+    '</div>';
+  container.appendChild(sec2);
+
+  // Section 3: 5線
+  const sec3 = document.createElement('div');
+  sec3.className = 'result-section';
+  sec3.innerHTML = '<div class="result-section-title">🖐️ 5つの手相線</div>';
+  ['life', 'heart', 'head', 'fate', 'sun'].forEach((key, i) => {
     const lineData  = data.lines[key];
-    const res       = analysis[key];
+    const res       = analysis.lines[key];
     const levelData = lineData.levels[res.level];
-    const msg       = levelData.messages[Math.floor(Math.random() * levelData.messages.length)];
+    const msg       = pickRandom(levelData.messages);
     const stars     = '⭐'.repeat(levelData.stars) + '☆'.repeat(3 - levelData.stars);
     const card = document.createElement('div');
     card.className = 'line-card';
+    card.style.animationDelay = (i * 0.1) + 's';
     card.innerHTML =
       '<div class="line-header">' +
         '<span class="line-emoji">' + lineData.emoji + '</span>' +
@@ -577,9 +789,60 @@ function showResult(analysis, data) {
         '</div>' +
         '<div class="line-stars">' + stars + '</div>' +
       '</div>' +
-      '<p class="line-message">' + msg + '</p>';
-    container.appendChild(card);
+      '<p class="line-message">' + msg + '</p>' +
+      '<div class="line-advice">' + levelData.advice + '</div>';
+    sec3.appendChild(card);
   });
+  container.appendChild(sec3);
+
+  // Section 4: 才能の丘
+  const mt = data.mounts[analysis.dominantMount];
+  const mtMsg = pickRandom(mt.messages);
+  const sec4 = document.createElement('div');
+  sec4.className = 'result-section';
+  sec4.innerHTML =
+    '<div class="result-section-title">🌟 あなたの隠れた才能</div>' +
+    '<div class="type-badge">' +
+      '<span class="type-badge-emoji">' + mt.emoji + '</span>' +
+      '<div class="type-badge-body">' +
+        '<div class="type-badge-name">' + mt.name + '（' + mt.talent + '）</div>' +
+        '<div class="type-badge-msg">' + mtMsg + '</div>' +
+      '</div>' +
+    '</div>';
+  container.appendChild(sec4);
+
+  // Section 5: シェア
+  const shareText = buildShareText(analysis, data);
+  const ht2 = data.handTypes[analysis.handType];
+  const se2 = data.seasons[analysis.season];
+  const mt2 = data.mounts[analysis.dominantMount];
+  const lineKeys = ['life', 'heart', 'head', 'fate', 'sun'];
+  const sec5 = document.createElement('div');
+  sec5.className = 'share-section';
+  const cardRows = lineKeys.map(k => {
+    const ld = data.lines[k];
+    const lv = ld.levels[analysis.lines[k].level];
+    return '<div class="share-card-row">' +
+      '<span class="sc-emoji">' + ld.emoji + '</span>' +
+      '<span class="share-card-label">' + ld.name + '</span>' +
+      '<span class="share-card-value">' + lv.label + '</span>' +
+      '</div>';
+  }).join('');
+  sec5.innerHTML =
+    '<div class="share-section-title">👫 友達にも試してみよう！</div>' +
+    '<div class="share-section-desc">手相は人によって全然ちがいます。<br>友達の手相と比べてみてね✨</div>' +
+    '<div class="share-card">' +
+      '<div class="share-card-title">🔮 手相占い結果</div>' +
+      '<div class="share-card-row"><span class="sc-emoji">' + ht2.emoji + '</span><span class="share-card-label">手型</span><span class="share-card-value">' + ht2.name + '</span></div>' +
+      '<div class="share-card-row"><span class="sc-emoji">' + se2.emoji + '</span><span class="share-card-label">今の時期</span><span class="share-card-value">' + se2.name + '</span></div>' +
+      cardRows +
+      '<div class="share-card-row"><span class="sc-emoji">' + mt2.emoji + '</span><span class="share-card-label">才能の丘</span><span class="share-card-value">' + mt2.name + '</span></div>' +
+    '</div>' +
+    '<button class="btn-share" id="btn-share-result">📤 友達にシェア！</button>';
+  container.appendChild(sec5);
+
+  document.getElementById('btn-share-result').addEventListener('click', () => shareResult(shareText));
+
   showScreen('result');
 }
 
