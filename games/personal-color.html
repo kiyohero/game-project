@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>パーソナルカラー診断</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    body {
+      padding: 60px 16px 40px;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* ===== SCREEN SYSTEM ===== */
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 440px;
+      animation: fadeInUp 0.35s ease;
+    }
+    .screen.active { display: block; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== CARD ===== */
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 28px 20px 24px;
+      box-shadow: 0 4px 24px rgba(107, 91, 122, 0.18);
+      margin-bottom: 16px;
+    }
+
+    /* ===== START SCREEN ===== */
+    .title-emoji {
+      font-size: 5rem;
+      text-align: center;
+      display: block;
+      margin-bottom: 12px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+    .title-main {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #6b5b7a;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .title-desc {
+      color: #9b8ab8;
+      font-size: 0.9rem;
+      line-height: 1.75;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .season-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .season-chip {
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .chip-spring { background: linear-gradient(135deg, #FFE5CC, #FFB8A0); color: #7a3a1a; }
+    .chip-autumn { background: linear-gradient(135deg, #C4783A, #8B4513); color: #fff; }
+    .chip-summer { background: linear-gradient(135deg, #E8D5E8, #C4A8D8); color: #4a2a5a; }
+    .chip-winter { background: linear-gradient(135deg, #3D1A6E, #1A0A2E); color: #e8d8ff; }
+
+    /* ===== BUTTONS ===== */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #a78bbd, #7a6b8a);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(122, 107, 138, 0.4);
+      margin-bottom: 12px;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(122,107,138,0.5); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      background: transparent;
+      color: #9b8ab8;
+      border: 1.5px solid #c4b4d4;
+      border-radius: 14px;
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: #f5f0fa; }
+
+    /* ===== CAMERA SCREEN ===== */
+    .step-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #a78bbd;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .camera-icon { font-size: 3.5rem; text-align: center; display: block; margin-bottom: 16px; }
+    .camera-desc {
+      font-size: 0.88rem;
+      color: #9b8ab8;
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .camera-divider {
+      text-align: center;
+      color: #c4b4d4;
+      font-size: 0.82rem;
+      margin-bottom: 12px;
+    }
+
+    /* ===== PHOTO / CANVAS SCREEN ===== */
+    .instruction {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #4a3a5a;
+      text-align: center;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .instruction-sub {
+      font-size: 0.82rem;
+      color: #9b8ab8;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      cursor: crosshair;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      border: 2px dashed #c4b4d4;
+      background: #f5f0fa;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #photo-canvas { display: block; width: 100%; height: auto; }
+    #canvas-placeholder {
+      color: #c4b4d4;
+      font-size: 2.5rem;
+      padding: 30px;
+    }
+    #sampled-color-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f5f0fa;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+    #sampled-color-preview.hidden { display: none; }
+    #color-swatch {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      border: 2px solid #c4b4d4;
+      flex-shrink: 0;
+    }
+    .swatch-info { flex: 1; }
+    .swatch-label { font-size: 0.78rem; color: #9b8ab8; margin-bottom: 2px; }
+    #color-hex { font-size: 0.9rem; color: #6b5b7a; font-weight: 700; font-family: monospace; }
+
+    /* ===== QUIZ SCREEN ===== */
+    .progress-wrap {
+      background: #e8e0f0;
+      border-radius: 8px;
+      height: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      background: linear-gradient(90deg, #a78bbd, #7a6b8a);
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.4s ease;
+    }
+    .progress-label {
+      font-size: 0.8rem;
+      color: #9b8ab8;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+    .question-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #4a3a5a;
+      line-height: 1.55;
+      margin-bottom: 20px;
+      text-align: center;
+      min-height: 2.5em;
+    }
+    .quiz-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-option {
+      min-height: 72px;
+      border: 2px solid #e0d4f0;
+      background: #f5f0fa;
+      color: #4a3a5a;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 10px 8px;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      text-align: center;
+      line-height: 1.45;
+    }
+    .btn-option:hover { background: #e8e0f0; border-color: #a78bbd; }
+    .btn-option:active { transform: scale(0.95); }
+    .btn-option.selected { background: #a78bbd; color: #fff; border-color: #7a6b8a; }
+
+    /* ===== ANALYZING SCREEN ===== */
+    .analyzing-wrap { text-align: center; padding: 48px 20px 40px; }
+    .analyze-emoji {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 24px;
+      animation: spin-pulse 2s ease-in-out infinite;
+    }
+    @keyframes spin-pulse {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50%       { transform: rotate(180deg) scale(1.1); }
+    }
+    .analyzing-text { color: #6b5b7a; font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
+    .dot-loader { display: flex; justify-content: center; gap: 6px; }
+    .dot-loader span {
+      width: 10px; height: 10px;
+      background: #a78bbd;
+      border-radius: 50%;
+      animation: blink-dot 1.2s infinite;
+    }
+    .dot-loader span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-loader span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.2; transform: scale(0.7); }
+    }
+
+    /* ===== RESULT SCREEN ===== */
+    .result-card {
+      border-radius: 20px;
+      padding: 28px 20px 24px;
+      box-shadow: 0 4px 28px rgba(0, 0, 0, 0.2);
+      margin-bottom: 16px;
+    }
+    .season-spring-bg { background: linear-gradient(160deg, #FFE5CC, #FFB8A0); color: #6b3a1a; }
+    .season-autumn-bg { background: linear-gradient(160deg, #C4783A, #7B3F00); color: #fff4e6; }
+    .season-summer-bg { background: linear-gradient(160deg, #EDD8ED, #B8A0C8); color: #3a1a4a; }
+    .season-winter-bg { background: linear-gradient(160deg, #2C1654, #120828); color: #e8d8ff; }
+    .season-neutral-bg { background: linear-gradient(160deg, #E8DCC8, #B8A8C8); color: #3a2a3a; }
+
+    .accuracy-note {
+      font-size: 0.72rem;
+      text-align: center;
+      margin-top: 16px;
+      line-height: 1.65;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 10px;
+      opacity: 0.82;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .result-anim { animation: slideUp 0.5s ease both; }
+    .result-anim:nth-child(2) { animation-delay: 0.1s; }
+    .result-anim:nth-child(3) { animation-delay: 0.2s; }
+    .result-anim:nth-child(4) { animation-delay: 0.3s; }
+    .result-anim:nth-child(5) { animation-delay: 0.4s; }
+
+    .result-season-icon { font-size: 4.5rem; display: block; text-align: center; margin-bottom: 10px; }
+    .result-season-name { font-size: 2rem; font-weight: 900; text-align: center; margin-bottom: 8px; }
+    .result-type-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .result-season-desc {
+      font-size: 0.92rem;
+      line-height: 1.75;
+      margin-bottom: 22px;
+      text-align: center;
+      opacity: 0.92;
+    }
+    .result-swatches-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    .color-swatches {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+    .color-swatch-item { text-align: center; }
+    .color-swatch-circle {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.55);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      margin: 0 auto 5px;
+    }
+    .color-swatch-name { font-size: 0.65rem; opacity: 0.85; line-height: 1.3; }
+
+    .result-advice-box {
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .advice-title {
+      font-size: 0.75rem;
+      font-weight: 800;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .advice-body { font-size: 0.88rem; line-height: 1.75; }
+
+    .result-actions { margin-top: 18px; }
+    .btn-retry {
+      display: block;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.25);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      color: inherit;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-retry:hover { background: rgba(255, 255, 255, 0.4); }
+  </style>
+</head>
+<body>
+
+  <!-- ===== SCREEN: スタート ===== -->
+  <div id="screen-start" class="screen active">
+    <div class="card">
+      <span class="title-emoji">💄</span>
+      <div class="title-main">パーソナルカラー診断</div>
+      <p class="title-desc">
+        写真を撮って自分の「パーソナルカラー」を診断しよう！<br>
+        肌・髪・瞳の色から、あなたに似合う色がわかるよ。
+      </p>
+      <div class="season-preview">
+        <div class="season-chip chip-spring">🌸 イエベ春<br><small style="font-weight:400;font-size:0.75em">明るく温かみのある色</small></div>
+        <div class="season-chip chip-autumn">🍂 イエベ秋<br><small style="font-weight:400;font-size:0.75em">深みのあるアースカラー</small></div>
+        <div class="season-chip chip-summer">🌿 ブルベ夏<br><small style="font-weight:400;font-size:0.75em">やわらかいソフトカラー</small></div>
+        <div class="season-chip chip-winter">❄️ ブルベ冬<br><small style="font-weight:400;font-size:0.75em">鮮やかでクリアな色</small></div>
+      </div>
+      <button id="btn-start" class="btn-primary">✨ 診断スタート</button>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: 撮影 ===== -->
+  <div id="screen-camera" class="screen">
+    <div class="card">
+      <p class="step-label">STEP 1 — 写真を選ぼう</p>
+      <span class="camera-icon">📸</span>
+      <p class="camera-desc">
+        顔や首がはっきり見える写真を使ってね。<br>
+        <strong>自然光（窓際）</strong>で撮ると精度がアップ！<br>
+        <small style="color:#c4a8a8">⚠️ 暗い場所・フィルターあり写真は結果がズレることがあるよ</small>
+      </p>
+      <!-- iOS: capture="user" でフロントカメラを直接開く -->
+      <input type="file" id="photo-input-camera" accept="image/*" capture="user" hidden>
+      <input type="file" id="photo-input-file"   accept="image/*" hidden>
+      <button id="btn-camera" class="btn-primary">📸 カメラで撮る</button>
+      <div class="camera-divider">または</div>
+      <button id="btn-file" class="btn-secondary">🖼️ 画像フォルダから選ぶ</button>
+      <button id="btn-camera-back" class="btn-secondary">← もどる</button>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: 写真タップ ===== -->
+  <div id="screen-photo" class="screen">
+    <div class="card">
+      <p class="step-label">STEP 2 — 肌の色をタップ</p>
+      <p class="instruction">顔・首・手首など<br>肌の部分をタップしてね</p>
+      <p class="instruction-sub">タップした場所の色を読み取るよ</p>
+      <div id="canvas-container">
+        <canvas id="photo-canvas"></canvas>
+        <div id="canvas-placeholder">🖼️</div>
+      </div>
+      <div id="sampled-color-preview" class="hidden">
+        <div id="color-swatch"></div>
+        <div class="swatch-info">
+          <div class="swatch-label">読み取った肌の色</div>
+          <div id="color-hex">—</div>
+        </div>
+      </div>
+      <button id="btn-photo-next" class="btn-primary" disabled>次へ → クイズへ</button>
+      <button id="btn-photo-back" class="btn-secondary">← 写真を撮り直す</button>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: クイズ ===== -->
+  <div id="screen-quiz" class="screen">
+    <div class="card">
+      <p class="step-label">STEP 3 — かんたんクイズ</p>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="quiz-progress-bar" style="width:0%"></div>
+      </div>
+      <p class="progress-label" id="quiz-progress-label">しつもん 1 / 3</p>
+      <p class="question-text" id="quiz-question"></p>
+      <div class="quiz-options" id="quiz-options"></div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: 分析中 ===== -->
+  <div id="screen-analyzing" class="screen">
+    <div class="card analyzing-wrap">
+      <span class="analyze-emoji">💄</span>
+      <p class="analyzing-text">あなたのカラーを分析中...</p>
+      <div class="dot-loader">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: 結果 ===== -->
+  <div id="screen-result" class="screen">
+    <div id="result-card" class="result-card">
+      <!-- JS で動的に生成 -->
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ===========================
+       STATE
+    =========================== */
+    var state = {
+      loadedImage: null,
+      sampledR: 128,
+      sampledG: 100,
+      sampledB: 90,
+      hasSample: false,
+      quizStep: 0,
+      quizWarmth: 0,
+      quizDepth: 0,
+      season: null,
+    };
+
+    /* ===========================
+       SCREEN MANAGER
+    =========================== */
+    var SCREENS = ['start', 'camera', 'photo', 'quiz', 'analyzing', 'result'];
+
+    function showScreen(name) {
+      SCREENS.forEach(function (id) {
+        var el = document.getElementById('screen-' + id);
+        if (el) el.classList.toggle('active', id === name);
+      });
+      window.scrollTo(0, 0);
+    }
+
+    /* ===========================
+       COLOR UTILITIES
+    =========================== */
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      var max = Math.max(r, g, b);
+      var min = Math.min(r, g, b);
+      var h, s;
+      var l = (max + min) / 2;
+      if (max === min) {
+        h = s = 0;
+      } else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      return { h: h, s: s, l: l };
+    }
+
+    function averagePixels(canvas, cx, cy) {
+      var radius = 7;
+      var ctx = canvas.getContext('2d');
+      var x0 = Math.max(0, cx - radius);
+      var y0 = Math.max(0, cy - radius);
+      var w  = Math.min(canvas.width  - x0, radius * 2 + 1);
+      var h  = Math.min(canvas.height - y0, radius * 2 + 1);
+      if (w <= 0 || h <= 0) return { r: 200, g: 170, b: 150 };
+      var data = ctx.getImageData(x0, y0, w, h).data;
+      var rSum = 0, gSum = 0, bSum = 0, count = 0;
+      for (var i = 0; i < data.length; i += 4) {
+        rSum += data[i];
+        gSum += data[i + 1];
+        bSum += data[i + 2];
+        count++;
+      }
+      return {
+        r: Math.round(rSum / count),
+        g: Math.round(gSum / count),
+        b: Math.round(bSum / count),
+      };
+    }
+
+    function analyzeSkinColor(r, g, b) {
+      // 暖色スコア: 正=イエベ、負=ブルベ（R-Bの差で判定）
+      var warmth = (r - b) / 100;
+      var hsl = rgbToHsl(r, g, b);
+      // 深みスコア: 正=深い、負=明るい
+      var depth = (0.62 - hsl.l) * 6;
+      // 鮮やかさスコア: 正=クリア、負=くすみ
+      var clarity = (hsl.s - 0.25) * 4;
+      return { warmth: warmth, depth: depth, clarity: clarity };
+    }
+
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(function (v) {
+        return Math.min(255, Math.max(0, v)).toString(16).padStart(2, '0');
+      }).join('').toUpperCase();
+    }
+
+    /* ===========================
+       CANVAS / PHOTO HANDLING
+    =========================== */
+    function loadImageToCanvas(file) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var img = new Image();
+        img.onload = function () {
+          state.loadedImage = img;
+          var canvas = document.getElementById('photo-canvas');
+          var placeholder = document.getElementById('canvas-placeholder');
+          var maxW = 560;
+          var scale = Math.min(1, maxW / img.naturalWidth);
+          canvas.width  = Math.round(img.naturalWidth  * scale);
+          canvas.height = Math.round(img.naturalHeight * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.style.display = 'block';
+          if (placeholder) placeholder.style.display = 'none';
+          state.hasSample = false;
+          var preview = document.getElementById('sampled-color-preview');
+          preview.classList.add('hidden');
+          document.getElementById('btn-photo-next').disabled = true;
+          showScreen('photo');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function drawCrosshair(canvas, cx, cy) {
+      if (!state.loadedImage) return;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(state.loadedImage, 0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - 26, cy); ctx.lineTo(cx + 26, cy);
+      ctx.moveTo(cx, cy - 26); ctx.lineTo(cx, cy + 26);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function handleCanvasTap(e) {
+      e.preventDefault();
+      var canvas = document.getElementById('photo-canvas');
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width  / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var clientX, clientY;
+
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+      } else if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+
+      var cx = Math.round((clientX - rect.left) * scaleX);
+      var cy = Math.round((clientY - rect.top)  * scaleY);
+      cx = Math.max(0, Math.min(canvas.width  - 1, cx));
+      cy = Math.max(0, Math.min(canvas.height - 1, cy));
+
+      var rgb = averagePixels(canvas, cx, cy);
+      state.sampledR = rgb.r;
+      state.sampledG = rgb.g;
+      state.sampledB = rgb.b;
+      state.hasSample = true;
+
+      drawCrosshair(canvas, cx, cy);
+
+      var hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+      document.getElementById('color-swatch').style.background = hex;
+      document.getElementById('color-hex').textContent = hex;
+      var preview = document.getElementById('sampled-color-preview');
+      preview.classList.remove('hidden');
+      document.getElementById('btn-photo-next').disabled = false;
+    }
+
+    /* ===========================
+       QUIZ DATA
+    =========================== */
+    var QUIZ_DATA = [
+      {
+        question: '自分の髪の色・印象は？',
+        options: [
+          { label: '🌸 明るいブラウン\nゴールド系',    warmth: +2, depth: -1 },
+          { label: '🍂 こげ茶・カーキ\nアッシュブラウン', warmth: +1, depth: +1 },
+          { label: '🌿 やわらかいブラウン\nグレーっぽい', warmth: -1, depth: -1 },
+          { label: '❄️ 黒・ダークブラウン\n真っ黒に近い', warmth: -1, depth: +2 },
+        ],
+      },
+      {
+        question: '自分の瞳の色・印象は？',
+        options: [
+          { label: '🌸 明るいブラウン\nヘーゼル系',       warmth: +2, depth: -1 },
+          { label: '🍂 深いブラウン\nオリーブっぽい',     warmth: +1, depth: +1 },
+          { label: '🌿 やわらかいブラウン\nグレーがかった', warmth: -1, depth: -1 },
+          { label: '❄️ 黒・ダークブラウン\nクールな印象',  warmth: -1, depth: +1 },
+        ],
+      },
+      {
+        question: '手首の内側の血管の色は？',
+        options: [
+          { label: '💚 緑っぽく\n見える',           warmth: +3, depth: 0 },
+          { label: '💙 青・紫っぽく\n見える',       warmth: -3, depth: 0 },
+          { label: '🤍 両方まじって\nいる',         warmth:  0, depth: 0 },
+          { label: '❓ よくわからない\n見えにくい', warmth:  0, depth: 0 },
+        ],
+      },
+    ];
+
+    /* ===========================
+       QUIZ ENGINE
+    =========================== */
+    function renderQuestion(step) {
+      var q = QUIZ_DATA[step];
+      var pct = (step / QUIZ_DATA.length) * 100;
+      document.getElementById('quiz-progress-bar').style.width = pct + '%';
+      document.getElementById('quiz-progress-label').textContent =
+        'しつもん ' + (step + 1) + ' / ' + QUIZ_DATA.length;
+      document.getElementById('quiz-question').textContent = q.question;
+
+      var container = document.getElementById('quiz-options');
+      container.innerHTML = '';
+      q.options.forEach(function (opt) {
+        var btn = document.createElement('button');
+        btn.className = 'btn-option';
+        btn.textContent = opt.label;
+        btn.style.whiteSpace = 'pre-line';
+        btn.addEventListener('click', function () {
+          handleQuizAnswer(opt);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function handleQuizAnswer(opt) {
+      state.quizWarmth += opt.warmth;
+      state.quizDepth  += opt.depth;
+      state.quizStep++;
+
+      if (state.quizStep < QUIZ_DATA.length) {
+        renderQuestion(state.quizStep);
+      } else {
+        showScreen('analyzing');
+        setTimeout(computeAndShowResult, 2000);
+      }
+    }
+
+    /* ===========================
+       COLOR CLASSIFICATION
+    =========================== */
+    function computeAndShowResult() {
+      var skin = analyzeSkinColor(state.sampledR, state.sampledG, state.sampledB);
+      var totalWarmth = skin.warmth + state.quizWarmth;
+      var totalDepth  = skin.depth  + state.quizDepth;
+      var season;
+      // |totalWarmth| <= 1.0 はイエベ・ブルベの信号が拮抗しており、
+      // 日本人の約50%が該当するとされるニュートラルとして扱う
+      if (Math.abs(totalWarmth) <= 1.0) {
+        season = 'neutral';
+      } else if (totalWarmth > 0) {
+        season = totalDepth < 0 ? 'spring' : 'autumn';
+      } else {
+        season = totalDepth < 0 ? 'summer' : 'winter';
+      }
+      state.season = season;
+      saveHistory();
+      showResult(season);
+    }
+
+    /* ===========================
+       RESULT DATA
+    =========================== */
+    var RESULT_DATA = {
+      spring: {
+        name: 'イエベ春',
+        type: 'Yellow Base / Spring',
+        icon: '🌸',
+        bgClass: 'season-spring-bg',
+        desc: '明るく透明感のある暖かいカラーが得意！春の花のようにフレッシュで、コーラルやピーチが特に似合います。',
+        swatches: [
+          { color: '#FF7A6B', name: 'コーラル' },
+          { color: '#FFB347', name: 'ピーチ' },
+          { color: '#FFF5D6', name: 'アイボリー' },
+          { color: '#FFD700', name: 'ゴールド' },
+          { color: '#5BCFB8', name: 'ターコイズ' },
+        ],
+        bestColors: 'コーラル、ピーチ、アイボリー、ゴールド、ターコイズ、ライトオレンジ',
+        avoidColors: '暗い色・くすんだ色・黒・寒色系・シルバー',
+        hairTip: '明るいブラウン・ゴールドブラウン・キャラメルカラーがおすすめ',
+        makeupTip: '明るいピーチ系リップ、ゴールドのアイシャドウ、ピンクの頬紅',
+      },
+      autumn: {
+        name: 'イエベ秋',
+        type: 'Yellow Base / Autumn',
+        icon: '🍂',
+        bgClass: 'season-autumn-bg',
+        desc: '深みのあるアースカラーが得意！こっくりとした温かみのある色で、大人の落ち着いた雰囲気が出ます。',
+        swatches: [
+          { color: '#CC5500', name: 'テラコッタ' },
+          { color: '#8B7A55', name: 'カーキ' },
+          { color: '#DAA520', name: 'ゴールデン' },
+          { color: '#A0522D', name: 'ブラウン' },
+          { color: '#6B8E23', name: 'オリーブ' },
+        ],
+        bestColors: 'テラコッタ、カーキ、ゴールデンイエロー、ブラウン、オリーブ、キャメル',
+        avoidColors: '明るいパステル・白すぎる色・寒色系・ビビッドカラー',
+        hairTip: 'ダークブラウン・オーバーン・チェスナット・こげ茶系',
+        makeupTip: 'テラコッタリップ、ブラウン系アイシャドウ、オレンジ系チーク',
+      },
+      summer: {
+        name: 'ブルベ夏',
+        type: 'Blue Base / Summer',
+        icon: '🌿',
+        bgClass: 'season-summer-bg',
+        desc: 'やわらかくソフトな色が得意！くすみのある柔らかい色合いで、上品で優しい雰囲気が漂います。',
+        swatches: [
+          { color: '#D4A0D8', name: 'ラベンダー' },
+          { color: '#FFB6C1', name: 'ライトピンク' },
+          { color: '#A8C4D8', name: 'スモーキーブルー' },
+          { color: '#B8B8B8', name: 'シルバーグレー' },
+          { color: '#C8A8BC', name: 'モーブ' },
+        ],
+        bestColors: 'ラベンダー、ライトピンク、スモーキーブルー、グレー、ローズ、モーブ',
+        avoidColors: 'オレンジ・くすみなしの鮮やか系・暖色系・ゴールド',
+        hairTip: 'アッシュブラウン・ピンクブラウン・くすみブラウン・グレーがかった色',
+        makeupTip: 'ローズ系リップ、モーブ・ラベンダーのアイシャドウ、ピンク系チーク',
+      },
+      winter: {
+        name: 'ブルベ冬',
+        type: 'Blue Base / Winter',
+        icon: '❄️',
+        bgClass: 'season-winter-bg',
+        desc: '鮮やかでクリアな色が得意！コントラストの強いはっきりとした色使いで、都会的でシャープな印象に。',
+        swatches: [
+          { color: '#800020', name: 'バーガンディ' },
+          { color: '#1A3AAD', name: 'ロイヤルブルー' },
+          { color: '#007848', name: 'エメラルド' },
+          { color: '#1a1a1a', name: 'ブラック' },
+          { color: '#F5F5F5', name: 'ピュアホワイト' },
+        ],
+        bestColors: 'バーガンディ、ロイヤルブルー、エメラルド、ブラック、ホワイト、マゼンタ',
+        avoidColors: 'くすんだ色・アースカラー・暖色系・オレンジ・ベージュ',
+        hairTip: 'ブルーブラック・ダークブラウン・ピンク系のダーク・非常に暗い色',
+        makeupTip: 'ワインレッドリップ、ブラックのアイライナー、ローズ系チーク',
+      },
+      neutral: {
+        name: 'ニュートラル',
+        type: 'Neutral / Both Sides',
+        icon: '🌈',
+        bgClass: 'season-neutral-bg',
+        desc: 'イエベ・ブルベ両方の要素を持つニュートラルタイプ！実は日本人の約半数がこのタイプとも言われているよ。幅広い色が楽しめるお得な個性です。',
+        swatches: [
+          { color: '#D4A870', name: 'キャメル' },
+          { color: '#C4A8C8', name: 'モーブ' },
+          { color: '#88C4A4', name: 'セージグリーン' },
+          { color: '#D4B890', name: 'ベージュ' },
+          { color: '#A8B8C8', name: 'スレートブルー' },
+        ],
+        bestColors: 'キャメル、ベージュ、モーブ、セージグリーン、テラコッタ、アッシュブラウンなど幅広い色',
+        avoidColors: '極端に鮮やかすぎる色・極端に暗すぎる色が少し重く感じることも',
+        hairTip: 'ベージュブラウン・アッシュブラウン・ナチュラルブラウンなど自然な中間色',
+        makeupTip: 'コーラル〜ローズ系リップ、ブラウン〜モーブ系アイシャドウがなじみやすい',
+      },
+    };
+
+    /* ===========================
+       RESULT DISPLAY
+    =========================== */
+    function showResult(season) {
+      var data = RESULT_DATA[season];
+      var card = document.getElementById('result-card');
+      card.className = 'result-card ' + data.bgClass;
+
+      var swatchHtml = data.swatches.map(function (sw) {
+        var border = season === 'winter' ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.6)';
+        return (
+          '<div class="color-swatch-item">' +
+            '<div class="color-swatch-circle" style="background:' + sw.color +
+              ';border-color:' + border + '"></div>' +
+            '<div class="color-swatch-name">' + sw.name + '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+      card.innerHTML =
+        '<div class="result-anim" style="text-align:center;margin-bottom:6px">' +
+          '<span class="result-season-icon">' + data.icon + '</span>' +
+          '<div class="result-season-name">' + data.name + '</div>' +
+          '<span class="result-type-badge">' + data.type + '</span>' +
+          '<p class="result-season-desc">' + data.desc + '</p>' +
+          '<div class="result-swatches-label">あなたに似合う色</div>' +
+          '<div class="color-swatches">' + swatchHtml + '</div>' +
+        '</div>' +
+        '<div class="result-advice-box result-anim">' +
+          '<div class="advice-title">💐 おすすめカラー</div>' +
+          '<div class="advice-body">' + data.bestColors + '</div>' +
+        '</div>' +
+        '<div class="result-advice-box result-anim">' +
+          '<div class="advice-title">🚫 さけた方がよい色</div>' +
+          '<div class="advice-body">' + data.avoidColors + '</div>' +
+        '</div>' +
+        '<div class="result-advice-box result-anim">' +
+          '<div class="advice-title">💇 ヘアカラーのヒント</div>' +
+          '<div class="advice-body">' + data.hairTip + '</div>' +
+        '</div>' +
+        '<div class="result-advice-box result-anim">' +
+          '<div class="advice-title">💋 メイクのヒント</div>' +
+          '<div class="advice-body">' + data.makeupTip + '</div>' +
+        '</div>' +
+        '<div class="result-actions result-anim">' +
+          '<button class="btn-retry" id="btn-result-retry">🔄 もう一度診断する</button>' +
+        '</div>' +
+        '<p class="accuracy-note result-anim">' +
+          '📷 この診断は写真の色情報をもとにした簡易判定です。<br>' +
+          '照明・フィルター・美肌補正の影響で結果が変わることがあります。<br>' +
+          'より正確な診断はプロのサロンでのドレープ診断がおすすめです。' +
+        '</p>';
+
+      document.getElementById('btn-result-retry').addEventListener('click', resetApp);
+      showScreen('result');
+    }
+
+    /* ===========================
+       LOCALSTORAGE
+    =========================== */
+    function saveHistory() {
+      try {
+        var key = 'personalColorHistory';
+        var h = JSON.parse(localStorage.getItem(key) || '[]');
+        h.unshift({ season: state.season, date: Date.now() });
+        if (h.length > 10) h.length = 10;
+        localStorage.setItem(key, JSON.stringify(h));
+      } catch (e) {}
+    }
+
+    /* ===========================
+       RESET
+    =========================== */
+    function resetApp() {
+      state.loadedImage = null;
+      state.hasSample   = false;
+      state.quizStep    = 0;
+      state.quizWarmth  = 0;
+      state.quizDepth   = 0;
+      state.season      = null;
+
+      var canvas = document.getElementById('photo-canvas');
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.style.display = 'none';
+      var placeholder = document.getElementById('canvas-placeholder');
+      if (placeholder) placeholder.style.display = '';
+      document.getElementById('sampled-color-preview').classList.add('hidden');
+      document.getElementById('btn-photo-next').disabled = true;
+
+      // file inputをリセット（同じ写真を再選択できるように）
+      document.getElementById('photo-input-camera').value = '';
+      document.getElementById('photo-input-file').value = '';
+
+      showScreen('start');
+    }
+
+    /* ===========================
+       EVENT LISTENERS
+    =========================== */
+
+    // スタート
+    document.getElementById('btn-start').addEventListener('click', function () {
+      showScreen('camera');
+    });
+
+    // カメラ・ファイル選択
+    document.getElementById('btn-camera').addEventListener('click', function () {
+      document.getElementById('photo-input-camera').click();
+    });
+    document.getElementById('btn-file').addEventListener('click', function () {
+      document.getElementById('photo-input-file').click();
+    });
+    document.getElementById('btn-camera-back').addEventListener('click', function () {
+      showScreen('start');
+    });
+
+    function onFileSelected(e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      loadImageToCanvas(file);
+    }
+    document.getElementById('photo-input-camera').addEventListener('change', onFileSelected);
+    document.getElementById('photo-input-file').addEventListener('change', onFileSelected);
+
+    // Canvas タップ
+    var canvas = document.getElementById('photo-canvas');
+    canvas.style.display = 'none'; // 画像読み込み前は非表示
+    canvas.addEventListener('click', handleCanvasTap);
+    canvas.addEventListener('touchend', handleCanvasTap, { passive: false });
+
+    // 写真確定
+    document.getElementById('btn-photo-next').addEventListener('click', function () {
+      if (!state.hasSample) return;
+      state.quizStep   = 0;
+      state.quizWarmth = 0;
+      state.quizDepth  = 0;
+      renderQuestion(0);
+      showScreen('quiz');
+    });
+    document.getElementById('btn-photo-back').addEventListener('click', function () {
+      showScreen('camera');
+    });
+
+  })();
+  </script>
+</body>
+</html>
