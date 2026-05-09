@@ -381,6 +381,26 @@
     .color-chip-name { font-size: 0.82rem; line-height: 1.3; }
 
     .result-actions { margin-top: 18px; }
+    .btn-line-share {
+      display: block;
+      width: 100%;
+      background: #06C755;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      box-sizing: border-box;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(6, 199, 85, 0.4);
+      margin-bottom: 10px;
+    }
+    .btn-line-share:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(6,199,85,0.55); }
+    .btn-line-share:active { transform: scale(0.97); }
     .btn-retry {
       display: block;
       width: 100%;
@@ -976,6 +996,15 @@
       '</div>';
     }
 
+    function buildLineShareUrl(data) {
+      var text = '🎨 パーソナルカラー診断してみたよ！\n\n' +
+        '私のタイプは「' + data.name + ' ' + data.icon + '」\n' +
+        data.desc + '\n\n' +
+        'あなたも診断してみてね↓\n' +
+        window.location.href;
+      return 'https://line.me/R/msg/text/?' + encodeURIComponent(text);
+    }
+
     function showResult(season) {
       var data = RESULT_DATA[season];
       var card = document.getElementById('result-card');
@@ -1018,6 +1047,9 @@
           buildChips(data.makeupColors) +
         '</div>' +
         '<div class="result-actions result-anim">' +
+          '<a class="btn-line-share" href="' + buildLineShareUrl(data) + '" target="_blank" rel="noopener">' +
+            '💚 LINEでシェアする' +
+          '</a>' +
           '<button class="btn-retry" id="btn-result-retry">🔄 もう一度診断する</button>' +
         '</div>' +
         '<p class="accuracy-note result-anim">' +
