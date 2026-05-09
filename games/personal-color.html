@@ -286,6 +286,18 @@
     .season-autumn-bg { background: linear-gradient(160deg, #C4783A, #7B3F00); color: #fff4e6; }
     .season-summer-bg { background: linear-gradient(160deg, #EDD8ED, #B8A0C8); color: #3a1a4a; }
     .season-winter-bg { background: linear-gradient(160deg, #2C1654, #120828); color: #e8d8ff; }
+    .season-neutral-bg { background: linear-gradient(160deg, #E8DCC8, #B8A8C8); color: #3a2a3a; }
+
+    .accuracy-note {
+      font-size: 0.72rem;
+      text-align: center;
+      margin-top: 16px;
+      line-height: 1.65;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 10px;
+      opacity: 0.82;
+    }
 
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(18px); }
@@ -402,7 +414,8 @@
       <span class="camera-icon">📸</span>
       <p class="camera-desc">
         顔や首がはっきり見える写真を使ってね。<br>
-        明るい場所で撮ると精度がアップするよ！
+        <strong>自然光（窓際）</strong>で撮ると精度がアップ！<br>
+        <small style="color:#c4a8a8">⚠️ 暗い場所・フィルターあり写真は結果がズレることがあるよ</small>
       </p>
       <!-- iOS: capture="user" でフロントカメラを直接開く -->
       <input type="file" id="photo-input-camera" accept="image/*" capture="user" hidden>
@@ -729,7 +742,11 @@
       var totalWarmth = skin.warmth + state.quizWarmth;
       var totalDepth  = skin.depth  + state.quizDepth;
       var season;
-      if (totalWarmth > 0) {
+      // |totalWarmth| <= 1.0 はイエベ・ブルベの信号が拮抗しており、
+      // 日本人の約50%が該当するとされるニュートラルとして扱う
+      if (Math.abs(totalWarmth) <= 1.0) {
+        season = 'neutral';
+      } else if (totalWarmth > 0) {
         season = totalDepth < 0 ? 'spring' : 'autumn';
       } else {
         season = totalDepth < 0 ? 'summer' : 'winter';
@@ -815,6 +832,24 @@
         hairTip: 'ブルーブラック・ダークブラウン・ピンク系のダーク・非常に暗い色',
         makeupTip: 'ワインレッドリップ、ブラックのアイライナー、ローズ系チーク',
       },
+      neutral: {
+        name: 'ニュートラル',
+        type: 'Neutral / Both Sides',
+        icon: '🌈',
+        bgClass: 'season-neutral-bg',
+        desc: 'イエベ・ブルベ両方の要素を持つニュートラルタイプ！実は日本人の約半数がこのタイプとも言われているよ。幅広い色が楽しめるお得な個性です。',
+        swatches: [
+          { color: '#D4A870', name: 'キャメル' },
+          { color: '#C4A8C8', name: 'モーブ' },
+          { color: '#88C4A4', name: 'セージグリーン' },
+          { color: '#D4B890', name: 'ベージュ' },
+          { color: '#A8B8C8', name: 'スレートブルー' },
+        ],
+        bestColors: 'キャメル、ベージュ、モーブ、セージグリーン、テラコッタ、アッシュブラウンなど幅広い色',
+        avoidColors: '極端に鮮やかすぎる色・極端に暗すぎる色が少し重く感じることも',
+        hairTip: 'ベージュブラウン・アッシュブラウン・ナチュラルブラウンなど自然な中間色',
+        makeupTip: 'コーラル〜ローズ系リップ、ブラウン〜モーブ系アイシャドウがなじみやすい',
+      },
     };
 
     /* ===========================
@@ -863,7 +898,12 @@
         '</div>' +
         '<div class="result-actions result-anim">' +
           '<button class="btn-retry" id="btn-result-retry">🔄 もう一度診断する</button>' +
-        '</div>';
+        '</div>' +
+        '<p class="accuracy-note result-anim">' +
+          '📷 この診断は写真の色情報をもとにした簡易判定です。<br>' +
+          '照明・フィルター・美肌補正の影響で結果が変わることがあります。<br>' +
+          'より正確な診断はプロのサロンでのドレープ診断がおすすめです。' +
+        '</p>';
 
       document.getElementById('btn-result-retry').addEventListener('click', resetApp);
       showScreen('result');
