@@ -369,6 +369,17 @@
     }
     .advice-body { font-size: 0.88rem; line-height: 1.75; }
 
+    .color-chips { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 6px; }
+    .color-chip  { display: flex; align-items: center; gap: 6px; }
+    .color-chip-dot {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.55);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+      flex-shrink: 0;
+    }
+    .color-chip-name { font-size: 0.82rem; line-height: 1.3; }
+
     .result-actions { margin-top: 18px; }
     .btn-retry {
       display: block;
@@ -769,14 +780,34 @@
         swatches: [
           { color: '#FF7A6B', name: 'コーラル' },
           { color: '#FFB347', name: 'ピーチ' },
-          { color: '#FFF5D6', name: 'アイボリー' },
+          { color: '#FFF0C0', name: 'アイボリー' },
           { color: '#FFD700', name: 'ゴールド' },
           { color: '#5BCFB8', name: 'ターコイズ' },
         ],
-        bestColors: 'コーラル、ピーチ、アイボリー、ゴールド、ターコイズ、ライトオレンジ',
-        avoidColors: '暗い色・くすんだ色・黒・寒色系・シルバー',
-        hairTip: '明るいブラウン・ゴールドブラウン・キャラメルカラーがおすすめ',
-        makeupTip: '明るいピーチ系リップ、ゴールドのアイシャドウ、ピンクの頬紅',
+        bestColors: [
+          { color: '#FF7A6B', name: 'コーラル' },
+          { color: '#FFB347', name: 'ピーチ' },
+          { color: '#FFF0C0', name: 'アイボリー' },
+          { color: '#FFD700', name: 'ゴールド' },
+          { color: '#5BCFB8', name: 'ターコイズ' },
+          { color: '#FFA040', name: 'ライトオレンジ' },
+        ],
+        avoidColors: [
+          { color: '#1a1a2e', name: '黒' },
+          { color: '#5a6a7a', name: 'くすみグレー' },
+          { color: '#4a5a8a', name: 'ネイビー' },
+          { color: '#C0C0C0', name: 'シルバー' },
+        ],
+        hairColors: [
+          { color: '#C87941', name: '明るいブラウン' },
+          { color: '#D4A028', name: 'ゴールドブラウン' },
+          { color: '#C88848', name: 'キャラメル' },
+        ],
+        makeupColors: [
+          { color: '#FF8888', name: 'ピーチリップ' },
+          { color: '#D4A828', name: 'ゴールドアイシャドウ' },
+          { color: '#F09898', name: 'ピンク頬紅' },
+        ],
       },
       autumn: {
         name: 'イエベ秋',
@@ -791,10 +822,30 @@
           { color: '#A0522D', name: 'ブラウン' },
           { color: '#6B8E23', name: 'オリーブ' },
         ],
-        bestColors: 'テラコッタ、カーキ、ゴールデンイエロー、ブラウン、オリーブ、キャメル',
-        avoidColors: '明るいパステル・白すぎる色・寒色系・ビビッドカラー',
-        hairTip: 'ダークブラウン・オーバーン・チェスナット・こげ茶系',
-        makeupTip: 'テラコッタリップ、ブラウン系アイシャドウ、オレンジ系チーク',
+        bestColors: [
+          { color: '#CC5500', name: 'テラコッタ' },
+          { color: '#8B7A55', name: 'カーキ' },
+          { color: '#DAA520', name: 'ゴールデン' },
+          { color: '#A0522D', name: 'ブラウン' },
+          { color: '#6B8E23', name: 'オリーブ' },
+          { color: '#C19A6B', name: 'キャメル' },
+        ],
+        avoidColors: [
+          { color: '#FFB6D9', name: 'パステルピンク' },
+          { color: '#F0F0F0', name: '白すぎる色' },
+          { color: '#87CEEB', name: '寒色系' },
+          { color: '#FF40FF', name: 'ビビッドカラー' },
+        ],
+        hairColors: [
+          { color: '#4A2A10', name: 'ダークブラウン' },
+          { color: '#8B3A1A', name: 'オーバーン' },
+          { color: '#7B3F00', name: 'チェスナット' },
+        ],
+        makeupColors: [
+          { color: '#CC5500', name: 'テラコッタリップ' },
+          { color: '#8B6355', name: 'ブラウンアイシャドウ' },
+          { color: '#E07040', name: 'オレンジ系チーク' },
+        ],
       },
       summer: {
         name: 'ブルベ夏',
@@ -809,10 +860,30 @@
           { color: '#B8B8B8', name: 'シルバーグレー' },
           { color: '#C8A8BC', name: 'モーブ' },
         ],
-        bestColors: 'ラベンダー、ライトピンク、スモーキーブルー、グレー、ローズ、モーブ',
-        avoidColors: 'オレンジ・くすみなしの鮮やか系・暖色系・ゴールド',
-        hairTip: 'アッシュブラウン・ピンクブラウン・くすみブラウン・グレーがかった色',
-        makeupTip: 'ローズ系リップ、モーブ・ラベンダーのアイシャドウ、ピンク系チーク',
+        bestColors: [
+          { color: '#D4A0D8', name: 'ラベンダー' },
+          { color: '#FFB6C1', name: 'ライトピンク' },
+          { color: '#A8C4D8', name: 'スモーキーブルー' },
+          { color: '#B8B8B8', name: 'シルバーグレー' },
+          { color: '#C8A8BC', name: 'モーブ' },
+          { color: '#D8A8B8', name: 'ローズ' },
+        ],
+        avoidColors: [
+          { color: '#FF8C00', name: 'オレンジ' },
+          { color: '#FF4500', name: '鮮やかレッド' },
+          { color: '#FFD700', name: 'ゴールド' },
+          { color: '#FF8060', name: '暖色系' },
+        ],
+        hairColors: [
+          { color: '#7A7060', name: 'アッシュブラウン' },
+          { color: '#9A7878', name: 'ピンクブラウン' },
+          { color: '#888880', name: 'グレーブラウン' },
+        ],
+        makeupColors: [
+          { color: '#C87890', name: 'ローズリップ' },
+          { color: '#B898C0', name: 'モーブアイシャドウ' },
+          { color: '#F0A8B8', name: 'ピンク系チーク' },
+        ],
       },
       winter: {
         name: 'ブルベ冬',
@@ -827,10 +898,30 @@
           { color: '#1a1a1a', name: 'ブラック' },
           { color: '#F5F5F5', name: 'ピュアホワイト' },
         ],
-        bestColors: 'バーガンディ、ロイヤルブルー、エメラルド、ブラック、ホワイト、マゼンタ',
-        avoidColors: 'くすんだ色・アースカラー・暖色系・オレンジ・ベージュ',
-        hairTip: 'ブルーブラック・ダークブラウン・ピンク系のダーク・非常に暗い色',
-        makeupTip: 'ワインレッドリップ、ブラックのアイライナー、ローズ系チーク',
+        bestColors: [
+          { color: '#800020', name: 'バーガンディ' },
+          { color: '#1A3AAD', name: 'ロイヤルブルー' },
+          { color: '#007848', name: 'エメラルド' },
+          { color: '#1a1a1a', name: 'ブラック' },
+          { color: '#F5F5F5', name: 'ピュアホワイト' },
+          { color: '#CC0080', name: 'マゼンタ' },
+        ],
+        avoidColors: [
+          { color: '#C4A882', name: 'ベージュ' },
+          { color: '#8B7355', name: 'アースブラウン' },
+          { color: '#FF8C00', name: 'オレンジ' },
+          { color: '#C9956C', name: '暖色系' },
+        ],
+        hairColors: [
+          { color: '#0a0a18', name: 'ブルーブラック' },
+          { color: '#2a1a10', name: 'ダークブラウン' },
+          { color: '#3a1828', name: 'ダークピンク系' },
+        ],
+        makeupColors: [
+          { color: '#8B0030', name: 'ワインレッドリップ' },
+          { color: '#1a1a1a', name: 'ブラックアイライナー' },
+          { color: '#C05070', name: 'ローズ系チーク' },
+        ],
       },
       neutral: {
         name: 'ニュートラル',
@@ -845,16 +936,46 @@
           { color: '#D4B890', name: 'ベージュ' },
           { color: '#A8B8C8', name: 'スレートブルー' },
         ],
-        bestColors: 'キャメル、ベージュ、モーブ、セージグリーン、テラコッタ、アッシュブラウンなど幅広い色',
-        avoidColors: '極端に鮮やかすぎる色・極端に暗すぎる色が少し重く感じることも',
-        hairTip: 'ベージュブラウン・アッシュブラウン・ナチュラルブラウンなど自然な中間色',
-        makeupTip: 'コーラル〜ローズ系リップ、ブラウン〜モーブ系アイシャドウがなじみやすい',
+        bestColors: [
+          { color: '#D4A870', name: 'キャメル' },
+          { color: '#D4B890', name: 'ベージュ' },
+          { color: '#C4A8C8', name: 'モーブ' },
+          { color: '#88C4A4', name: 'セージグリーン' },
+          { color: '#A8B8C8', name: 'スレートブルー' },
+          { color: '#CC6644', name: 'テラコッタ' },
+        ],
+        avoidColors: [
+          { color: '#FF00FF', name: '蛍光ピンク' },
+          { color: '#00FF00', name: '蛍光グリーン' },
+          { color: '#050505', name: '極端な黒' },
+        ],
+        hairColors: [
+          { color: '#B8906A', name: 'ベージュブラウン' },
+          { color: '#7A7060', name: 'アッシュブラウン' },
+          { color: '#9A7A50', name: 'ナチュラルブラウン' },
+        ],
+        makeupColors: [
+          { color: '#E07860', name: 'コーラル〜ローズリップ' },
+          { color: '#A08898', name: 'モーブ系アイシャドウ' },
+          { color: '#D49090', name: 'ナチュラルチーク' },
+        ],
       },
     };
 
     /* ===========================
        RESULT DISPLAY
     =========================== */
+    function buildChips(arr) {
+      return '<div class="color-chips">' +
+        arr.map(function (c) {
+          return '<span class="color-chip">' +
+            '<span class="color-chip-dot" style="background:' + c.color + '"></span>' +
+            '<span class="color-chip-name">' + c.name + '</span>' +
+          '</span>';
+        }).join('') +
+      '</div>';
+    }
+
     function showResult(season) {
       var data = RESULT_DATA[season];
       var card = document.getElementById('result-card');
@@ -882,19 +1003,19 @@
         '</div>' +
         '<div class="result-advice-box result-anim">' +
           '<div class="advice-title">💐 おすすめカラー</div>' +
-          '<div class="advice-body">' + data.bestColors + '</div>' +
+          buildChips(data.bestColors) +
         '</div>' +
         '<div class="result-advice-box result-anim">' +
           '<div class="advice-title">🚫 さけた方がよい色</div>' +
-          '<div class="advice-body">' + data.avoidColors + '</div>' +
+          buildChips(data.avoidColors) +
         '</div>' +
         '<div class="result-advice-box result-anim">' +
           '<div class="advice-title">💇 ヘアカラーのヒント</div>' +
-          '<div class="advice-body">' + data.hairTip + '</div>' +
+          buildChips(data.hairColors) +
         '</div>' +
         '<div class="result-advice-box result-anim">' +
           '<div class="advice-title">💋 メイクのヒント</div>' +
-          '<div class="advice-body">' + data.makeupTip + '</div>' +
+          buildChips(data.makeupColors) +
         '</div>' +
         '<div class="result-actions result-anim">' +
           '<button class="btn-retry" id="btn-result-retry">🔄 もう一度診断する</button>' +
