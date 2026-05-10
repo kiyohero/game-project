@@ -18,21 +18,9 @@
 - ローカルマシンの場合：Python等でデータ生成スクリプトの実行が可能
 - iOSアプリの場合：プロンプト指示のみ（ローカルプログラム実行は不可）
 
-## ゲーム一覧
+## ゲーム
 
-※ 今後も追加予定
-
-| ゲーム | ファイル | 説明 |
-|--------|----------|------|
-| 2048 | `games/2048.html` | 数字タイルを結合して2048を目指すパズル |
-| マルバツ | `games/tic-tac-toe.html` | 3目並べ対戦ゲーム |
-| インベーダー | `games/invader.html` | 敵を撃ち落とすシューティング（Canvas使用） |
-| リバーシ | `games/reversi.html` | CPU対戦も可能なボードゲーム |
-| 将棋 | `games/shogi.html` | 動ける場所が光る初心者向け将棋 |
-| ポケモンしりとり | `games/pokemon-shiritori.html` | ポケモンの名前でしりとり対決（pokemon-data.json使用） |
-| お絵かきロジック | `games/nonogram.html` | 数字のヒントでマスを塗って絵を完成させるノノグラムパズル |
-| スライドパズル | `games/sliding-puzzle.html` | 動物イラストを完成させるスライドパズル |
-| アキネーター | `games/akinator.html` | 動物を思い浮かべてYES/NOで答えると当ててくれるゲーム（akinator-data.json使用） |
+ゲームは `games/` ディレクトリに HTML ファイルとして格納。`index.html` が全ゲームへのリンクを管理。
 
 ## 技術スタック
 
@@ -62,9 +50,10 @@
    - **クラウド保存**: Firebase Firestore（ランキング、全プレイヤーデータ）
 
 4. **外部データ**
-   - **pokemon-data.json**: PokeAPIから事前に生成・保存したデータ
-   - games/フォルダに静的ファイルとして配置
-   - ゲーム起動時に読み込まれる（実行時のAPI呼び出しなし）
+   - `games/` フォルダに静的JSONファイルとして配置、ゲーム起動時に読み込む（実行時のAPI呼び出しなし）
+   - **pokemon-data.json**: PokeAPIから事前に生成・保存したポケモン名データ
+   - **akinator-data.json**: アキネーター用動物データ
+   - **palm-reading-data.json**: 手相占い用データ
 
 ### 主要な設計パターン
 
@@ -83,10 +72,18 @@ game-project/
 │   ├── common.js                 # 共通スクリプト（ナビ自動挿入）
 │   ├── ranking.js                # ランキング機能（Firebase）
 │   ├── ranking.css               # ランキング画面のスタイル
-│   ├── firebase-config.js         # Firebase設定
-│   └── pokemon-data.json          # ポケモン名データ（PokeAPI由来）
+│   ├── firebase-config.js         # Firebase設定（スタブ、実値はコミットしない）
+│   ├── firestore.rules.example    # Firestoreセキュリティルールのテンプレート
+│   ├── pokemon-data.json          # ポケモン名データ（PokeAPI由来）
+│   ├── akinator-data.json         # アキネーター用動物データ
+│   └── palm-reading-data.json     # 手相占い用データ
 ├── scripts/
-│   └── fetch-pokemon.js           # PokeAPIからポケモンデータを取得するスクリプト
+│   ├── fetch-pokemon.js           # PokeAPIからポケモンデータを取得（Node.js）
+│   └── fetch-pokemon.py           # PokeAPIからポケモンデータを取得（Python）
+├── tasks/
+│   ├── todo.md                    # タスク管理
+│   └── lessons.md                 # 学習記録
+├── README.md                      # プロジェクト概要
 └── CLAUDE.md                      # このファイル
 ```
 
