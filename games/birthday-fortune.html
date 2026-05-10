@@ -76,7 +76,7 @@
       flex-wrap: wrap;
       margin-bottom: 20px;
     }
-    .date-row select {
+    .date-row input[type="number"] {
       background: rgba(255,255,255,0.15);
       border: 1px solid rgba(255,255,255,0.30);
       color: #fff;
@@ -84,15 +84,18 @@
       padding: 10px 8px;
       font-size: 1rem;
       outline: none;
-      cursor: pointer;
-      -webkit-appearance: none;
       text-align: center;
+      -moz-appearance: textfield;
+      -webkit-appearance: none;
+      appearance: textfield;
     }
-    .date-row select option { background: #302b63; color: #fff; }
+    .date-row input[type="number"]::-webkit-inner-spin-button,
+    .date-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .date-row input[type="number"]::placeholder { opacity: 0.5; font-size: 0.78rem; }
     .date-row span { font-size: 1rem; opacity: 0.8; }
-    .sel-year { width: 90px; }
-    .sel-month { width: 68px; }
-    .sel-day { width: 62px; }
+    .num-year { width: 90px; }
+    .num-month { width: 62px; }
+    .num-day { width: 62px; }
     /* Buttons */
     .btn {
       display: block;
@@ -334,6 +337,21 @@
     }
     #milestone-toast.show { opacity: 1; }
     .back-link { color: rgba(255,255,255,0.6) !important; }
+    /* Pair daily fortune */
+    .pair-daily {
+      background: rgba(255,107,157,0.12);
+      border: 1px solid rgba(255,107,157,0.3);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .pair-daily-label { font-size: 0.75rem; opacity: 0.7; margin-bottom: 8px; }
+    .pair-fortune-level { font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
+    .pair-fortune-emoji { font-size: 1.3rem; margin-bottom: 10px; }
+    .pair-lucky-row { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
+    .pair-lucky-item { font-size: 0.82rem; }
+    .pair-msg { font-size: 0.88rem; line-height: 1.65; color: #fce7f3; }
   </style>
 </head>
 <body>
@@ -350,13 +368,14 @@
       <p class="subtitle">コスモ博士の星の共鳴理論</p>
       <p class="input-label">生年月日を教えてね✨</p>
       <div class="date-row">
-        <select id="in-year" class="sel-year"></select>
+        <input type="number" id="in-year" class="num-year" placeholder="例:2010">
         <span>年</span>
-        <select id="in-month" class="sel-month"></select>
+        <input type="number" id="in-month" class="num-month" placeholder="月" min="1" max="12">
         <span>月</span>
-        <select id="in-day" class="sel-day"></select>
+        <input type="number" id="in-day" class="num-day" placeholder="日" min="1" max="31">
         <span>日</span>
       </div>
+      <p id="in-error" style="color:#ff6b9d;font-size:0.8rem;text-align:center;display:none;margin-top:-12px;margin-bottom:8px;"></p>
       <button class="btn" id="btn-start">今日の運勢を見る🌟</button>
     </div>
     <p style="text-align:center;font-size:0.72rem;opacity:0.45;margin-top:8px;">入力した生年月日はこの端末のみに保存されます</p>
@@ -391,6 +410,7 @@
       <button class="btn btn-sm" id="btn-go-compat">💕 相性占い</button>
       <button class="btn btn-sm" id="btn-line-share">📲 LINEでシェア</button>
       <button class="btn btn-sm btn-ghost" id="btn-change-bd">🔄 生年月日を変える</button>
+      <a href="../index.html" class="btn btn-sm btn-ghost">🏠 ゲーム一覧</a>
     </div>
   </div>
 
@@ -400,13 +420,14 @@
       <h2>💕 相性占い</h2>
       <p class="subtitle">友達の生年月日を入れてね</p>
       <div class="date-row">
-        <select id="fr-year" class="sel-year"></select>
+        <input type="number" id="fr-year" class="num-year" placeholder="例:2010">
         <span>年</span>
-        <select id="fr-month" class="sel-month"></select>
+        <input type="number" id="fr-month" class="num-month" placeholder="月" min="1" max="12">
         <span>月</span>
-        <select id="fr-day" class="sel-day"></select>
+        <input type="number" id="fr-day" class="num-day" placeholder="日" min="1" max="31">
         <span>日</span>
       </div>
+      <p id="fr-error" style="color:#ff6b9d;font-size:0.8rem;text-align:center;display:none;margin-top:-12px;margin-bottom:8px;"></p>
       <button class="btn" id="btn-calc-compat">相性を見る💫</button>
       <button class="btn btn-ghost" id="btn-back-from-compat">← もどる</button>
     </div>
@@ -431,9 +452,11 @@
       <div class="compat-cats" id="compat-cats"></div>
       <div class="compat-tip-box" id="compat-tip-box"></div>
       <div class="cosmo-num-compat" id="cosmo-num-compat"></div>
+      <div class="pair-daily" id="pair-daily-section"></div>
       <div class="btn-row">
         <button class="btn btn-sm" id="btn-line-share-compat">📲 友達にシェア</button>
         <button class="btn btn-sm btn-ghost" id="btn-back-compat">← もどる</button>
+        <a href="../index.html" class="btn btn-sm btn-ghost">🏠 ゲーム一覧</a>
       </div>
     </div>
   </div>
@@ -587,6 +610,17 @@
     { friend:'最高の友達！',           fun:'最高に楽しい！',           learning:'一緒にどんどん成長！' },
   ];
 
+  // Pair daily messages [fortuneLevel]
+  const PAIR_MESSAGES = [
+    'ふたりで一緒にいると最高の奇跡が起きる日！今日ぜひ話しかけてみて✨',
+    'ふたりのエネルギーが特別に共鳴している日。一緒にいると楽しさ2倍⭐',
+    'ふたりで話すと素敵なアイデアが生まれる日。気軽に連絡してみよう💫',
+    'ふたりの力を合わせると良い結果が生まれる日。協力すると吉🍀',
+    '今日は短い会話でも大切に。笑顔を交わすだけで運気がアップするよ😊',
+    '今日はそれぞれのペースで過ごすのが吉。次に会う楽しみをとっておいて🌙',
+    '今日は思いやりをもって丁寧に接するのが吉。その気遣いがふたりをつなぐ💕',
+  ];
+
   // Cosmo messages: [zodiacIndex][fortuneLevel] = [msg1, msg2, msg3]
   const COSMO_MESSAGES = [
     // 0: 山羊座
@@ -621,7 +655,7 @@
     ],
     // 3: 牡羊座
     [
-      ['今日の宇宙エネルギーが最高潮！あなたの情熱が周りを明るくするよ✨','星たちがあなたを応援してる！思い切って動くと奇跡が起きる日🌟','コスモナンバーと星が完璧共鳴！今日はすべてがうまくいく！🔥'],
+      ['今日の宇宙エネルギーが最高潮！あなたの情熱が周りを明るくするよ✨','星たちがあなたを応援してる！思い切って動くと奇跡が起きる日🌟','ライフパスナンバーと星が完璧共鳴！今日はすべてがうまくいく！🔥'],
       ['宇宙の風があなたを後押ししてるよ。新しいことにチャレンジして！','牡羊座の勇気が今日輝く！積極的に動くといいことがある⭐','星の共鳴が強い一日。友達に声をかけると素敵な展開が！'],
       ['コスモ博士の計算では、今日はいい流れが来てるよ🌟','行動する者に幸運あり！牡羊座の勇気を発揮して✨','一歩踏み出すと、宇宙が後押ししてくれる日だよ💫'],
       ['じっくり丁寧に進むことで、星の恵みを受けられる日','焦らず着実に。でも牡羊座のパワーは今日も健在だよ⭐','コスモ博士ヒント：誰かに優しくすると運気がアップするよ'],
@@ -884,44 +918,26 @@
     document.getElementById('screen-' + name).classList.add('active');
   }
 
-  // ── SELECT POPULATION ─────────────────────────────────────────────────────
+  // ── PAIR DAILY FORTUNE ────────────────────────────────────────────────────
 
-  function populateYear(sel) {
-    const now = new Date().getFullYear();
-    for (let y = now - 3; y >= now - 80; y--) {
-      const o = document.createElement('option');
-      o.value = y; o.textContent = y + '年';
-      sel.appendChild(o);
-    }
-    sel.value = now - 12;
-  }
-
-  function populateMonth(sel) {
-    for (let m = 1; m <= 12; m++) {
-      const o = document.createElement('option');
-      o.value = m; o.textContent = m + '月';
-      sel.appendChild(o);
-    }
-  }
-
-  function populateDay(sel, year, month) {
-    const cur = +sel.value;
-    sel.innerHTML = '';
-    const max = daysInMonth(+year, +month);
-    for (let d = 1; d <= max; d++) {
-      const o = document.createElement('option');
-      o.value = d; o.textContent = d + '日';
-      sel.appendChild(o);
-    }
-    sel.value = Math.min(cur || 1, max);
-  }
-
-  function setupDateSelects(yearSel, monthSel, daySel) {
-    populateYear(yearSel);
-    populateMonth(monthSel);
-    populateDay(daySel, yearSel.value, monthSel.value);
-    monthSel.addEventListener('change', () => populateDay(daySel, yearSel.value, monthSel.value));
-    yearSel.addEventListener('change', () => populateDay(daySel, yearSel.value, monthSel.value));
+  function buildCompatDailySection(y1, m1, d1, y2, m2, d2) {
+    const cseed = getCompatSeed(y1, m1, d1, y2, m2, d2);
+    const now = new Date();
+    const todayNum = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+    const dailySeed = Math.abs((cseed * 31 + todayNum) % 999983);
+    const lvl = getFortuneLevel(dailySeed);
+    const fl = FORTUNE_LEVELS[lvl];
+    const itemIdx = Math.floor(seededRandom(dailySeed + 7) * LUCKY_ITEMS.length);
+    const colorIdx = Math.floor(seededRandom(dailySeed + 11) * LUCKY_COLORS.length);
+    document.getElementById('pair-daily-section').innerHTML = `
+      <p class="pair-daily-label">📅 今日のふたりの運勢</p>
+      <div class="pair-fortune-level" style="color:${fl.color}">${fl.label}</div>
+      <div class="pair-fortune-emoji">${fl.emoji}</div>
+      <div class="pair-lucky-row">
+        <div class="pair-lucky-item">🌈 <strong>${LUCKY_COLORS[colorIdx]}</strong></div>
+        <div class="pair-lucky-item">✨ <strong>${LUCKY_ITEMS[itemIdx]}</strong></div>
+      </div>
+      <p class="pair-msg">${PAIR_MESSAGES[lvl]}</p>`;
   }
 
   // ── BUILD FORECAST ─────────────────────────────────────────────────────────
@@ -975,7 +991,7 @@
         <div class="identity-name">${ETOS[etoIdx]}年</div>
       </div>
       <div class="identity-item lifepath-box">
-        <div class="identity-name">コスモナンバー</div>
+        <div class="identity-name">ライフパスナンバー</div>
         <div class="lifepath-num">${lp}</div>
         <div class="lifepath-type">${lpData.type}</div>
         <div class="lifepath-desc">${lpData.desc}</div>
@@ -1125,13 +1141,16 @@
     // Cosmo number compat
     const lpRelation = getLPRelation(lp1, lp2);
     document.getElementById('cosmo-num-compat').innerHTML = `
-      <p class="cnc-label">🔢 コスモナンバー相性</p>
+      <p class="cnc-label">🔢 ライフパスナンバーの相性</p>
       <div class="cnc-row">
         <div class="cnc-item"><div class="cnc-num">${lp1}</div><div class="cnc-type">${lpp1.type}</div></div>
         <div class="cnc-cross">×</div>
         <div class="cnc-item"><div class="cnc-num">${lp2}</div><div class="cnc-type">${lpp2.type}</div></div>
       </div>
       <p class="cnc-desc">${lpRelation}</p>`;
+
+    // Pair daily fortune
+    buildCompatDailySection(y1, m1, d1, y2, m2, d2);
 
     // Share button
     document.getElementById('btn-line-share-compat').onclick = () =>
@@ -1150,21 +1169,17 @@
     return `「${p1.type}」と「${p2.type}」が出会う運命の組み合わせ。お互いの宇宙を広げ合えるよ！`;
   }
 
-  // ── SELECT POPULATION ─────────────────────────────────────────────────────
+  // ── INIT ──────────────────────────────────────────────────────────────────
 
   function init() {
     createStars();
 
-    setupDateSelects(
-      document.getElementById('in-year'),
-      document.getElementById('in-month'),
-      document.getElementById('in-day')
-    );
-    setupDateSelects(
-      document.getElementById('fr-year'),
-      document.getElementById('fr-month'),
-      document.getElementById('fr-day')
-    );
+    const nowY = new Date().getFullYear();
+    const minY = nowY - 80, maxY = nowY - 3;
+    ['in-year', 'fr-year'].forEach(id => {
+      const el = document.getElementById(id);
+      el.min = minY; el.max = maxY;
+    });
 
     const params = new URLSearchParams(location.search);
     const bdParam = params.get('bd');
@@ -1194,28 +1209,53 @@
     }
 
     if (saved) {
+      document.getElementById('in-year').value = saved.year;
+      document.getElementById('in-month').value = saved.month;
+      document.getElementById('in-day').value = saved.day;
       buildFortuneScreen(saved.year, saved.month, saved.day);
     } else {
       if (compatMode) window._afterInput = 'compat';
       showScreen('input');
     }
 
+    function validateDate(yId, mId, dId, errId) {
+      const y = parseInt(document.getElementById(yId).value, 10);
+      const m = parseInt(document.getElementById(mId).value, 10);
+      const d = parseInt(document.getElementById(dId).value, 10);
+      const errEl = document.getElementById(errId);
+      if (isNaN(y) || y < minY || y > maxY) {
+        errEl.textContent = `年は${minY}〜${maxY}で入力してね`;
+        errEl.style.display = ''; return null;
+      }
+      if (isNaN(m) || m < 1 || m > 12) {
+        errEl.textContent = '月は1〜12で入力してね';
+        errEl.style.display = ''; return null;
+      }
+      if (isNaN(d) || d < 1 || d > daysInMonth(y, m)) {
+        errEl.textContent = `日は1〜${daysInMonth(y, m)}で入力してね`;
+        errEl.style.display = ''; return null;
+      }
+      errEl.style.display = 'none';
+      return { y, m, d };
+    }
+
     // Event listeners
     document.getElementById('btn-start').addEventListener('click', () => {
-      const y = +document.getElementById('in-year').value;
-      const m = +document.getElementById('in-month').value;
-      const d = +document.getElementById('in-day').value;
-      saveBirthday(y, m, d);
+      const v = validateDate('in-year', 'in-month', 'in-day', 'in-error');
+      if (!v) return;
+      saveBirthday(v.y, v.m, v.d);
       if (window._afterInput === 'compat') {
         window._afterInput = null;
         showScreen('compat-input');
       } else {
-        buildFortuneScreen(y, m, d);
+        buildFortuneScreen(v.y, v.m, v.d);
       }
     });
 
     document.getElementById('btn-change-bd').addEventListener('click', () => {
       try { localStorage.removeItem('bf_birthday'); } catch (e) {}
+      ['in-year', 'in-month', 'in-day'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('in-error').style.display = 'none';
       showScreen('input');
     });
 
@@ -1230,10 +1270,9 @@
     document.getElementById('btn-calc-compat').addEventListener('click', () => {
       const s = getSavedBirthday();
       if (!s) { showScreen('input'); return; }
-      const fy = +document.getElementById('fr-year').value;
-      const fm = +document.getElementById('fr-month').value;
-      const fd = +document.getElementById('fr-day').value;
-      buildCompatResult(s.year, s.month, s.day, fy, fm, fd);
+      const v = validateDate('fr-year', 'fr-month', 'fr-day', 'fr-error');
+      if (!v) return;
+      buildCompatResult(s.year, s.month, s.day, v.y, v.m, v.d);
     });
 
     document.getElementById('btn-back-compat').addEventListener('click', () => showScreen('compat-input'));
