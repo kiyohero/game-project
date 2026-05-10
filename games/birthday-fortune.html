@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>誕生日占い | コスモ博士の星の共鳴理論</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+      min-height: 100vh;
+      color: #fff;
+      overflow-x: hidden;
+    }
+    /* Stars background */
+    #stars-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--dur, 2s) infinite alternate;
+      animation-delay: var(--delay, 0s);
+    }
+    @keyframes twinkle {
+      from { opacity: 0.15; transform: scale(1); }
+      to { opacity: 0.9; transform: scale(1.4); }
+    }
+    /* Layout */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 16px 14px 40px;
+      min-height: 100vh;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    /* Card */
+    .cosmos-card {
+      background: rgba(255,255,255,0.10);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.20);
+      border-radius: 22px;
+      padding: 26px 20px 22px;
+      margin-bottom: 14px;
+    }
+    /* Streak badge */
+    #streak-badge {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      background: rgba(255,100,0,0.85);
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 10;
+      animation: pulse 2s infinite;
+      display: none;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,100,0,0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(255,100,0,0); }
+    }
+    /* Input screen */
+    .app-title {
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .app-title h1 { font-size: 1.7rem; letter-spacing: 1px; }
+    .subtitle {
+      text-align: center;
+      font-size: 0.8rem;
+      opacity: 0.65;
+      margin-bottom: 22px;
+    }
+    .input-label {
+      font-size: 0.95rem;
+      opacity: 0.85;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .date-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .date-row select {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.30);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 8px;
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      text-align: center;
+    }
+    .date-row select option { background: #302b63; color: #fff; }
+    .date-row span { font-size: 1rem; opacity: 0.8; }
+    .sel-year { width: 90px; }
+    .sel-month { width: 68px; }
+    .sel-day { width: 62px; }
+    /* Buttons */
+    .btn {
+      display: block;
+      width: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 25px;
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-bottom: 10px;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: scale(0.97); }
+    .btn-sm {
+      display: inline-block;
+      width: auto;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      margin: 4px;
+      border-radius: 20px;
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 14px;
+    }
+    /* Fortune screen */
+    .identity-bar {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .identity-item {
+      text-align: center;
+    }
+    .identity-symbol {
+      font-size: 2.2rem;
+      line-height: 1.1;
+    }
+    .identity-name {
+      font-size: 0.75rem;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+    .lifepath-box {
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      align-self: center;
+    }
+    .lifepath-num { font-size: 1.4rem; font-weight: 800; }
+    /* Fortune level */
+    .fortune-level-wrap {
+      text-align: center;
+      margin: 8px 0 18px;
+    }
+    .fortune-day-label {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      margin-bottom: 6px;
+    }
+    .fortune-level-text {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      animation: popIn 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .fortune-emoji { font-size: 1.4rem; margin-top: 4px; }
+    @keyframes popIn {
+      from { transform: scale(0) rotate(-180deg); opacity: 0; }
+      to { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    /* Category stars */
+    .categories {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .cat-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .cat-label { font-size: 0.78rem; opacity: 0.7; margin-bottom: 4px; }
+    .cat-stars { font-size: 1.1rem; letter-spacing: 1px; color: #ffd700; }
+    /* Lucky info */
+    .lucky-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .lucky-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .lucky-icon { font-size: 1.3rem; margin-bottom: 4px; }
+    .lucky-label { font-size: 0.65rem; opacity: 0.6; margin-bottom: 3px; }
+    .lucky-value { font-size: 0.82rem; font-weight: 700; line-height: 1.2; }
+    .lucky-color-dot {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    /* Cosmo message */
+    .cosmo-msg {
+      background: rgba(102,126,234,0.2);
+      border: 1px solid rgba(102,126,234,0.4);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .cosmo-header { font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px; }
+    .cosmo-text { font-size: 0.95rem; line-height: 1.55; }
+    /* Tomorrow hint */
+    .tomorrow-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      opacity: 0.55;
+      margin-bottom: 16px;
+      padding: 8px;
+    }
+    /* History */
+    .history-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 14px;
+      scrollbar-width: none;
+    }
+    .history-row::-webkit-scrollbar { display: none; }
+    .hist-card {
+      flex: 0 0 72px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 0.7rem;
+    }
+    .hist-emoji { font-size: 1.2rem; }
+    .hist-date { opacity: 0.6; margin-top: 2px; }
+    .hist-level { font-weight: 700; margin-top: 2px; font-size: 0.65rem; }
+    /* Compat screen */
+    .compat-zodiacs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 14px 0;
+      font-size: 1rem;
+    }
+    .compat-zodiac-box { text-align: center; }
+    .compat-zodiac-sym { font-size: 2.8rem; }
+    .compat-zodiac-name { font-size: 0.78rem; opacity: 0.75; }
+    .compat-heart { font-size: 2rem; animation: heartbeat 1.2s infinite; }
+    @keyframes heartbeat {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    .compat-score-wrap { text-align: center; margin: 10px 0; }
+    .compat-score-num { font-size: 4rem; font-weight: 900; animation: popIn 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+    .compat-type {
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .compat-msg {
+      font-size: 0.9rem;
+      line-height: 1.55;
+      opacity: 0.85;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .compat-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .compat-detail-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 10px 6px;
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .compat-detail-label { opacity: 0.65; margin-bottom: 4px; }
+    .compat-detail-val { font-weight: 700; font-size: 0.9rem; }
+    /* Milestone toast */
+    #milestone-toast {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 1rem;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+    }
+    #milestone-toast.show { opacity: 1; }
+    /* Section title */
+    .section-title {
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    h2 { font-size: 1.3rem; margin-bottom: 4px; text-align: center; }
+    .back-link { color: rgba(255,255,255,0.6) !important; }
+  </style>
+</head>
+<body>
+<div id="stars-bg"></div>
+<div id="streak-badge">🔥 <span id="streak-num">1</span>日連続！</div>
+<div id="milestone-toast"></div>
+
+<div class="wrapper">
+
+  <!-- Screen 1: 生年月日入力 -->
+  <div id="screen-input" class="screen active">
+    <div class="cosmos-card">
+      <div class="app-title">
+        <h1>🔮 誕生日占い</h1>
+      </div>
+      <p class="subtitle">コスモ博士の星の共鳴理論</p>
+      <p class="input-label">生年月日を教えてね✨</p>
+      <div class="date-row">
+        <select id="in-year" class="sel-year"></select>
+        <span>年</span>
+        <select id="in-month" class="sel-month"></select>
+        <span>月</span>
+        <select id="in-day" class="sel-day"></select>
+        <span>日</span>
+      </div>
+      <button class="btn" id="btn-start">今日の運勢を見る🌟</button>
+    </div>
+    <p style="text-align:center;font-size:0.72rem;opacity:0.45;margin-top:8px;">入力した生年月日はこの端末のみに保存されます</p>
+  </div>
+
+  <!-- Screen 2: 今日の運勢 -->
+  <div id="screen-fortune" class="screen">
+    <div class="cosmos-card">
+      <p class="section-title">✦ コスモ博士の鑑定結果 ✦</p>
+      <div class="identity-bar" id="identity-bar"></div>
+      <div class="fortune-level-wrap">
+        <p class="fortune-day-label" id="fortune-date-label"></p>
+        <div class="fortune-level-text" id="fortune-level-text"></div>
+        <div class="fortune-emoji" id="fortune-emoji"></div>
+      </div>
+      <div class="categories" id="categories"></div>
+      <div class="lucky-grid" id="lucky-grid"></div>
+      <div class="cosmo-msg">
+        <p class="cosmo-header">💬 コスモ博士からのメッセージ</p>
+        <p class="cosmo-text" id="cosmo-text"></p>
+      </div>
+      <div class="tomorrow-hint" id="tomorrow-hint"></div>
+    </div>
+    <div class="cosmos-card" id="history-card" style="display:none;">
+      <p class="section-title">📅 この7日間の運勢</p>
+      <div class="history-row" id="history-row"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-sm" id="btn-go-compat">💕 相性占い</button>
+      <button class="btn btn-sm" id="btn-line-share">📲 LINEでシェア</button>
+      <button class="btn btn-sm btn-ghost" id="btn-change-bd">🔄 生年月日を変える</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: 相性入力 -->
+  <div id="screen-compat-input" class="screen">
+    <div class="cosmos-card">
+      <h2>💕 相性占い</h2>
+      <p class="subtitle">友達の生年月日を入れてね</p>
+      <div class="date-row">
+        <select id="fr-year" class="sel-year"></select>
+        <span>年</span>
+        <select id="fr-month" class="sel-month"></select>
+        <span>月</span>
+        <select id="fr-day" class="sel-day"></select>
+        <span>日</span>
+      </div>
+      <button class="btn" id="btn-calc-compat">相性を見る💫</button>
+      <button class="btn btn-ghost" id="btn-back-from-compat">← もどる</button>
+    </div>
+  </div>
+
+  <!-- Screen 4: 相性結果 -->
+  <div id="screen-compat-result" class="screen">
+    <div class="cosmos-card">
+      <h2>💕 ふたりの相性</h2>
+      <div class="compat-zodiacs" id="compat-zodiacs"></div>
+      <div class="compat-score-wrap">
+        <div class="compat-score-num" id="compat-score-num"></div>
+        <div style="font-size:1rem;opacity:0.7;">%</div>
+      </div>
+      <div class="compat-type" id="compat-type"></div>
+      <div class="compat-msg" id="compat-msg"></div>
+      <div class="compat-detail-grid" id="compat-detail-grid"></div>
+      <div class="btn-row">
+        <button class="btn btn-sm" id="btn-line-share-compat">📲 友達にシェア</button>
+        <button class="btn btn-sm btn-ghost" id="btn-back-compat">← もどる</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── DATA ──────────────────────────────────────────────────────────────────
+
+  const ZODIACS = [
+    { name:'山羊座', symbol:'♑', element:'earth', start:[12,22], end:[1,19] },
+    { name:'水瓶座', symbol:'♒', element:'air',   start:[1,20],  end:[2,18] },
+    { name:'魚座',   symbol:'♓', element:'water', start:[2,19],  end:[3,20] },
+    { name:'牡羊座', symbol:'♈', element:'fire',  start:[3,21],  end:[4,19] },
+    { name:'牡牛座', symbol:'♉', element:'earth', start:[4,20],  end:[5,20] },
+    { name:'双子座', symbol:'♊', element:'air',   start:[5,21],  end:[6,21] },
+    { name:'蟹座',   symbol:'♋', element:'water', start:[6,22],  end:[7,22] },
+    { name:'獅子座', symbol:'♌', element:'fire',  start:[7,23],  end:[8,22] },
+    { name:'乙女座', symbol:'♍', element:'earth', start:[8,23],  end:[9,22] },
+    { name:'天秤座', symbol:'♎', element:'air',   start:[9,23],  end:[10,23] },
+    { name:'蠍座',   symbol:'♏', element:'water', start:[10,24], end:[11,21] },
+    { name:'射手座', symbol:'♐', element:'fire',  start:[11,22], end:[12,21] },
+  ];
+
+  const ETOS      = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+  const ETO_EMOJI = ['🐭','🐮','🐯','🐰','🐲','🐍','🐴','🐑','🐵','🐔','🐕','🐗'];
+
+  const FORTUNE_LEVELS = [
+    { label:'大大吉', color:'#ffd700', emoji:'🌟🌟🌟' },
+    { label:'大吉',   color:'#ff9500', emoji:'⭐⭐⭐'  },
+    { label:'吉',     color:'#4cd964', emoji:'✨✨'    },
+    { label:'中吉',   color:'#5ac8fa', emoji:'💫💫'   },
+    { label:'小吉',   color:'#ff6b9d', emoji:'🍀'     },
+    { label:'末吉',   color:'#b8b8b8', emoji:'🌙'     },
+    { label:'凶',     color:'#ff3b30', emoji:'⚡'     },
+  ];
+
+  const LUCKY_COLORS = ['赤','橙','黄','黄緑','緑','水色','青','紺','紫','ピンク','白','金色','銀色','サーモンピンク','コーラル'];
+  const COLOR_HEX    = ['#e74c3c','#e67e22','#f1c40f','#a8e063','#2ecc71','#74ebd5','#3498db','#2c3e7b','#9b59b6','#ff6b9d','#ecf0f1','#ffd700','#c0c0c0','#fa8072','#ff7f50'];
+  const LUCKY_ITEMS  = ['消しゴム','えんぴつ','ノート','星のシール','四つ葉のクローバー','ハート型のもの','丸いもの','青いもの','赤いもの','本','音楽','植物','水','太陽の光','鏡','ボタン','リボン','ハンカチ','お守り','コイン','花柄のもの','緑のもの','キラキラしたもの','しましまのもの','ふわふわしたもの'];
+
+  const COMPAT_TYPES = [
+    { min:90, label:'ベストフレンド型💕', msg:'ふたりは宇宙で選ばれたような最高の組み合わせ！一緒にいるだけで奇跡が起きそうな相性だよ✨' },
+    { min:80, label:'相性抜群型✨',       msg:'星の配置がふたりをつなぐ！笑いが絶えない最高のコンビ。一緒にいると楽しさが2倍になるよ🌟' },
+    { min:70, label:'仲良しコンビ型🌟',   msg:'お互いの良いところを引き出せる関係。一緒に過ごすたびにどんどん仲良くなれるよ⭐' },
+    { min:60, label:'バランス型⭐',       msg:'ちょうどいいバランスの相性！ちがいがあるからこそ、お互いに学び合えるステキな関係だよ💫' },
+    { min:50, label:'ゆっくり仲良し型🍀', msg:'最初はゆっくりかもしれないけど、時間をかけると深い友情が育つよ。焦らずいこう！🌱' },
+    { min:0,  label:'ちがいが個性型💫',   msg:'タイプはちがうけど、だからこそ面白い関係！お互いの個性を認め合えば最高の友達になれるよ🌈' },
+  ];
+
+  // Cosmo messages: [zodiacIndex][fortuneLevel] = [msg1, msg2, msg3]
+  const COSMO_MESSAGES = [
+    // 0: 山羊座
+    [
+      ['今日の宇宙エネルギーが最高潮！コツコツ努力してきた成果が花開く日✨','山羊座の星が黄金に輝く！積み上げてきたものが一気に実る日だよ🌟','コスモ博士が見た中で最高の共鳴！今日はすべてがうまくいく！🔥'],
+      ['宇宙の大きな流れがあなたを後押し！責任感の強さが今日輝く⭐','努力の星が今日全開！真面目なあなたには最高の一日が待ってるよ','山羊座の持つ粘り強さが今日の鍵。一歩踏み出せば大きな実りが！'],
+      ['コスモ博士の計算では、今日はいい流れが来てるよ✨','地道な努力が今日実を結ぶ。あなたの頑張りを星が見てたよ🌟','踏み出した一歩が宇宙に共鳴する日。やってみよう！'],
+      ['じっくり丁寧に進めることで、星の恵みを受けられる日です','急がずしっかり、それが山羊座の強み。今日も着実に進もう💫','コスモ博士からのヒント：計画を立てると運気がアップするよ'],
+      ['小さな成功が今日の宝物。コツコツが後でビッグになる🍀','笑顔を忘れずに。それだけで今日の運気がちょっとアップするよ','一つひとつ丁寧に。それがあなたの星の生き方✨'],
+      ['今日は少し慎重に。でも山羊座の粘り強さで乗り越えられる🌙','ゆっくり休んでエネルギーをチャージ。明日につながる日だよ','無理せず、自分のペースで。それが今日の吉行動🌙'],
+      ['慎重に行動する日。でも絶対に大丈夫、山羊座の底力があるから！⚡','今日はおとなしくが吉。明日には素敵な展開が待ってるよ','試練があるとしたら成長のチャンス。コスモ博士が応援してるよ⚡'],
+    ],
+    // 1: 水瓶座
+    [
+      ['あなたのユニークなアイデアが今日宇宙に輝く！周りをあっと言わせよう🌟','水瓶座の革命エネルギーが最大化！新しいことを始めるなら今日✨','コスモ博士が宣言：今日の水瓶座は最強！自由に羽ばたいて🔥'],
+      ['個性が今日のラッキーポイント！あなたらしさを全開にしよう⭐','宇宙の自由な風があなたを包む。面白いことが起きる予感！','水瓶座の発想力が今日輝く！ひらめきを大切にして✨'],
+      ['新しいアイデアが運気を運んでくる日。思ったことを試してみて','コスモ博士から：今日は変化を楽しむと吉だよ🌟','頭の中のアイデアを誰かに話すと、いいことが起きそう💫'],
+      ['自分らしく過ごすことで星の恵みを受けられる日','周りとちょっとちがう視点が今日の武器。大切にして⭐','じっくり考えてから動こう。水瓶座の知性が光る日だよ'],
+      ['小さな「面白い！」を大切に。運気の芽が育つよ🍀','友達に連絡してみると、予想外の展開が待ってるかも','今日のラッキーアクション：いつもとちがう道を歩いてみよう'],
+      ['今日は静かに考える時間を取るといいよ🌙','少しだけ休憩を。明日のひらめきのためにエネルギーをためよう','無理に動かず流れに乗る日。水瓶座はじっくりが吉🌙'],
+      ['慎重に行動すると吉。でも水瓶座の知恵で必ず道は開けるよ⚡','今日は人の意見を聞く日。それが明日の成長につながるから','小さな壁も、あなたのユニークさで乗り越えられるよ⚡'],
+    ],
+    // 2: 魚座
+    [
+      ['魚座の豊かな感性が今日宇宙に響く！直感を信じれば奇跡が起きる✨','あなたの優しさが今日最大の宝物。周りがあなたを必要としてる🌟','コスモ博士が見た夢：魚座が今日の主役！感性を解き放って🔥'],
+      ['直感が今日のナビゲーター！ピンときたことに従ってみよう⭐','水の星の恵みが降り注ぐ。今日は感じることを大切にして✨','魚座の共感力が今日輝く！人の気持ちに寄り添うと吉だよ'],
+      ['夢見る気持ちが今日の運気を上げる。想像を膨らませて！','コスモ博士から：今日は好きなことに集中すると開運するよ🌟','ふとした出会いや言葉に宝が隠れてる日だよ💫'],
+      ['感受性豊かに過ごすことで星の恵みを受けられる日','穏やかに、自分の気持ちを大切に。それが魚座の星の生き方⭐','じっくりと内側を見つめる時間を作ると運気アップ！'],
+      ['小さな感動を大切に。それが今日の幸運の種🍀','今日のラッキーアクション：好きな音楽を聴いてみて','誰かに「ありがとう」を伝えると素敵なことが起きるかも✨'],
+      ['今日はゆっくり休んでOK。感性をリセットする日だよ🌙','無理に動かず、流れに身を任せる日。魚座らしくいこう','内側の声に耳を澄ませて。明日の答えがそこにあるかも🌙'],
+      ['今日は慎重に。でも魚座の優しさが必ず味方を呼んでくれる⚡','少し疲れてるかも。今日は休息が最優先だよ','困ったら信頼できる人に話してみよう。必ず助けてくれるから⚡'],
+    ],
+    // 3: 牡羊座
+    [
+      ['今日の宇宙エネルギーが最高潮！あなたの情熱が周りを明るくするよ✨','星たちがあなたを応援してる！思い切って動くと奇跡が起きる日🌟','ライフパスと星が完璧共鳴！今日はすべてがうまくいく！🔥'],
+      ['宇宙の風があなたを後押ししてるよ。新しいことにチャレンジして！','牡羊座の勇気が今日輝く！積極的に動くといいことがある⭐','星の共鳴が強い一日。友達に声をかけると素敵な展開が！'],
+      ['コスモ博士の計算では、今日はいい流れが来てるよ🌟','行動する者に幸運あり！牡羊座の勇気を発揮して✨','一歩踏み出すと、宇宙が後押ししてくれる日だよ💫'],
+      ['じっくり丁寧に進むことで、星の恵みを受けられる日','焦らず着実に。でも牡羊座のパワーは今日も健在だよ⭐','コスモ博士ヒント：誰かに優しくすると運気がアップするよ'],
+      ['小さな親切が大きな幸運を呼ぶ日。笑顔を大切に😊','今日のラッキーアクション：新しいことを一つ試してみよう🍀','友達と話すと元気になれる日。連絡してみて✨'],
+      ['今日は焦らずゆっくり。明日に向けてエネルギーをためて🌙','少し休憩を取るといいよ。牡羊座のパワーを充電しよう','無理せず自分のペースで。それが今日の吉行動🌙'],
+      ['慎重に行動する日。でも大丈夫、牡羊座の根性があるから！⚡','今日はおとなしくが吉。明日には素敵なことが待ってるよ','困ったら一息ついて。コスモ博士が見守ってるよ⚡'],
+    ],
+    // 4: 牡牛座
+    [
+      ['牡牛座の粘り強さが今日宇宙に輝く！積み上げた努力が実る！✨','五感が最高に冴えてる日！美しいものに囲まれて幸運をつかんで🌟','コスモ博士の観測：今日の牡牛座に最高のエネルギーが降り注いでる🔥'],
+      ['着実に積み上げてきたものが今日花開く！信じて進もう⭐','牡牛座の安定したパワーが今日全開！心強い一日になりそう✨','地に足ついた行動が今日の吉。牡牛座らしく輝いて！'],
+      ['コスモ博士から：今日は美しいものに注目すると運気が上がるよ🌟','一歩一歩着実に。今日の小さな歩みが大きな宝になるよ','コツコツ積み上げることが今日の開運アクション💫'],
+      ['好きなことをじっくり楽しむことで星の恵みが来る日','焦らず自分のペースで。牡牛座のゆったりさが今日の武器⭐','大切なものを大切にする。それが今日の幸運の種だよ'],
+      ['美味しいものを食べると運気がアップする日🍀','今日のラッキーアクション：好きな場所でのんびりしてみよう','自分へのごほうびが幸運を引き寄せる日✨'],
+      ['今日はゆっくり休んでOK。牡牛座には休息が力になるよ🌙','無理せず、好きなことをして過ごして。それが今日の吉行動','静かな時間を大切に。明日への英気を養う日だよ🌙'],
+      ['慎重に行動すると吉。牡牛座の堅実さで必ず乗り越えられる⚡','今日は決断を急がずに。じっくり考えることが大切だよ','困ったことがあっても、牡牛座の粘り強さがあれば大丈夫⚡'],
+    ],
+    // 5: 双子座
+    [
+      ['双子座のコミュニケーション力が今日宇宙最高潮！話すほど幸運が来る✨','ふたつの星が今日完全に共鳴！頭が冴えて何でもできる日🌟','コスモ博士絶賛：今日の双子座は止まらない！どんどん話して🔥'],
+      ['会話の中に今日の宝が隠れてる！積極的に話しかけよう⭐','双子座の知的好奇心が今日輝く！興味があることを追いかけて✨','情報収集が開運のカギ！今日はたくさん学んで吸収しよう'],
+      ['コスモ博士から：今日は人と話すことで運気がアップするよ🌟','いろんな人と話してみよう。面白いことが起きそうな一日💫','新しい情報が幸運を運んでくる日。アンテナを張ってみよう'],
+      ['幅広く情報を集めることで星の恵みが来る日','フレキシブルに動くことが今日の吉。双子座らしく変幻自在に⭐','両方の視点で考えてみよう。新しい発見があるかも'],
+      ['今日のラッキーアクション：初めて行く場所に行ってみよう🍀','ちょっとしたひらめきが大切。メモしておこう✨','友達と新しい遊びをすると運気がアップするよ！'],
+      ['今日は情報を整理する日。頭を休めてリフレッシュして🌙','考えすぎずシンプルに。それが今日の双子座の吉行動','無理に決めなくていい日。ゆっくり考えよう🌙'],
+      ['情報過多に注意する日。大切なことに集中しよう⚡','今日はひとつのことに集中するのが吉。双子座の器用さを活かして','迷ったら信頼できる人に相談して。答えが見つかるよ⚡'],
+    ],
+    // 6: 蟹座
+    [
+      ['蟹座の深い愛情が今日宇宙に響く！大切な人への思いが奇跡を呼ぶ✨','家族や友達への愛が今日の最大のパワー！感謝を伝えよう🌟','コスモ博士感動：蟹座の優しさが今日の宇宙を照らしてる🔥'],
+      ['直感が今日のナビゲーター！ハートの声に従えば正解だよ⭐','蟹座の共感力が今日全開！誰かを助けると素敵なことが返ってくる✨','大切な人を大切にする日。その愛が幸運を呼んでくる！'],
+      ['コスモ博士から：今日は家でゆっくり過ごすと運気アップ🌟','好きな人のことを思うと、心が温かくなる日だよ💫','居心地のいい場所で過ごすことが今日の開運アクション'],
+      ['大切な人との時間を丁寧に過ごすことで星の恵みが来る日','感情を素直に表現することが今日の吉。蟹座らしく正直に⭐','今日は守りを固めることで運気が安定する日だよ'],
+      ['今日のラッキーアクション：好きな人に「ありがとう」を伝えよう🍀','家を快適にすると運気がアップする日✨','美味しいものを作ってみんなに分けると幸運が来るよ！'],
+      ['今日はおうちでゆっくりが吉。充電する日だよ🌙','感情が揺れやすい日。深呼吸して落ち着こう','信頼できる人と話すことで心が安らぐ日🌙'],
+      ['今日は感情的になりやすいかも。一息ついて冷静に⚡','大切なことは明日に回しても大丈夫。今日は休もう','困ったら家族や仲のいい友達に話してみよう⚡'],
+    ],
+    // 7: 獅子座
+    [
+      ['獅子座のカリスマが今日宇宙最高値！主役として輝く日✨','太陽の子・獅子座に最大のエネルギーが！今日は思い切り輝いて🌟','コスモ博士も驚き！今日の獅子座に太陽が微笑んでる🔥'],
+      ['今日は自信を持って！あなたの存在が周りを元気にする⭐','獅子座の情熱と自信が今日輝く！堂々と自分を表現して✨','リーダーシップを発揮すると、みんながついてくる日だよ！'],
+      ['コスモ博士から：自分らしく輝くことが今日の開運アクション🌟','好きなことに全力で！それが今日の幸運を引き寄せるよ💫','今日はちょっとだけ目立ってみよう。きっといいことあるよ'],
+      ['自分の魅力を信じることで星の恵みが来る日','少し控えめに行動すると周りとの関係がうまくいく日⭐','コスモ博士ヒント：誰かをほめると自分の運気もアップするよ'],
+      ['今日のラッキーアクション：好きなことを楽しく語ってみよう🍀','明るい笑顔が今日の最強アイテム！惜しみなく笑顔を✨','好きな服を着るだけで運気が上がる日だよ！'],
+      ['今日は少し休んで内側のエネルギーを補充しよう🌙','主役も休憩が必要。今日はゆっくりするのが吉','静かな時間に自分と向き合うことで明日が輝く🌙'],
+      ['今日は目立つより見守る日。獅子座の大きな心で周りを支えよう⚡','一歩引いて状況を見ると正解が見えてくる日だよ','困難も獅子座のプライドがあれば乗り越えられる！⚡'],
+    ],
+    // 8: 乙女座
+    [
+      ['乙女座の細やかな気配りが今日宇宙を動かす！完璧な一日✨','分析力と行動力が今日完全共鳴！何でも完璧にできちゃう日🌟','コスモ博士が断言：今日の乙女座は最強の問題解決者！🔥'],
+      ['細かいところへの注意力が今日の宝物！丁寧にいこう⭐','乙女座の知性と分析力が今日輝く！考えて動けば大丈夫✨','まわりへの思いやりが幸運を呼ぶ日。いつも通りの乙女座で！'],
+      ['コスモ博士から：整理整頓をすると運気がアップするよ🌟','コツコツ積み上げることが今日の開運アクション💫','気になったことを調べると、面白い発見がある日だよ'],
+      ['丁寧に一つひとつこなすことで星の恵みが来る日','少しゆとりを持って行動することが今日の吉⭐','完璧を求めすぎずに、今日は7割でOKにしよう'],
+      ['今日のラッキーアクション：身の回りをきれいにしよう🍀','誰かのために何かすると運気がアップする日✨','ノートに気持ちを書き出すと心がスッキリするよ'],
+      ['今日は考えすぎずにゆっくり過ごそう🌙','細かいことより大きな流れを見る日。のんびりいこう','休息も大切な仕事。今日はしっかり休もう🌙'],
+      ['今日は物事がうまく進まないかも。でも乙女座の知恵があれば必ず解決⚡','急がずに、慎重に進めることが今日の正解だよ','困ったら一歩下がって全体を見直そう⚡'],
+    ],
+    // 9: 天秤座
+    [
+      ['天秤座のバランス感覚が今日宇宙最高潮！すべてが完璧に調和する✨','美しいものへの感性が今日輝く！美と調和が幸運を運んでくる🌟','コスモ博士が観測：天秤座の星が完璧なバランスで輝いてる🔥'],
+      ['調和とバランスが今日の開運キーワード！穏やかに過ごそう⭐','天秤座の外交力が今日全開！人間関係で素敵なことが起きる✨','公平な視点が今日のラッキーポイント。両方の意見を聞いてみよう'],
+      ['コスモ博士から：美しいものを見ると運気がアップするよ🌟','誰かと一緒に何かするといいことがある日💫','今日は好きな音楽を聴きながら過ごすと開運！'],
+      ['バランスを大切にすることで星の恵みが来る日','一人で抱え込まず、誰かと一緒に考えるのが今日の吉⭐','コスモ博士ヒント：迷ったら「どっちが美しいか」で決めよう'],
+      ['今日のラッキーアクション：好きな人に笑顔を向けよう🍀','おしゃれを楽しむと運気がアップする日✨','誰かのいいところを見つけて伝えると素敵なことが！'],
+      ['今日は迷いやすい日。でも大丈夫、じっくり考えれば答えが出る🌙','無理に決めなくていい日。明日もう一度考えよう','穏やかに過ごすことが今日の吉行動🌙'],
+      ['今日は人間関係で少し気を遣う日。でも天秤座の外交力で乗り越えられる⚡','慎重に言葉を選ぼう。今日は特に大切だよ','困ったら第三者の意見を聞いてみよう⚡'],
+    ],
+    // 10: 蠍座
+    [
+      ['蠍座の深い洞察力が今日宇宙に轟く！真実を見抜く力が最高潮✨','変容のエネルギーが今日最大化！大きな変化の波に乗ろう🌟','コスモ博士が震えた：今日の蠍座には底知れないパワーがある🔥'],
+      ['集中力と意志の強さが今日輝く！やると決めたことは絶対できる⭐','蠍座の探求心が今日全開！深く追求すると宝が見つかる✨','信頼できる人とのつながりが今日の幸運のカギだよ'],
+      ['コスモ博士から：今日は直感に従って動くと正解だよ🌟','隠れた情報が今日のラッキーを運んでくる💫','じっくり考えてから動く今日。答えは必ず見つかる'],
+      ['深く考えることで星の恵みが来る日','感情を大切にしながら慎重に行動することが今日の吉⭐','今日は秘密を守ることで信頼が深まる日だよ'],
+      ['今日のラッキーアクション：深呼吸して心を落ち着けよう🍀','好きなことに没頭する時間が今日の幸運の種✨','信頼できる友達と本音で話すといいことあるかも'],
+      ['今日は感情が揺れやすい日。心の声に耳を傾けよう🌙','ひとりの時間を楽しもう。蠍座には大切な時間だよ','無理せず感情のまま過ごしてOK。それが今日の正解🌙'],
+      ['今日は感情的になりやすいかも。一息ついて落ち着こう⚡','大切なことは明日に持ち越そう。今日は休息が優先','困ったら信頼できる人だけに話そう⚡'],
+    ],
+    // 11: 射手座
+    [
+      ['射手座の自由な魂が今日宇宙を飛び回る！冒険が幸運を運んでくる✨','哲学と冒険の星が今日最高に輝く！大きな夢を持とう🌟','コスモ博士が喝采：今日の射手座は宇宙一の冒険家！🔥'],
+      ['自由な発想と行動力が今日輝く！遠くを目指す日⭐','射手座の楽観主義が今日全開！前向きにいけばいいことある✨','新しい場所や体験が今日の幸運のカギ。チャレンジして！'],
+      ['コスモ博士から：いつもとちがうことをすると運気アップ🌟','遠い場所や広い世界に目を向けることが今日の開運アクション💫','ワクワクすることを追いかけよう。それが射手座の星の道'],
+      ['冒険心を持ちながら着実に進むことで星の恵みが来る日','自由に動きながらも周りとのバランスを大切に⭐','コスモ博士ヒント：好奇心がある方向に進もう！'],
+      ['今日のラッキーアクション：新しい場所に行ってみよう🍀','笑顔で前向きにいれば運気がアップする日✨','好きな本を読むといいひらめきが！'],
+      ['今日はちょっと立ち止まって計画を見直そう🌙','焦らずのんびりいく日。射手座もたまには休息が必要','静かに遠い夢を思い描く時間を取ろう🌙'],
+      ['今日は衝動的な行動に注意。一度考えてから動こう⚡','自由を求めすぎると空回りするかも。バランスが大切だよ','困ったことも笑い飛ばせる射手座！大丈夫、きっとなんとかなる⚡'],
+    ],
+  ];
+
+  const DAYS_IN_MONTH = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+  function daysInMonth(year, month) {
+    if (month === 2 && ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0)) return 29;
+    return DAYS_IN_MONTH[month];
+  }
+
+  // ── CORE FUNCTIONS ────────────────────────────────────────────────────────
+
+  function getZodiac(month, day) {
+    for (let i = 0; i < ZODIACS.length; i++) {
+      const z = ZODIACS[i];
+      const [sm, sd] = z.start, [em, ed] = z.end;
+      if (sm <= em) {
+        if (month === sm && day >= sd) return i;
+        if (month === em && day <= ed) return i;
+        if (month > sm && month < em) return i;
+      } else {
+        if (month === sm && day >= sd) return i;
+        if (month === em && day <= ed) return i;
+        if (month > sm || month < em) return i;
+      }
+    }
+    return 0;
+  }
+
+  function getEtoIndex(year) {
+    return ((year - 4) % 12 + 12) % 12;
+  }
+
+  function getLifePathNumber(year, month, day) {
+    let sum = [...`${year}${month}${day}`].reduce((a, c) => a + +c, 0);
+    while (sum > 9) sum = [...`${sum}`].reduce((a, c) => a + +c, 0);
+    return sum;
+  }
+
+  function seededRandom(seed) {
+    const x = Math.sin(Math.abs(seed) + 1) * 10000;
+    return x - Math.floor(x);
+  }
+
+  function getTodaySeed(birthYear, month, day) {
+    const d = new Date();
+    const todayNum = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    return todayNum * 100000 + birthYear * 10 + month * 100 + day;
+  }
+
+  function getTomorrowSeed(birthYear, month, day) {
+    const d = new Date(Date.now() + 86400000);
+    const tomorrowNum = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    return tomorrowNum * 100000 + birthYear * 10 + month * 100 + day;
+  }
+
+  function getFortuneLevel(seed) {
+    const r = seededRandom(seed);
+    if (r < 0.10) return 0;
+    if (r < 0.30) return 1;
+    if (r < 0.55) return 2;
+    if (r < 0.75) return 3;
+    if (r < 0.88) return 4;
+    if (r < 0.96) return 5;
+    return 6;
+  }
+
+  function getCategoryStars(seed, offset) {
+    return Math.floor(seededRandom(seed + offset) * 5) + 1;
+  }
+
+  function starsHTML(n) {
+    return '★'.repeat(n) + '☆'.repeat(5 - n);
+  }
+
+  function getCompatibility(y1, m1, d1, y2, m2, d2) {
+    const zi1 = getZodiac(m1, d1), zi2 = getZodiac(m2, d2);
+    const e1 = ZODIACS[zi1].element, e2 = ZODIACS[zi2].element;
+    const elementScore = {
+      fire_fire:80, fire_earth:60, fire_air:85, fire_water:55,
+      earth_earth:80, earth_air:60, earth_water:85,
+      air_air:80, air_water:65, water_water:80,
+    };
+    const key = [e1, e2].sort().join('_');
+    const base = elementScore[key] !== undefined ? elementScore[key] : 65;
+    const lp1 = getLifePathNumber(y1, m1, d1);
+    const lp2 = getLifePathNumber(y2, m2, d2);
+    const adj = ((lp1 + lp2) % 7) * 3 - 9;
+    const eto1 = getEtoIndex(y1), eto2 = getEtoIndex(y2);
+    const etoAdj = (Math.abs(eto1 - eto2) % 4 === 0) ? 5 : 0;
+    return Math.min(100, Math.max(30, base + adj + etoAdj));
+  }
+
+  function getCompatType(score) {
+    for (const ct of COMPAT_TYPES) {
+      if (score >= ct.min) return ct;
+    }
+    return COMPAT_TYPES[COMPAT_TYPES.length - 1];
+  }
+
+  // ── STREAK ────────────────────────────────────────────────────────────────
+
+  function dateStr(d) {
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  }
+
+  function updateStreak() {
+    const today = dateStr(new Date());
+    const yesterday = dateStr(new Date(Date.now() - 86400000));
+    try {
+      const data = JSON.parse(localStorage.getItem('bf_streak') || '{}');
+      if (data.lastDate === today) return { streak: data.streak || 1, best: data.bestStreak || 1, isNew: false };
+      data.streak = (data.lastDate === yesterday) ? (data.streak || 0) + 1 : 1;
+      data.bestStreak = Math.max(data.streak, data.bestStreak || 0);
+      data.lastDate = today;
+      localStorage.setItem('bf_streak', JSON.stringify(data));
+      return { streak: data.streak, best: data.bestStreak, isNew: true };
+    } catch (e) { return { streak: 1, best: 1, isNew: false }; }
+  }
+
+  function milestoneMsg(streak) {
+    if (streak === 30) return '🌟コスモ博士公認マスター！30日達成！';
+    if (streak === 14) return '👑2週間連続！もはや占い博士！';
+    if (streak === 7)  return '🎉1週間達成！すごすぎる！';
+    if (streak === 3)  return '🔥3日連続！調子いい！';
+    return null;
+  }
+
+  // ── HISTORY ───────────────────────────────────────────────────────────────
+
+  function saveHistory(level, zodiacName, etoName) {
+    try {
+      const today = dateStr(new Date());
+      let hist = JSON.parse(localStorage.getItem('bf_history') || '[]');
+      hist = hist.filter(h => h.date !== today);
+      hist.unshift({ date: today, level, zodiacName, etoName });
+      if (hist.length > 7) hist = hist.slice(0, 7);
+      localStorage.setItem('bf_history', JSON.stringify(hist));
+    } catch (e) {}
+  }
+
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem('bf_history') || '[]'); }
+    catch (e) { return []; }
+  }
+
+  // ── BIRTHDAY STORAGE ──────────────────────────────────────────────────────
+
+  function saveBirthday(y, m, d) {
+    try { localStorage.setItem('bf_birthday', `${y}-${m}-${d}`); } catch (e) {}
+  }
+
+  function getSavedBirthday() {
+    try {
+      const v = localStorage.getItem('bf_birthday');
+      if (!v) return null;
+      const parts = v.split('-').map(Number);
+      if (parts.length !== 3 || parts.some(isNaN)) return null;
+      return { year: parts[0], month: parts[1], day: parts[2] };
+    } catch (e) { return null; }
+  }
+
+  // ── SHARE ─────────────────────────────────────────────────────────────────
+
+  function shareFortuneToLine(zodiacName, etoName, levelLabel, color, item, y, m, d) {
+    const fmt = (n, len) => String(n).padStart(len, '0');
+    const pageUrl = location.href.split('?')[0] + `?bd=${y}-${fmt(m,2)}-${fmt(d,2)}`;
+    const msg = `🔮 誕生日占い (${zodiacName}・${etoName}年) 🔮\n今日の運勢：${levelLabel}\n🌈ラッキーカラー：${color}\n✨ラッキーアイテム：${item}\n\nあなたも占ってみてね👇\n${pageUrl}`;
+    window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg), '_blank');
+  }
+
+  function shareCompatToLine(z1, z2, score, type, y1, m1, d1, y2, m2, d2) {
+    const fmt = (n, len) => String(n).padStart(len, '0');
+    const pageUrl = location.href.split('?')[0] + `?bd=${y1}-${fmt(m1,2)}-${fmt(d1,2)}&friend=${y2}-${fmt(m2,2)}-${fmt(d2,2)}`;
+    const msg = `💕 相性占い結果 💕\n${z1} × ${z2}\n相性度：${score}%！${type}\n\nふたりの相性を確かめよう👇\n${pageUrl}`;
+    window.open('https://line.me/R/msg/text/?' + encodeURIComponent(msg), '_blank');
+  }
+
+  // ── STARS BACKGROUND ──────────────────────────────────────────────────────
+
+  function createStars() {
+    const bg = document.getElementById('stars-bg');
+    for (let i = 0; i < 80; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = Math.random() * 3 + 1.5;
+      s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${(Math.random()*2+1.5).toFixed(1)}s;--delay:${(Math.random()*3).toFixed(1)}s;`;
+      bg.appendChild(s);
+    }
+  }
+
+  // ── SCREEN MANAGEMENT ─────────────────────────────────────────────────────
+
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+  }
+
+  // ── SELECT POPULATION ─────────────────────────────────────────────────────
+
+  function populateYear(sel) {
+    const now = new Date().getFullYear();
+    for (let y = now - 3; y >= now - 80; y--) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y + '年';
+      sel.appendChild(o);
+    }
+    sel.value = now - 12;
+  }
+
+  function populateMonth(sel) {
+    for (let m = 1; m <= 12; m++) {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m + '月';
+      sel.appendChild(o);
+    }
+  }
+
+  function populateDay(sel, year, month) {
+    const cur = +sel.value;
+    sel.innerHTML = '';
+    const max = daysInMonth(+year, +month);
+    for (let d = 1; d <= max; d++) {
+      const o = document.createElement('option');
+      o.value = d; o.textContent = d + '日';
+      sel.appendChild(o);
+    }
+    sel.value = Math.min(cur || 1, max);
+  }
+
+  function setupDateSelects(yearSel, monthSel, daySel) {
+    populateYear(yearSel);
+    populateMonth(monthSel);
+    populateDay(daySel, yearSel.value, monthSel.value);
+    monthSel.addEventListener('change', () => populateDay(daySel, yearSel.value, monthSel.value));
+    yearSel.addEventListener('change', () => populateDay(daySel, yearSel.value, monthSel.value));
+  }
+
+  // ── BUILD FORTUNE SCREEN ──────────────────────────────────────────────────
+
+  function buildFortuneScreen(year, month, day) {
+    const seed = getTodaySeed(year, month, day);
+    const zi = getZodiac(month, day);
+    const zodiac = ZODIACS[zi];
+    const etoIdx = getEtoIndex(year);
+    const lp = getLifePathNumber(year, month, day);
+    const level = getFortuneLevel(seed);
+    const fl = FORTUNE_LEVELS[level];
+    const colorIdx = Math.floor(seededRandom(seed + 7) * LUCKY_COLORS.length);
+    const itemIdx  = Math.floor(seededRandom(seed + 13) * LUCKY_ITEMS.length);
+    const luckyNum = Math.floor(seededRandom(seed + 19) * 9) + 1;
+    const msgVar   = Math.floor(seededRandom(seed + 23) * 3);
+    const cosmoMsg = COSMO_MESSAGES[zi][level][msgVar];
+
+    // Identity bar
+    document.getElementById('identity-bar').innerHTML = `
+      <div class="identity-item">
+        <div class="identity-symbol">${zodiac.symbol}</div>
+        <div class="identity-name">${zodiac.name}</div>
+      </div>
+      <div class="identity-item">
+        <div class="identity-symbol">${ETO_EMOJI[etoIdx]}</div>
+        <div class="identity-name">${ETOS[etoIdx]}年</div>
+      </div>
+      <div class="identity-item lifepath-box">
+        <div class="identity-name">ライフパス</div>
+        <div class="lifepath-num">${lp}</div>
+      </div>`;
+
+    // Date label
+    const now = new Date();
+    document.getElementById('fortune-date-label').textContent =
+      `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日の運勢`;
+
+    // Fortune level
+    const lt = document.getElementById('fortune-level-text');
+    lt.textContent = fl.label;
+    lt.style.color = fl.color;
+    document.getElementById('fortune-emoji').textContent = fl.emoji;
+
+    // Categories
+    const cats = [
+      { label:'🌟 総合運', offset:31 },
+      { label:'❤️ 恋愛運', offset:37 },
+      { label:'📚 勉強運', offset:43 },
+      { label:'👫 友達運', offset:47 },
+    ];
+    document.getElementById('categories').innerHTML = cats.map(c =>
+      `<div class="cat-item">
+        <div class="cat-label">${c.label}</div>
+        <div class="cat-stars">${starsHTML(getCategoryStars(seed, c.offset))}</div>
+      </div>`
+    ).join('');
+
+    // Lucky grid
+    const colorHex = COLOR_HEX[colorIdx];
+    document.getElementById('lucky-grid').innerHTML = `
+      <div class="lucky-item">
+        <div class="lucky-icon">🌈</div>
+        <div class="lucky-label">ラッキーカラー</div>
+        <div class="lucky-value"><span class="lucky-color-dot" style="background:${colorHex}"></span>${LUCKY_COLORS[colorIdx]}</div>
+      </div>
+      <div class="lucky-item">
+        <div class="lucky-icon">✨</div>
+        <div class="lucky-label">ラッキーアイテム</div>
+        <div class="lucky-value">${LUCKY_ITEMS[itemIdx]}</div>
+      </div>
+      <div class="lucky-item">
+        <div class="lucky-icon">🔢</div>
+        <div class="lucky-label">ラッキーナンバー</div>
+        <div class="lucky-value" style="font-size:1.4rem;">${luckyNum}</div>
+      </div>`;
+
+    // Cosmo message
+    document.getElementById('cosmo-text').textContent = cosmoMsg;
+
+    // Tomorrow hint
+    const tomorrowLevel = getFortuneLevel(getTomorrowSeed(year, month, day));
+    document.getElementById('tomorrow-hint').textContent =
+      `明日の運勢は… ${FORTUNE_LEVELS[tomorrowLevel].label}かも？🔮 また明日チェックしてね`;
+
+    // History
+    const hist = getHistory();
+    const histCard = document.getElementById('history-card');
+    if (hist.length > 0) {
+      histCard.style.display = '';
+      const DOW = ['日','月','火','水','木','金','土'];
+      document.getElementById('history-row').innerHTML = hist.map(h => {
+        const hd = new Date(h.date);
+        const dow = DOW[hd.getDay()];
+        const hfl = FORTUNE_LEVELS[h.level] || FORTUNE_LEVELS[2];
+        return `<div class="hist-card">
+          <div class="hist-emoji">${hfl.emoji.split('')[0]}</div>
+          <div class="hist-date">${hd.getMonth()+1}/${hd.getDate()}(${dow})</div>
+          <div class="hist-level" style="color:${hfl.color}">${hfl.label}</div>
+        </div>`;
+      }).join('');
+    } else {
+      histCard.style.display = 'none';
+    }
+
+    // Save history
+    saveHistory(level, zodiac.name, ETOS[etoIdx]);
+
+    // Streak
+    const streakData = updateStreak();
+    const badge = document.getElementById('streak-badge');
+    const num = document.getElementById('streak-num');
+    if (streakData.streak >= 2) {
+      badge.style.display = '';
+      num.textContent = streakData.streak;
+    }
+    if (streakData.isNew) {
+      const msg = milestoneMsg(streakData.streak);
+      if (msg) showToast(msg);
+    }
+
+    // LINE share button
+    document.getElementById('btn-line-share').onclick = () =>
+      shareFortuneToLine(zodiac.name, ETOS[etoIdx] + '年', fl.label, LUCKY_COLORS[colorIdx], LUCKY_ITEMS[itemIdx], year, month, day);
+
+    showScreen('fortune');
+  }
+
+  // ── BUILD COMPAT RESULT ───────────────────────────────────────────────────
+
+  function buildCompatResult(y1, m1, d1, y2, m2, d2) {
+    const zi1 = getZodiac(m1, d1), zi2 = getZodiac(m2, d2);
+    const z1 = ZODIACS[zi1], z2 = ZODIACS[zi2];
+    const eto1 = ETOS[getEtoIndex(y1)], eto2 = ETOS[getEtoIndex(y2)];
+    const lp1 = getLifePathNumber(y1, m1, d1), lp2 = getLifePathNumber(y2, m2, d2);
+    const score = getCompatibility(y1, m1, d1, y2, m2, d2);
+    const ct = getCompatType(score);
+
+    document.getElementById('compat-zodiacs').innerHTML = `
+      <div class="compat-zodiac-box">
+        <div class="compat-zodiac-sym">${z1.symbol}</div>
+        <div class="compat-zodiac-name">${z1.name}</div>
+      </div>
+      <div class="compat-heart">💕</div>
+      <div class="compat-zodiac-box">
+        <div class="compat-zodiac-sym">${z2.symbol}</div>
+        <div class="compat-zodiac-name">${z2.name}</div>
+      </div>`;
+
+    const scoreEl = document.getElementById('compat-score-num');
+    scoreEl.textContent = score;
+    scoreEl.style.color = score >= 80 ? '#ffd700' : score >= 60 ? '#5ac8fa' : '#b8b8b8';
+
+    document.getElementById('compat-type').textContent = ct.label;
+    document.getElementById('compat-msg').textContent = ct.msg;
+
+    document.getElementById('compat-detail-grid').innerHTML = `
+      <div class="compat-detail-item">
+        <div class="compat-detail-label">星座相性</div>
+        <div class="compat-detail-val">${z1.name}<br>×<br>${z2.name}</div>
+      </div>
+      <div class="compat-detail-item">
+        <div class="compat-detail-label">ライフパス</div>
+        <div class="compat-detail-val">${lp1} × ${lp2}</div>
+      </div>
+      <div class="compat-detail-item">
+        <div class="compat-detail-label">干支</div>
+        <div class="compat-detail-val">${eto1}${ETO_EMOJI[getEtoIndex(y1)]}<br>×<br>${eto2}${ETO_EMOJI[getEtoIndex(y2)]}</div>
+      </div>`;
+
+    document.getElementById('btn-line-share-compat').onclick = () =>
+      shareCompatToLine(z1.name, z2.name, score, ct.label, y1, m1, d1, y2, m2, d2);
+
+    showScreen('compat-result');
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────────────────────
+
+  function showToast(msg) {
+    const t = document.getElementById('milestone-toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+
+  function init() {
+    createStars();
+
+    // Setup input selects
+    setupDateSelects(
+      document.getElementById('in-year'),
+      document.getElementById('in-month'),
+      document.getElementById('in-day')
+    );
+    setupDateSelects(
+      document.getElementById('fr-year'),
+      document.getElementById('fr-month'),
+      document.getElementById('fr-day')
+    );
+
+    // URL params
+    const params = new URLSearchParams(location.search);
+    const bdParam = params.get('bd');
+    const friendParam = params.get('friend');
+
+    if (bdParam) {
+      const parts = bdParam.split('-').map(Number);
+      if (parts.length === 3 && parts.every(n => !isNaN(n))) {
+        saveBirthday(parts[0], parts[1], parts[2]);
+      }
+    }
+
+    const saved = getSavedBirthday();
+
+    if (saved && friendParam) {
+      const fp = friendParam.split('-').map(Number);
+      if (fp.length === 3 && fp.every(n => !isNaN(n))) {
+        buildCompatResult(saved.year, saved.month, saved.day, fp[0], fp[1], fp[2]);
+        return;
+      }
+    }
+
+    if (saved) {
+      // Pre-fill input selects with saved values
+      const ySel = document.getElementById('in-year');
+      if (ySel) { ySel.value = saved.year; }
+      buildFortuneScreen(saved.year, saved.month, saved.day);
+    } else {
+      showScreen('input');
+    }
+
+    // Event listeners
+    document.getElementById('btn-start').addEventListener('click', () => {
+      const y = +document.getElementById('in-year').value;
+      const m = +document.getElementById('in-month').value;
+      const d = +document.getElementById('in-day').value;
+      saveBirthday(y, m, d);
+      buildFortuneScreen(y, m, d);
+    });
+
+    document.getElementById('btn-change-bd').addEventListener('click', () => {
+      try { localStorage.removeItem('bf_birthday'); } catch (e) {}
+      showScreen('input');
+    });
+
+    document.getElementById('btn-go-compat').addEventListener('click', () => {
+      showScreen('compat-input');
+    });
+
+    document.getElementById('btn-back-from-compat').addEventListener('click', () => {
+      const s = getSavedBirthday();
+      if (s) buildFortuneScreen(s.year, s.month, s.day);
+      else showScreen('fortune');
+    });
+
+    document.getElementById('btn-calc-compat').addEventListener('click', () => {
+      const s = getSavedBirthday();
+      if (!s) { showScreen('input'); return; }
+      const fy = +document.getElementById('fr-year').value;
+      const fm = +document.getElementById('fr-month').value;
+      const fd = +document.getElementById('fr-day').value;
+      buildCompatResult(s.year, s.month, s.day, fy, fm, fd);
+    });
+
+    document.getElementById('btn-back-compat').addEventListener('click', () => {
+      showScreen('compat-input');
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
