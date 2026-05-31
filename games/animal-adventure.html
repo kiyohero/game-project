@@ -261,6 +261,7 @@
     // ===== オーディオ関連（invader踏襲） =====
     let audioCtx = null;
     let bgmGain = null;
+    let bgmTimer = null; // BGMループの予約タイマーID（停止時にキャンセルして多重起動を防ぐ）
     let bgmPlaying = false;
 
     function initAudio() {
@@ -418,7 +419,7 @@
         });
         currentLoop++;
         if (bgmGain) {
-          setTimeout(scheduleLoop, loopDuration * 900); // 少し早めに次をスケジュール
+          bgmTimer = setTimeout(scheduleLoop, loopDuration * 900); // 少し早めに次をスケジュール
         }
       };
 
@@ -427,6 +428,7 @@
     }
 
     function stopBGM() {
+      if (bgmTimer) { clearTimeout(bgmTimer); bgmTimer = null; } // 保留中のループ予約をキャンセル（古いschedulerが新BGMに混ざるのを防ぐ）
       if (bgmGain) {
         bgmGain.disconnect();
         bgmGain = null;
