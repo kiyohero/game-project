@@ -78,6 +78,12 @@
         return shelf;
       }
 
+      // しんちゃく（新しく追加されたゲーム。games-data.js の isNew: true が対象）
+      const news = games.filter(function(g) { return g.isNew; });
+      if (news.length) {
+        shelves.appendChild(makeShelf('🆕 しんちゃく', news));
+      }
+
       // さいきん あそんだ（履歴キーは file の ? 以降を除いた純粋なファイル名）
       const recent = games
         .filter(function(g) { return history[g.file.split('?')[0]]; })
