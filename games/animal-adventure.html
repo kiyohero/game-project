@@ -131,20 +131,20 @@
     <div class="start-title">🦛 どうぶつ大冒険</div>
     <p class="start-sub">すきな どうぶつを えらんで スタート！</p>
     <div class="char-select" id="charSelect">
-      <div class="char-card" data-char="chick">
-        <div class="char-emoji">🐥</div>
-        <div class="char-name">ひよこ</div>
-        <div class="char-desc">たかく とべる！<br>ジャンプが とくい</div>
+      <div class="char-card" data-char="hippo">
+        <div class="char-emoji">🦛</div>
+        <div class="char-name">カバ</div>
+        <div class="char-desc">タフで まけない！<br>1かい がまんできる</div>
       </div>
       <div class="char-card" data-char="shark">
         <div class="char-emoji">🦈</div>
         <div class="char-name">サメ</div>
         <div class="char-desc">あしが はやい！<br>そうかい にすすめる</div>
       </div>
-      <div class="char-card" data-char="hippo">
-        <div class="char-emoji">🦛</div>
-        <div class="char-name">カバ</div>
-        <div class="char-desc">タフで まけない！<br>1かい がまんできる</div>
+      <div class="char-card" data-char="penguin">
+        <div class="char-emoji">🐧</div>
+        <div class="char-name">ペンギン</div>
+        <div class="char-desc">たかく ジャンプ！<br>ぴょーんと とべる</div>
       </div>
     </div>
     <button class="btn" id="startBtn" style="font-size: 1.3rem; padding: 15px 40px;">スタート</button>
@@ -179,9 +179,9 @@
 
     // ===== キャラごとの性能 =====
     const CHARACTERS = {
-      chick: { emoji: '🐥', jump: 1.25, speed: 1.0,  hits: 0, name: 'ひよこ' },
-      shark: { emoji: '🦈', jump: 1.0,  speed: 1.35, hits: 0, name: 'サメ' },
       hippo: { emoji: '🦛', jump: 0.9,  speed: 0.9,  hits: 1, name: 'カバ' }, // 1回耐える
+      shark: { emoji: '🦈', jump: 1.0,  speed: 1.35, hits: 0, name: 'サメ' },
+      penguin: { emoji: '🐧', jump: 1.25, speed: 1.0,  hits: 0, name: 'ペンギン' }, // たかくジャンプ
     };
     let selectedChar = 'hippo'; // 初期せんたく（初心者向け）
 
@@ -505,6 +505,14 @@
         }
         goal.floorY = floorTopY;
       }
+
+      // 最終ステージは ゴールの手前に ラスボス（大きな🐥）を配置する
+      if (idx === STAGES.length - 1 && goal) {
+        const bw = 44, bh = 44;
+        const bx = goal.x - TILE * 3; // ゴールの3マス手前
+        const by = (goal.floorY != null ? goal.floorY : (stageRows - 1) * TILE) - bh; // 地面の上に立たせる
+        enemies.push({ type: 'boss', x: bx, y: by, w: bw, h: bh, vx: -0.7, dir: -1, baseX: bx, hp: 3, maxHp: 3, hurt: 0, alive: true });
+      }
     }
 
     // ===== プレイヤーをステージ先頭にもどす =====
@@ -785,6 +793,18 @@
           // こうもり: 上下にふわふわ
           e.t += 0.05;
           e.y = e.baseY + Math.sin(e.t) * 24;
+        } else if (e.type === 'boss') {
+          // ラスボス: 基準位置の前後2マスを ゆっくり左右に往復（落ちない）
+          if (e.hurt > 0) e.hurt--;
+          e.x += e.vx;
+          const footY = Math.floor((e.y + e.h + 1) / TILE);
+          const aheadX = e.dir < 0 ? Math.floor((e.x - 1) / TILE) : Math.floor((e.x + e.w + 1) / TILE);
+          const midY = Math.floor((e.y + e.h / 2) / TILE);
+          if (isSolid(aheadX, midY) || !isSolid(aheadX, footY) || Math.abs(e.x - e.baseX) > TILE * 2) {
+            e.dir *= -1;
+            e.vx = Math.abs(e.vx) * e.dir;
+            e.x += e.vx * 2;
+          }
         }
       }
     }
@@ -827,6 +847,48 @@
         // AABBの重なり
         if (px < e.x + e.w && px + pw > e.x && py < e.y + e.h && py + ph > e.y) {
           const stomped = player.vy > 0 && (py + ph) - e.y < 16;
+
+          // ===== ラスボス（HPあり・ふむたびにHPがへる） =====
+          if (e.type === 'boss') {
+            if (stomped || player.invincibleTimer > 0) {
+              player.vy = -JUMP_VELOCITY * 0.7; // ふんでバウンド
+              if (e.hurt > 0) continue;          // ダメージ直後は連続ヒットさせない
+              e.hp--;
+              e.hurt = 25;
+              playStompSound();
+              createParticles(e.x + e.w / 2, e.y + e.h / 2, '#ffb3c1', 12);
+              if (e.hp <= 0) {
+                // ボスげきは！ → ぜんぶクリア
+                e.alive = false;
+                score += 1000;
+                updateScore();
+                showScorePopup(e.x + e.w / 2, e.y, 'ボスげきは!');
+                createParticles(e.x + e.w / 2, e.y + e.h / 2, '#ffd93d', 28);
+                clearStage();
+                return;
+              } else {
+                showScorePopup(e.x + e.w / 2, e.y - 8, 'あと' + e.hp);
+              }
+            } else if (player.hurtTimer > 0) {
+              // ダメージ直後の無敵中は何もしない
+            } else if (player.extraHits > 0) {
+              // カバ: 1回耐える
+              player.extraHits--;
+              player.hurtTimer = 90;
+              playDamageSound();
+              gameContainer.classList.add('damage');
+              setTimeout(() => gameContainer.classList.remove('damage'), 300);
+              player.vx = (px + pw / 2 < e.x + e.w / 2) ? -4 : 4;
+              player.vy = -4;
+            } else {
+              // ミス
+              loseLife('hit');
+              return;
+            }
+            continue; // ボスの判定おわり
+          }
+
+          // ===== ふつうの敵（いもむし・こうもり） =====
           if (stomped) {
             // 上からふんだ → 敵をたおしてバウンド
             e.alive = false;
@@ -1054,7 +1116,18 @@
       for (const e of enemies) {
         if (!e.alive) continue;
         const sx = e.x + e.w / 2 - camera.x;
-        if (sx < -64 || sx > W + 64) continue;
+        if (sx < -80 || sx > W + 80) continue;
+        if (e.type === 'boss') {
+          // ラスボス（大きな🐥）。ふまれた直後は点滅
+          ctx.globalAlpha = (e.hurt > 0 && Math.floor(e.hurt / 3) % 2 === 0) ? 0.4 : 1;
+          drawEmoji('🐥', sx, e.y + e.h / 2, 48);
+          ctx.globalAlpha = 1;
+          // HP（ハート）を頭の上に表示
+          for (let i = 0; i < e.maxHp; i++) {
+            drawEmoji(i < e.hp ? '❤️' : '🤍', sx - (e.maxHp - 1) * 9 + i * 18, e.y - 12, 14);
+          }
+          continue;
+        }
         const emoji = e.type === 'walker' ? '🐛' : '🦇';
         drawEmoji(emoji, sx, e.y + e.h / 2, 30);
       }
