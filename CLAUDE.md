@@ -68,7 +68,8 @@ game-project/
 ├── games/
 │   ├── *.html                    # 各ゲームファイル
 │   ├── common.css                # 共通スタイル
-│   ├── common.js                 # 共通スクリプト（ナビ自動挿入）
+│   ├── common.js                 # 共通スクリプト（共通ヘッダ＋☰メニュー自動挿入）
+│   ├── games-data.js             # 全ゲームの定義（トップ一覧・☰メニューの元データ）
 │   ├── ranking.js                # ランキング機能（Firebase）
 │   ├── ranking.css               # ランキング画面のスタイル
 │   ├── firebase-config.js         # Firebase設定（スタブ、実値はコミットしない）
@@ -105,11 +106,21 @@ game-project/
 - **fetch-pokemon.js**: Node.js実行スクリプト。PokeAPIから最新データを取得して`pokemon-data.json`を生成
   - 実行方法: `node scripts/fetch-pokemon.js`
 
-新しいゲームを追加する際は、以下を`<head>`内に追加：
+新しいゲームを追加する際は、次の2ステップで行う：
+
+**① ゲームHTMLの`<head>`に共通ファイルを読み込む**
 ```html
 <link rel="stylesheet" href="common.css">
 <script src="common.js" defer></script>
 ```
+これだけで、全ゲーム共通の固定ヘッダ（← 一覧 ／ ゲーム名 ／ ☰メニュー）が自動で挿入される。
+
+**② `games/games-data.js` の `GAME_PROJECT_GAMES` に1エントリ追加する**
+```js
+{ name: 'ゲーム名', icon: '🎮', category: 'puzzle', file: 'new-game.html' },
+```
+これだけでトップページのカードと☰メニューの両方に自動で並ぶ。**`index.html`を手で編集する必要はない**。
+カテゴリ（`category`）は `GAME_PROJECT_CATEGORIES` の `id`（puzzle / battle / action / learn / fortune）から選ぶ。
 
 ランキング機能を使用する場合は、`firebase-config.js`と`ranking.js`も読み込み：
 ```html
@@ -214,16 +225,17 @@ git pull origin main
 
 問題がある場合は、作業前にユーザーに確認・相談する。
 
-### ⚠️ ゲーム追加・変更時の必須チェック（index.html整合性）
+### ⚠️ ゲーム一覧の管理（games-data.js で一元管理）
 
-新しいゲームを追加したり、`index.html`を変更するPRを作成する際は、**必ず最新のmainブランチを取り込んでから**作業すること。
+ゲーム一覧は **`games/games-data.js` が唯一の管理元**。`index.html`（トップページ）も各ゲームの☰メニューも、このファイルから自動生成される。**`index.html`のゲームカードを手書きで編集しないこと**（自動生成のため不要）。
 
-**背景**: 過去に、複数のゲーム追加PRが並行して作られた際、後からマージされたPRが先にマージされたゲームのリンクを`index.html`から消してしまう事故が発生した（ノノグラムのリンク消失）。
+**背景**: 以前は`index.html`にゲームカードを手書きしていたため、複数PRの並行作業でリンクが消える事故（ノノグラム消失）や、完成済みゲームの載せ忘れ（アキネーター）が起きていた。ゲーム情報を1か所に集約してこれらを構造的に防ぐ。
 
-**対策**:
-1. **PRを作る前に`main`を取り込む**: `git pull origin main` または `git merge origin/main` を実行して、最新の`index.html`を反映する
-2. **`index.html`のゲームリンク数を確認**: `games/`フォルダ内の`.html`ゲームファイル数と、`index.html`内のゲームカード数が一致しているか確認する
-3. **既存ゲームのリンクが消えていないか確認**: `git diff origin/main -- index.html` で、意図しない削除がないかチェックする
+**ゲームを追加・変更するときの確認**:
+1. **`games/games-data.js` に1エントリ追加/編集する**（手順は上記「新しいゲームを追加する際は」を参照）
+2. **件数の整合を確認**: `games/`フォルダの`.html`ゲームファイル数と、`games-data.js`の`GAME_PROJECT_GAMES`の件数が一致しているか確認する
+3. **PRを作る前に`main`を取り込む**: `git pull origin main` で最新の`games-data.js`を反映してから作業する（並行編集の衝突を防ぐ）
+4. **ローカルで表示確認**: トップページに全ゲームの棚が出るか、☰メニューから各ゲームへ移動できるかを確認する
 
 ### フィードバック対応
 
