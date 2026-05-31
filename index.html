@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ゲーム</title>
+  <script src="games/games-data.js" defer></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f0fa; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 15px 10px; }
     h1 { font-size: 1.6rem; color: #6b5b7a; margin-bottom: 12px; }
+    .shelf { width: 100%; max-width: 400px; margin-bottom: 8px; }
+    .shelf-title { font-size: 1rem; font-weight: bold; color: #6b5b7a; margin: 18px 0 8px; display: flex; align-items: center; gap: 6px; }
     .game-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; }
     .game-card {
       aspect-ratio: 1;
@@ -30,109 +33,69 @@
 </head>
 <body>
   <h1>ゲーム</h1>
-  <div class="game-list">
-    <a href="games/2048.html" class="game-card">
-      <span class="game-icon">🔢</span>
-      <span>2048</span>
-    </a>
-    <a href="games/tic-tac-toe.html" class="game-card">
-      <span class="game-icon">⭕</span>
-      <span>マルバツ</span>
-    </a>
-    <a href="games/invader.html" class="game-card">
-      <span class="game-icon">👾</span>
-      <span>インベーダー</span>
-    </a>
-    <a href="games/reversi.html" class="game-card">
-      <span class="game-icon">⚫</span>
-      <span>リバーシ</span>
-    </a>
-    <a href="games/shogi.html" class="game-card">
-      <span class="game-icon">♟️</span>
-      <span>将棋</span>
-    </a>
-    <a href="games/pokemon-shiritori.html" class="game-card">
-      <span class="game-icon">⚡</span>
-      <span>ポケモン<br>しりとり</span>
-    </a>
-    <a href="games/nonogram.html" class="game-card">
-      <span class="game-icon">🎨</span>
-      <span>お絵かき<br>ロジック</span>
-    </a>
-    <a href="games/sliding-puzzle.html" class="game-card">
-      <span class="game-icon">🧩</span>
-      <span>スライド<br>パズル</span>
-    </a>
-    <a href="games/werewolf.html" class="game-card">
-      <span class="game-icon">🐺</span>
-      <span>人狼ゲーム</span>
-    </a>
-<a href="games/crossword.html" class="game-card">
-      <span class="game-icon">🔤</span>
-      <span>クロス<br>ワード</span>
-    </a>
-    <a href="games/barcode-battle.html" class="game-card">
-      <span class="game-icon">📱</span>
-      <span>バーコード<br>バトル</span>
-    </a>
-    <a href="games/investment-game.html" class="game-card">
-      <span class="game-icon">📈</span>
-      <span>投資シミュ<br>レーター</span>
-    </a>
-    <a href="games/memory-game.html" class="game-card">
-      <span class="game-icon">🧠</span>
-      <span>神経衰弱</span>
-    </a>
-    <a href="games/old-maid.html" class="game-card">
-      <span class="game-icon">🃏</span>
-      <span>ババ抜き</span>
-    </a>
-    <a href="games/arithmetic-game.html" class="game-card">
-      <span class="game-icon">🏮</span>
-      <span>算術堂へ<br>ようこそ</span>
-    </a>
-    <a href="games/palm-reading.html" class="game-card">
-      <span class="game-icon">🔮</span>
-      <span>手相占い</span>
-    </a>
-    <a href="games/personal-color.html" class="game-card">
-      <span class="game-icon">💄</span>
-      <span>パーソナル<br>カラー診断</span>
-    </a>
-    <a href="games/birthday-fortune.html" class="game-card">
-      <span class="game-icon">🔮</span>
-      <span>誕生日占い</span>
-    </a>
-    <a href="games/birthday-fortune.html?compat=1" class="game-card">
-      <span class="game-icon">💕</span>
-      <span>相性占い</span>
-    </a>
-    <a href="games/animal-adventure.html" class="game-card">
-      <span class="game-icon">🦛</span>
-      <span>どうぶつ<br>大冒険</span>
-    </a>
-  </div>
+  <div id="shelves"></div>
   <script>
-    // 最近プレイしたゲームを上に表示
-    (function() {
+    // ゲーム棚を生成（さいきん あそんだ ＋ カテゴリ別）
+    document.addEventListener('DOMContentLoaded', function() {
+      const games = window.GAME_PROJECT_GAMES;
+      const categories = window.GAME_PROJECT_CATEGORIES;
+      const shelves = document.getElementById('shelves');
+      if (!Array.isArray(games) || !Array.isArray(categories) || !shelves) return;
+
+      // 履歴を読む
+      let history = {};
       try {
-        const history = JSON.parse(localStorage.getItem('gameHistory') || '{}');
-        const gameList = document.querySelector('.game-list');
-        const cards = Array.from(gameList.querySelectorAll('.game-card'));
-
-        // アクセス履歴でソート（新しい順）
-        cards.sort((a, b) => {
-          const fileA = a.href.split('/').pop();
-          const fileB = b.href.split('/').pop();
-          const timeA = history[fileA] || 0;
-          const timeB = history[fileB] || 0;
-          return timeB - timeA;
-        });
-
-        // 並び替えたカードを再挿入
-        cards.forEach(card => gameList.appendChild(card));
+        history = JSON.parse(localStorage.getItem('gameHistory') || '{}');
       } catch (e) {}
-    })();
+
+      // カード生成（共通）
+      function makeCard(game) {
+        const a = document.createElement('a');
+        a.href = 'games/' + game.file;
+        a.className = 'game-card';
+        const icon = document.createElement('span');
+        icon.className = 'game-icon';
+        icon.textContent = game.icon;
+        const label = document.createElement('span');
+        label.textContent = game.name;
+        a.appendChild(icon);
+        a.appendChild(label);
+        return a;
+      }
+
+      // 棚生成（共通）
+      function makeShelf(titleText, list) {
+        const shelf = document.createElement('div');
+        shelf.className = 'shelf';
+        const title = document.createElement('div');
+        title.className = 'shelf-title';
+        title.textContent = titleText;
+        const grid = document.createElement('div');
+        grid.className = 'game-list';
+        list.forEach(function(g) { grid.appendChild(makeCard(g)); });
+        shelf.appendChild(title);
+        shelf.appendChild(grid);
+        return shelf;
+      }
+
+      // さいきん あそんだ（履歴キーは file の ? 以降を除いた純粋なファイル名）
+      const recent = games
+        .filter(function(g) { return history[g.file.split('?')[0]]; })
+        .sort(function(a, b) {
+          return history[b.file.split('?')[0]] - history[a.file.split('?')[0]];
+        })
+        .slice(0, 6);
+      if (recent.length) {
+        shelves.appendChild(makeShelf('🕘 さいきん あそんだ', recent));
+      }
+
+      // カテゴリ棚
+      categories.forEach(function(cat) {
+        const catGames = games.filter(function(g) { return g.category === cat.id; });
+        if (!catGames.length) return;
+        shelves.appendChild(makeShelf(cat.icon + ' ' + cat.name, catGames));
+      });
+    });
   </script>
 </body>
 </html>

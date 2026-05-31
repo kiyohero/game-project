@@ -52,7 +52,6 @@
 4. **外部データ**
    - `games/` フォルダに静的JSONファイルとして配置、ゲーム起動時に読み込む（実行時のAPI呼び出しなし）
    - **pokemon-data.json**: PokeAPIから事前に生成・保存したポケモン名データ
-   - **akinator-data.json**: アキネーター用動物データ
    - **palm-reading-data.json**: 手相占い用データ
 
 ### 主要な設計パターン
@@ -75,7 +74,6 @@ game-project/
 │   ├── firebase-config.js         # Firebase設定（スタブ、実値はコミットしない）
 │   ├── firestore.rules.example    # Firestoreセキュリティルールのテンプレート
 │   ├── pokemon-data.json          # ポケモン名データ（PokeAPI由来）
-│   ├── akinator-data.json         # アキネーター用動物データ
 │   └── palm-reading-data.json     # 手相占い用データ
 ├── scripts/
 │   ├── fetch-pokemon.js           # PokeAPIからポケモンデータを取得（Node.js）
