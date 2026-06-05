@@ -28,4 +28,5 @@ window.GAME_PROJECT_GAMES = [
   { name: 'パーソナルカラー診断', icon: '💄', category: 'fortune', file: 'personal-color.html', isNew: true },
   { name: '誕生日占い',         icon: '🔮', category: 'fortune', file: 'birthday-fortune.html', isNew: true },
   { name: '相性占い',           icon: '💕', category: 'fortune', file: 'birthday-fortune.html?compat=1', isNew: true },
+  { name: 'どうぶつ性格診断', icon: '🦁', category: 'fortune', file: 'mbti-animal.html', isNew: true },
 ];

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>どうぶつ性格診断</title>
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<script>window.GAME_PROJECT_CURRENT_GAME = 'どうぶつ性格診断';</script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: linear-gradient(160deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%);
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif;
+  padding: 60px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+}
+
+.stars-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: -1; overflow: hidden;
+}
+.star-particle {
+  position: absolute; border-radius: 50%; background: #fff;
+  animation: twinkle var(--d, 2s) ease-in-out infinite;
+  animation-delay: var(--del, 0s);
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.65; }
+}
+
+#app {
+  width: 100%; max-width: 440px;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+.screen { display: none; width: 100%; animation: fadeIn 0.4s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(180,140,255,0.3);
+  border-radius: 20px;
+  padding: 28px 20px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+/* Title */
+.animal-parade {
+  display: flex; justify-content: center; gap: 8px;
+  font-size: 2rem; margin-bottom: 16px;
+}
+.animal-parade span {
+  display: inline-block;
+  animation: floatBob 2.5s ease-in-out infinite alternate;
+}
+.animal-parade span:nth-child(1) { animation-delay: 0s; }
+.animal-parade span:nth-child(2) { animation-delay: 0.25s; }
+.animal-parade span:nth-child(3) { animation-delay: 0.5s; }
+.animal-parade span:nth-child(4) { animation-delay: 0.75s; }
+.animal-parade span:nth-child(5) { animation-delay: 1.0s; }
+@keyframes floatBob {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-8px); }
+}
+
+.title-main {
+  font-size: 1.7rem; font-weight: 800;
+  background: linear-gradient(135deg, #e0b0ff, #b080ff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  text-align: center; margin-bottom: 12px;
+}
+.title-desc {
+  text-align: center; color: rgba(220,200,255,0.85);
+  font-size: 0.95rem; line-height: 1.7; margin-bottom: 24px;
+}
+.title-desc small { font-size: 0.78rem; opacity: 0.7; }
+.last-result-hint {
+  text-align: center; font-size: 0.82rem; color: rgba(180,150,255,0.8);
+  margin-top: 10px;
+}
+
+/* Progress */
+.progress-wrap {
+  background: rgba(255,255,255,0.12);
+  border-radius: 8px; height: 10px;
+  margin-bottom: 8px; overflow: hidden;
+}
+.progress-bar {
+  background: linear-gradient(90deg, #9b6dff, #c44dff);
+  height: 100%; border-radius: 8px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+.progress-label {
+  font-size: 0.78rem; color: rgba(200,170,255,0.7);
+  text-align: right; margin-bottom: 10px;
+}
+.dimension-badge {
+  font-size: 0.8rem; color: rgba(180,150,255,0.85);
+  text-align: center; margin-bottom: 16px;
+  background: rgba(155,109,255,0.15);
+  border-radius: 20px; padding: 5px 14px; display: inline-block;
+  width: 100%;
+}
+.question-text {
+  font-size: 1.1rem; font-weight: 700;
+  color: #f0e8ff; text-align: center;
+  margin-bottom: 24px; line-height: 1.6;
+}
+.quiz-options { display: flex; flex-direction: column; gap: 10px; }
+.btn-option {
+  display: block; width: 100%; min-height: 64px;
+  border: 2px solid rgba(180,140,255,0.3);
+  background: rgba(255,255,255,0.06);
+  color: rgba(220,200,255,0.9);
+  border-radius: 14px; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; padding: 14px 16px;
+  text-align: left; line-height: 1.5;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.btn-option:hover { background: rgba(180,140,255,0.18); border-color: rgba(180,140,255,0.7); }
+.btn-option:active { transform: scale(0.97); }
+.btn-option:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Analyzing */
+.analyzing-wrap { text-align: center; padding: 48px 20px 40px; }
+.animal-spin-container {
+  font-size: 3.5rem; margin-bottom: 24px;
+  display: flex; justify-content: center; gap: 12px;
+}
+.spin-animal {
+  display: inline-block;
+  animation: animalBounce 0.6s ease-in-out infinite alternate;
+}
+.spin-animal:nth-child(2) { animation-delay: 0.15s; }
+.spin-animal:nth-child(3) { animation-delay: 0.30s; }
+@keyframes animalBounce {
+  from { transform: translateY(0) scale(1); }
+  to   { transform: translateY(-12px) scale(1.2); }
+}
+.analyzing-text { font-size: 1.1rem; font-weight: 700; color: #e0d0ff; margin-bottom: 16px; }
+.dot-loader { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
+.dot-loader span {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #9b6dff;
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.dot-loader span:nth-child(2) { animation-delay: 0.2s; }
+.dot-loader span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.analyzing-sub { font-size: 0.85rem; color: rgba(200,170,255,0.7); }
+
+/* Result */
+.result-card {
+  --accent: #9b6dff;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid var(--accent);
+  border-radius: 20px; padding: 28px 20px 24px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  width: 100%; margin-bottom: 16px;
+  animation: fadeIn 0.4s ease;
+}
+.result-animal-emoji {
+  font-size: 5.5rem; display: block;
+  text-align: center; margin-bottom: 8px;
+  animation: animalPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes animalPop {
+  from { transform: scale(0) rotate(-15deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.result-animal-name {
+  font-size: 1.9rem; font-weight: 900;
+  background: linear-gradient(135deg, #e8d0ff, #c090ff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  text-align: center; margin-bottom: 4px;
+}
+.result-tagline {
+  text-align: center; font-size: 0.9rem;
+  color: rgba(200,170,255,0.8); margin-bottom: 16px;
+}
+.result-description {
+  font-size: 0.92rem; color: rgba(220,200,255,0.9);
+  line-height: 1.75; margin-bottom: 16px;
+}
+.traits-label {
+  font-size: 0.82rem; font-weight: 700;
+  color: rgba(200,170,255,0.7); margin-bottom: 10px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.trait-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(180,140,255,0.2);
+  border-radius: 10px; padding: 9px 13px;
+  font-size: 0.88rem; margin-bottom: 7px;
+  color: rgba(220,200,255,0.9);
+}
+.trait-pill::before { content: '✦'; color: var(--accent, #9b6dff); font-size: 0.75rem; flex-shrink: 0; }
+
+.mbti-box {
+  background: rgba(155,109,255,0.12);
+  border: 1px solid rgba(155,109,255,0.35);
+  border-radius: 12px; padding: 12px 16px;
+  margin-top: 16px;
+}
+.mbti-box-label { font-size: 0.72rem; color: rgba(180,150,255,0.7); margin-bottom: 4px; }
+.mbti-type-code {
+  font-size: 1.4rem; font-weight: 900; letter-spacing: 0.1em;
+  color: #d0a8ff; margin-bottom: 4px;
+}
+.mbti-desc { font-size: 0.85rem; color: rgba(220,200,255,0.85); line-height: 1.55; }
+
+.section-label {
+  font-size: 0.82rem; font-weight: 700; color: rgba(200,170,255,0.7);
+  margin-bottom: 12px;
+}
+
+.compat-box {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(180,140,255,0.25);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.compat-emoji { font-size: 2.8rem; flex-shrink: 0; }
+.compat-label { font-size: 0.72rem; opacity: 0.6; margin-bottom: 3px; }
+.compat-name  { font-size: 1rem; font-weight: 700; color: #e0d0ff; }
+.compat-desc  { font-size: 0.82rem; color: rgba(220,200,255,0.8); line-height: 1.5; margin-top: 3px; }
+
+.lucky-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lucky-item {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(180,140,255,0.2);
+  border-radius: 12px; padding: 12px 10px; text-align: center;
+}
+.lucky-icon  { font-size: 1.5rem; margin-bottom: 4px; }
+.lucky-label { font-size: 0.7rem; opacity: 0.6; margin-bottom: 4px; }
+.lucky-value { font-size: 0.92rem; font-weight: 700; color: #e0d0ff; }
+
+/* Compat check panel */
+.compat-check-title { font-size: 1rem; font-weight: 700; color: #e0d0ff; margin-bottom: 6px; }
+.compat-check-sub { font-size: 0.8rem; color: rgba(200,170,255,0.7); margin-bottom: 14px; line-height: 1.5; }
+.compat-animals-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-bottom: 14px;
+}
+.compat-animal-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(180,140,255,0.25);
+  border-radius: 10px; padding: 8px 4px;
+  font-size: 1.6rem; cursor: pointer;
+  text-align: center; transition: background 0.15s, transform 0.1s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.compat-animal-btn small { font-size: 0.55rem; color: rgba(200,170,255,0.7); line-height: 1.2; }
+.compat-animal-btn:hover { background: rgba(155,109,255,0.2); transform: scale(1.05); }
+.compat-animal-btn.selected { background: rgba(155,109,255,0.35); border-color: #9b6dff; }
+.compat-result-box {
+  background: rgba(155,109,255,0.12);
+  border: 1px solid rgba(155,109,255,0.3);
+  border-radius: 12px; padding: 14px 16px;
+  font-size: 0.9rem; color: rgba(220,200,255,0.9);
+  line-height: 1.6; display: none;
+  animation: fadeIn 0.3s ease;
+}
+.compat-result-box.visible { display: block; }
+
+.result-anim {
+  animation: slideUp 0.5s ease both;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Buttons */
+.btn-primary {
+  display: block; width: 100%;
+  background: linear-gradient(135deg, #7b4daa, #5a2d82);
+  color: #fff; border: none; border-radius: 14px;
+  padding: 16px; font-size: 1.05rem; font-weight: 700;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 20px rgba(123,77,170,0.5); margin-bottom: 12px;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(123,77,170,0.6); }
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-line {
+  display: block; width: 100%;
+  background: #06C755; color: #fff; border: none;
+  border-radius: 14px; padding: 14px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(6,199,85,0.4); margin-bottom: 10px;
+  transition: transform 0.15s;
+}
+.btn-line:hover { transform: translateY(-2px); }
+
+.btn-secondary {
+  display: block; width: 100%;
+  background: rgba(255,255,255,0.08);
+  color: rgba(220,200,255,0.9);
+  border: 1px solid rgba(180,140,255,0.35);
+  border-radius: 14px; padding: 13px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  margin-bottom: 10px; transition: background 0.2s;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.15); }
+</style>
+</head>
+<body>
+<div id="stars-bg" class="stars-bg"></div>
+<div id="app">
+
+  <!-- ===== TITLE SCREEN ===== -->
+  <div id="screen-title" class="screen active">
+    <div class="card">
+      <div class="animal-parade" aria-hidden="true">
+        <span>🦁</span><span>🐬</span><span>🦛</span><span>🦈</span><span>🐧</span>
+      </div>
+      <div class="title-main">どうぶつ性格診断</div>
+      <p class="title-desc">12のしつもんに答えると<br>あなたにそっくりな<strong>どうぶつ</strong>が分かるよ！<br><small>MBTIをもとにした本格診断</small></p>
+      <button id="btn-start" class="btn-primary">🐾 診断スタート！</button>
+      <p id="last-result-hint" class="last-result-hint" style="display:none"></p>
+    </div>
+  </div>
+
+  <!-- ===== QUIZ SCREEN ===== -->
+  <div id="screen-quiz" class="screen">
+    <div class="card">
+      <div class="progress-wrap"><div class="progress-bar" id="quiz-progress-bar"></div></div>
+      <p class="progress-label" id="quiz-progress-label">しつもん 1 / 12</p>
+      <p class="dimension-badge" id="dimension-badge"></p>
+      <p class="question-text" id="quiz-question"></p>
+      <div class="quiz-options" id="quiz-options"></div>
+    </div>
+  </div>
+
+  <!-- ===== ANALYZING SCREEN ===== -->
+  <div id="screen-analyzing" class="screen">
+    <div class="card analyzing-wrap">
+      <div class="animal-spin-container" id="animal-spin"></div>
+      <p class="analyzing-text">どうぶつを探しています…</p>
+      <div class="dot-loader"><span></span><span></span><span></span></div>
+      <p class="analyzing-sub" id="analyzing-sub">あなたのこたえをぶんせきちゅう</p>
+    </div>
+  </div>
+
+  <!-- ===== RESULT SCREEN ===== -->
+  <div id="screen-result" class="screen">
+    <div id="result-main-card" class="result-card"></div>
+    <div id="result-compat-card" class="card result-anim" style="animation-delay:0.5s"></div>
+    <div id="result-lucky-card" class="card result-anim" style="animation-delay:0.6s"></div>
+    <div class="card result-anim" style="animation-delay:0.7s">
+      <button id="btn-share-line" class="btn-line">💚 LINEでシェアする</button>
+      <button id="btn-share-clipboard" class="btn-secondary">📋 結果をコピーする</button>
+      <button id="btn-retry" class="btn-secondary">🔄 もう一度やってみる</button>
+    </div>
+    <div id="compat-check-panel" class="card result-anim" style="animation-delay:0.8s"></div>
+  </div>
+
+</div>
+
+<script>
+// ===== QUESTIONS =====
+var QUESTIONS = [
+  { dim:'EI', q:'休み時間、どうしたい？',
+    a:{text:'A  友だちとわいわい遊ぶ', side:'E'},
+    b:{text:'B  ひとりでのんびりする', side:'I'},
+    badge:'🤝 友だちとのすごし方' },
+  { dim:'SN', q:'遊びに行くなら？',
+    a:{text:'A  いつもの行きつけの場所', side:'S'},
+    b:{text:'B  まだ行ったことない新しい場所', side:'N'},
+    badge:'🗺️ あそびかた' },
+  { dim:'TF', q:'友だちが悩んでいたら？',
+    a:{text:'A  解決策をいっしょに考える', side:'T'},
+    b:{text:'B  まず話を聞いて気持ちに寄り添う', side:'F'},
+    badge:'💬 友だちへの接し方' },
+  { dim:'JP', q:'遠足の準備はいつする？',
+    a:{text:'A  前日までに全部準備して確認する', side:'J'},
+    b:{text:'B  当日の朝にまとめてやる', side:'P'},
+    badge:'📅 じゅんびのしかた' },
+  { dim:'EI', q:'週末のすごし方は？',
+    a:{text:'A  友だちを誘って外に出る', side:'E'},
+    b:{text:'B  家でゆっくり好きなことをする', side:'I'},
+    badge:'🌈 週末のすごし方' },
+  { dim:'SN', q:'工作の時間、どうする？',
+    a:{text:'A  説明通りにていねいに作る', side:'S'},
+    b:{text:'B  自分なりにアレンジして作る', side:'N'},
+    badge:'✂️ 工作のやり方' },
+  { dim:'TF', q:'ゲームで負けた友だちに言うなら？',
+    a:{text:'A  「次はこうすれば勝てるよ」', side:'T'},
+    b:{text:'B  「大丈夫！またいっしょにやろう」', side:'F'},
+    badge:'🎮 友だちへのひと言' },
+  { dim:'JP', q:'自由時間ができたら？',
+    a:{text:'A  何をするかあらかじめ決めておく', side:'J'},
+    b:{text:'B  そのとき気分で決める', side:'P'},
+    badge:'⏰ 自由時間のすごし方' },
+  { dim:'EI', q:'発表会の役、どっちがいい？',
+    a:{text:'A  みんなの前に立つ役', side:'E'},
+    b:{text:'B  うらで支える役', side:'I'},
+    badge:'🎤 発表会での役わり' },
+  { dim:'SN', q:'「もし空が飛べたら？」と聞かれたら？',
+    a:{text:'A  便利な使い方を考える', side:'S'},
+    b:{text:'B  どんな景色か想像する', side:'N'},
+    badge:'💭 想像力テスト' },
+  { dim:'TF', q:'班で意見が分かれたら？',
+    a:{text:'A  いちばんよい方法を論理的に説明する', side:'T'},
+    b:{text:'B  全員が納得できる答えを探す', side:'F'},
+    badge:'🏫 班の話し合い' },
+  { dim:'JP', q:'宿題はどうやってやる？',
+    a:{text:'A  毎日決まった時間にすぐやる', side:'J'},
+    b:{text:'B  ためてから一気にやる', side:'P'},
+    badge:'📚 宿題のやり方' }
+];
+
+// ===== MBTI ANIMALS DATA =====
+var MBTI_ANIMALS = {
+  'INTJ': {
+    animal:'サメ', emoji:'🦈', tagline:'深海の戦略家',
+    color:'#4a9eff', colorRgb:'74,158,255',
+    description:'深く考えるのが得意な、孤独な戦略家タイプ。いつも先のことを考えながら、じっくり計画を立てて動くよ。少数精鋭の仲の良い友だちとの時間をとくに大切にするね。',
+    traits:['計画を立てるのが上手','ひとりで集中できる','難しい問題も諦めない'],
+    compatible:{type:'ENFP', animal:'ひよこ', emoji:'🐥'},
+    compatDesc:'ひよこの明るさがサメの世界を広げてくれる！正反対だから引き合う最強コンビ',
+    lucky:{color:'深い青', item:'ノート'},
+    mbtiDesc:'「戦略家」タイプ。先を見据えて計画的に行動するよ'
+  },
+  'INTP': {
+    animal:'ペンギン', emoji:'🐧', tagline:'ふしぎ研究家',
+    color:'#7a9fff', colorRgb:'122,159,255',
+    description:'なんでも「なぜ？」と考えるのが大好きな好奇心旺盛なタイプ。冷静に観察して独自の方法でものごとを理解するのが得意だよ。見た目はクールだけど内側は熱いハートを持っているね。',
+    traits:['深く考えるのが好き','ユニークな発想がわく','じっくり分析できる'],
+    compatible:{type:'ENTJ', animal:'ライオン', emoji:'🦁'},
+    compatDesc:'ペンギンのアイデアをライオンが形にしてくれる！最強の組み合わせ',
+    lucky:{color:'水色', item:'本'},
+    mbtiDesc:'「論理学者」タイプ。深く考えて新しい発見を楽しむよ'
+  },
+  'ENTJ': {
+    animal:'ライオン', emoji:'🦁', tagline:'みんなのリーダー',
+    color:'#ffa520', colorRgb:'255,165,32',
+    description:'目標に向かってみんなをまとめる、生まれながらのリーダータイプ。やると決めたことは必ずやり遂げる意志の強さがあるよ。大きな夢を持ってどんどん挑戦していくね。',
+    traits:['みんなをまとめる力がある','目標に向かってがんばれる','決断力がある'],
+    compatible:{type:'INTP', animal:'ペンギン', emoji:'🐧'},
+    compatDesc:'ライオンのリーダーシップとペンギンの分析力が合わさると最高のチームに！',
+    lucky:{color:'金色', item:'旗'},
+    mbtiDesc:'「指揮官」タイプ。目標に向かってみんなをリードするよ'
+  },
+  'ENTP': {
+    animal:'さる', emoji:'🐵', tagline:'アイデア王',
+    color:'#ff8c30', colorRgb:'255,140,48',
+    description:'頭の回転が速くて、面白いアイデアをどんどん思いつくタイプ。話し合いや議論がとくに得意で、新しい考え方で周りを驚かせることも多いよ。好奇心がとまらないね。',
+    traits:['ひらめきが次々とわく','話すのが上手','新しいことに挑戦するのが好き'],
+    compatible:{type:'INFJ', animal:'キリン', emoji:'🦒'},
+    compatDesc:'さるのアイデアをキリンの深い洞察力が支えてくれる不思議な組み合わせ',
+    lucky:{color:'オレンジ', item:'地図'},
+    mbtiDesc:'「討論者」タイプ。新しいアイデアで周りを驚かせるよ'
+  },
+  'INFJ': {
+    animal:'キリン', emoji:'🦒', tagline:'夢みる見張り番',
+    color:'#c44dff', colorRgb:'196,77,255',
+    description:'人の気持ちを深く理解できる、とても珍しいタイプ。高いところから全体を見わたす力があって、将来のことをよく考えるよ。世界をもっとよくしたいという強い思いを持っているね。',
+    traits:['人の気持ちが分かる','深く考えられる','みんなの役に立ちたい'],
+    compatible:{type:'ENTP', animal:'さる', emoji:'🐵'},
+    compatDesc:'キリンの感性とさるの発想力が合わさると、素晴らしいアイデアが生まれるよ',
+    lucky:{color:'紫', item:'星のシール'},
+    mbtiDesc:'「提唱者」タイプ。深い洞察力で世界をよくしたいと思っているよ'
+  },
+  'INFP': {
+    animal:'うまれたてひよこ', emoji:'🐣', tagline:'夢いっぱいのぼうけんか',
+    color:'#ffcc50', colorRgb:'255,204,80',
+    description:'温かい心と豊かな想像力を持つ、純粋でやさしいタイプ。自分が信じることのために静かに努力するよ。可能性にあふれていて、自分だけの素晴らしい世界観を持っているね。',
+    traits:['思いやりがある','想像力がゆたか','自分だけの世界観を持っている'],
+    compatible:{type:'ENTJ', animal:'ライオン', emoji:'🦁'},
+    compatDesc:'うまれたてひよこの純粋さとライオンの力強さが合わさると、最高のコンビに！',
+    lucky:{color:'黄色', item:'お花'},
+    mbtiDesc:'「仲介者」タイプ。豊かな想像力と優しい心を持っているよ'
+  },
+  'ENFJ': {
+    animal:'イルカ', emoji:'🐬', tagline:'みんなの太陽',
+    color:'#00cfff', colorRgb:'0,207,255',
+    description:'みんなを笑顔にするのが大好きな、カリスマ的なタイプ。人の気持ちをよく理解して、自然とみんなをまとめる力があるよ。周りの人の成長を心から喜べるね。',
+    traits:['人を元気にするのが得意','共感力が高い','みんなをまとめるのが上手'],
+    compatible:{type:'INFP', animal:'うまれたてひよこ', emoji:'🐣'},
+    compatDesc:'イルカの明るさとうまれたてひよこの純粋さが合わさると、とても温かい関係になるよ',
+    lucky:{color:'水色', item:'ハート形のもの'},
+    mbtiDesc:'「主人公」タイプ。みんなを笑顔にするカリスマ力があるよ'
+  },
+  'ENFP': {
+    animal:'ひよこ', emoji:'🐥', tagline:'キラキラ自由人',
+    color:'#ffdd44', colorRgb:'255,221,68',
+    description:'エネルギーにあふれて、可能性をどこにでも見つけられるタイプ。人と話すことが大好きで、周りをワクワクさせる力があるよ。新しいことへのチャレンジが止まらないね。',
+    traits:['いつも元気でワクワク','人との出会いが大好き','想像力と行動力がある'],
+    compatible:{type:'INTJ', animal:'サメ', emoji:'🦈'},
+    compatDesc:'ひよこの自由な発想をサメが深く考えてくれる、バランスが最高のペア',
+    lucky:{color:'黄色', item:'キラキラしたもの'},
+    mbtiDesc:'「広報運動家」タイプ。エネルギーあふれる自由な発想家だよ'
+  },
+  'ISTJ': {
+    animal:'ゾウ', emoji:'🐘', tagline:'コツコツ職人',
+    color:'#a0a8c8', colorRgb:'160,168,200',
+    description:'責任感が強くて、約束を必ず守るとても信頼できるタイプ。コツコツ努力することが得意で、決めたことをやり遂げる力があるよ。記憶力がよくて正確で丁寧な仕事ぶりが光るね。',
+    traits:['約束を必ず守る','コツコツ努力できる','正確で丁寧にこなす'],
+    compatible:{type:'ESFP', animal:'ねずみ', emoji:'🐭'},
+    compatDesc:'ゾウの堅実さとねずみの楽しさが合わさると、生活がもっと豊かになるよ',
+    lucky:{color:'グレー', item:'えんぴつ'},
+    mbtiDesc:'「管理者」タイプ。責任感が強くコツコツ努力を続けられるよ'
+  },
+  'ISFJ': {
+    animal:'いぬ', emoji:'🐶', tagline:'みんなの守り神',
+    color:'#d4a860', colorRgb:'212,168,96',
+    description:'温かくて思いやりのある、周りの人を大切にするタイプ。大切な友だちのためならどんな時でも力を貸すよ。静かに見守りながら、いざというとき力強くサポートするね。',
+    traits:['思いやりが深い','友だちのことをよく覚えている','静かに支えるのが上手'],
+    compatible:{type:'ESTP', animal:'うま', emoji:'🐴'},
+    compatDesc:'いぬの安定感とうまのエネルギーが合わさると、最高の冒険仲間になれるよ',
+    lucky:{color:'茶色', item:'ハンカチ'},
+    mbtiDesc:'「擁護者」タイプ。大切な人をそっと守る温かい心を持っているよ'
+  },
+  'ESTJ': {
+    animal:'とら', emoji:'🐯', tagline:'たよれる番長',
+    color:'#ff9030', colorRgb:'255,144,48',
+    description:'しっかり者で、みんなをまとめながら物事を進める力強いタイプ。ルールや約束を大切にして、安心できる環境をつくるのが得意だよ。何でも率先してやり遂げるね。',
+    traits:['責任感がとても強い','みんなをリードできる','計画通りに進めるのが得意'],
+    compatible:{type:'ISFP', animal:'パンダ', emoji:'🐼'},
+    compatDesc:'とらのたくましさとパンダの穏やかさが合わさると、素晴らしいバランスに',
+    lucky:{color:'オレンジ', item:'手帳'},
+    mbtiDesc:'「幹部」タイプ。きっちり計画してみんなをまとめるのが得意だよ'
+  },
+  'ESFJ': {
+    animal:'うさぎ', emoji:'🐰', tagline:'なかよしチームの星',
+    color:'#ff88bb', colorRgb:'255,136,187',
+    description:'みんなと仲良くすることが大好きで、チームの雰囲気をよくするのが得意なタイプ。友だちの気持ちをよく理解して、みんなが笑顔になれるよう気を配るよ。',
+    traits:['友だち思いで協力的','雰囲気を明るくできる','みんなを気にかけられる'],
+    compatible:{type:'ISTP', animal:'カバ', emoji:'🦛'},
+    compatDesc:'うさぎの社交性とカバのクールな判断力が合わさると、最強のチームになるよ',
+    lucky:{color:'ピンク', item:'リボン'},
+    mbtiDesc:'「領事官」タイプ。友だちのことをいつも気にかける思いやり名人だよ'
+  },
+  'ISTP': {
+    animal:'カバ', emoji:'🦛', tagline:'クールな実力者',
+    color:'#78b890', colorRgb:'120,184,144',
+    description:'見た目はどっしり落ち着いているけど、実はとってもパワフル！問題が起きたとき、冷静に状況を見極めてすばやく解決策を見つけるよ。自分のペースでじっくり実力を磨くのが好きだね。',
+    traits:['観察力がとても鋭い','冷静に判断できる','実力をコツコツ磨ける'],
+    compatible:{type:'ESFJ', animal:'うさぎ', emoji:'🐰'},
+    compatDesc:'カバの落ち着きとうさぎの温かさが合わさると、みんなが頼りにするペアになるよ',
+    lucky:{color:'深い緑', item:'虫めがね'},
+    mbtiDesc:'「巨匠」タイプ。冷静な観察力と確かな技術を持っているよ'
+  },
+  'ISFP': {
+    animal:'パンダ', emoji:'🐼', tagline:'ほんわかアーティスト',
+    color:'#a8c890', colorRgb:'168,200,144',
+    description:'穏やかで感性が豊かな、芸術的なタイプ。自分のペースで美しいものを作り出すのが得意。その場の雰囲気をとても大切にして、争いを好まない優しい心を持っているよ。',
+    traits:['芸術センスがある','穏やかで争いを好まない','今この瞬間を大切にする'],
+    compatible:{type:'ESTJ', animal:'とら', emoji:'🐯'},
+    compatDesc:'パンダの穏やかさととらのたくましさが合わさると、何でもできるペアに',
+    lucky:{color:'パステルグリーン', item:'スケッチブック'},
+    mbtiDesc:'「冒険家」タイプ。感性が豊かで自分らしい表現を大切にするよ'
+  },
+  'ESTP': {
+    animal:'うま', emoji:'🐴', tagline:'スピードスター',
+    color:'#f0c040', colorRgb:'240,192,64',
+    description:'行動が速くてエネルギッシュな、何でもチャレンジするタイプ。考えるよりも先に動いて、実際に体験しながら学ぶのが好きだよ。スポーツや冒険がとくに得意なね。',
+    traits:['行動力がとびぬけている','スポーツや体を動かすのが得意','危機対応が速い'],
+    compatible:{type:'ISFJ', animal:'いぬ', emoji:'🐶'},
+    compatDesc:'うまのスピードといぬの安心感が合わさると、最高の冒険仲間になれるよ',
+    lucky:{color:'黄色', item:'スニーカー'},
+    mbtiDesc:'「起業家」タイプ。スピード感あふれる行動力で周りを引っ張るよ'
+  },
+  'ESFP': {
+    animal:'ねずみ', emoji:'🐭', tagline:'エンタメの天才',
+    color:'#ff80c0', colorRgb:'255,128,192',
+    description:'楽しいことが大好きで、その場の雰囲気を盛り上げるのが天才的なタイプ。人を笑顔にするセンスは抜群で、どんな場所でもすぐ友だちができるよ。自由で表現力豊かだね。',
+    traits:['いつも場を盛り上げられる','友だちをすぐ作れる','自己表現がとっても豊か'],
+    compatible:{type:'ISTJ', animal:'ゾウ', emoji:'🐘'},
+    compatDesc:'ねずみのにぎやかさとゾウの堅実さが合わさると、楽しくてしっかりした関係に',
+    lucky:{color:'ピンク', item:'マイク'},
+    mbtiDesc:'「エンターテイナー」タイプ。その場を盛り上げる天才的な明るさを持っているよ'
+  }
+};
+
+// ===== COMPAT MATRIX =====
+var OPPOSITE_PAIRS = {
+  'INTJ':'ENFP','ENFP':'INTJ',
+  'INTP':'ENTJ','ENTJ':'INTP',
+  'ENTP':'INFJ','INFJ':'ENTP',
+  'INFP':'ENFJ','ENFJ':'INFP',
+  'ISTJ':'ESFP','ESFP':'ISTJ',
+  'ISFJ':'ESTP','ESTP':'ISFJ',
+  'ESTJ':'ISFP','ISFP':'ESTJ',
+  'ESFJ':'ISTP','ISTP':'ESFJ'
+};
+
+var GENERIC_COMPAT = [
+  'ふたりのちがいが、新しい発見を生む！個性的な組み合わせだよ。',
+  'お互いのいいところを活かせる、ユニークなペア！',
+  'ちがうタイプだからこそ、いっしょにいると成長できるよ！',
+  'バランスのとれたふたり。助け合えるいい関係になれるよ！'
+];
+
+function getCompatMessage(myType, friendType) {
+  if (myType === friendType) {
+    var d = MBTI_ANIMALS[myType];
+    return d.emoji + ' ' + d.animal + ' どうし！同じタイプのなかまだよ。気が合うことが多いけど、たまにぶつかることも……ふたりで成長していこう！';
+  }
+  if (OPPOSITE_PAIRS[myType] === friendType) {
+    var me = MBTI_ANIMALS[myType];
+    var fr = MBTI_ANIMALS[friendType];
+    return me.emoji + ' と ' + fr.emoji + ' は正反対のタイプ！だからこそ引き合う最強ペアだよ。お互いに学び合えること間違いなし🌟';
+  }
+  var idx = (myType.charCodeAt(0) + friendType.charCodeAt(0)) % GENERIC_COMPAT.length;
+  return MBTI_ANIMALS[myType].emoji + ' と ' + MBTI_ANIMALS[friendType].emoji + ' — ' + GENERIC_COMPAT[idx];
+}
+
+// ===== GAME STATE =====
+var state = { step: 0, scores: {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0}, result: null };
+var analyzeInterval = null;
+
+function showScreen(name) {
+  ['title','quiz','analyzing','result'].forEach(function(id) {
+    var el = document.getElementById('screen-' + id);
+    if (el) el.classList.toggle('active', id === name);
+  });
+  window.scrollTo(0, 0);
+}
+
+function renderQuestion(step) {
+  var q = QUESTIONS[step];
+  var pct = Math.round(step / QUESTIONS.length * 100);
+  document.getElementById('quiz-progress-bar').style.width = pct + '%';
+  document.getElementById('quiz-progress-label').textContent = 'しつもん ' + (step + 1) + ' / ' + QUESTIONS.length;
+  document.getElementById('dimension-badge').textContent = q.badge;
+  document.getElementById('quiz-question').textContent = q.q;
+
+  var container = document.getElementById('quiz-options');
+  container.innerHTML = '';
+  [q.a, q.b].forEach(function(opt) {
+    var btn = document.createElement('button');
+    btn.className = 'btn-option';
+    btn.textContent = opt.text;
+    btn.addEventListener('click', function() { handleAnswer(opt.side); });
+    container.appendChild(btn);
+  });
+}
+
+function handleAnswer(side) {
+  document.querySelectorAll('.btn-option').forEach(function(b) { b.disabled = true; });
+  state.scores[side]++;
+  state.step++;
+  if (state.step < QUESTIONS.length) {
+    setTimeout(function() { renderQuestion(state.step); }, 150);
+  } else {
+    showScreen('analyzing');
+    startAnalyzingAnimation();
+    setTimeout(computeResult, 2200);
+  }
+}
+
+function computeResult() {
+  var s = state.scores;
+  var type = (s.E >= s.I ? 'E' : 'I') + (s.S >= s.N ? 'S' : 'N') + (s.T >= s.F ? 'T' : 'F') + (s.J >= s.P ? 'J' : 'P');
+  state.result = type;
+  saveResult(type);
+  showResult(type);
+}
+
+var PARADE = ['🦈','🐧','🦁','🐵','🦒','🐣','🐬','🐥','🐘','🐶','🐯','🐰','🦛','🐼','🐴','🐭'];
+
+function startAnalyzingAnimation() {
+  var container = document.getElementById('animal-spin');
+  var subTexts = [
+    'あなたのこたえをぶんせきちゅう…',
+    'どうぶつのデータを確認中…',
+    'あなたにぴったりのどうぶつを探しています…'
+  ];
+  var subIdx = 0;
+  container.innerHTML = '';
+  var picks = [];
+  while (picks.length < 3) {
+    var r = PARADE[Math.floor(Math.random() * PARADE.length)];
+    if (picks.indexOf(r) < 0) picks.push(r);
+  }
+  picks.forEach(function(em) {
+    var span = document.createElement('span');
+    span.className = 'spin-animal';
+    span.textContent = em;
+    container.appendChild(span);
+  });
+  analyzeInterval = setInterval(function() {
+    subIdx = (subIdx + 1) % subTexts.length;
+    document.getElementById('analyzing-sub').textContent = subTexts[subIdx];
+    var slots = container.querySelectorAll('.spin-animal');
+    var si = Math.floor(Math.random() * 3);
+    var newA;
+    do { newA = PARADE[Math.floor(Math.random() * PARADE.length)]; } while (newA === slots[si].textContent);
+    slots[si].textContent = newA;
+  }, 600);
+}
+
+function stopAnalyzing() {
+  if (analyzeInterval) { clearInterval(analyzeInterval); analyzeInterval = null; }
+}
+
+function showResult(type) {
+  stopAnalyzing();
+  var d = MBTI_ANIMALS[type];
+
+  var card = document.getElementById('result-main-card');
+  card.style.setProperty('--accent', d.color);
+  card.style.borderColor = d.color;
+  card.style.boxShadow = '0 8px 40px rgba(0,0,0,0.5), 0 0 32px rgba(' + d.colorRgb + ',0.3)';
+
+  var traitsHtml = d.traits.map(function(t, i) {
+    return '<div class="trait-pill" style="animation-delay:' + (0.3 + i * 0.1) + 's">' + t + '</div>';
+  }).join('');
+
+  card.innerHTML =
+    '<div style="text-align:center">' +
+      '<span class="result-animal-emoji">' + d.emoji + '</span>' +
+      '<div class="result-animal-name">' + d.animal + '</div>' +
+      '<div class="result-tagline">' + d.tagline + '</div>' +
+    '</div>' +
+    '<p class="result-description">' + d.description + '</p>' +
+    '<p class="traits-label">✦ あなたのとくちょう</p>' +
+    traitsHtml +
+    '<div class="mbti-box">' +
+      '<div class="mbti-box-label">🔬 MBTIで言うなら…</div>' +
+      '<div class="mbti-type-code">' + type + '</div>' +
+      '<div class="mbti-desc">' + d.mbtiDesc + '</div>' +
+    '</div>';
+
+  var compatCard = document.getElementById('result-compat-card');
+  compatCard.innerHTML =
+    '<p class="section-label">💕 相性のいいどうぶつ</p>' +
+    '<div class="compat-box">' +
+      '<span class="compat-emoji">' + d.compatible.emoji + '</span>' +
+      '<div>' +
+        '<div class="compat-label">相性タイプ</div>' +
+        '<div class="compat-name">' + d.compatible.animal + '</div>' +
+        '<div class="compat-desc">' + d.compatDesc + '</div>' +
+      '</div>' +
+    '</div>';
+
+  var luckyCard = document.getElementById('result-lucky-card');
+  luckyCard.innerHTML =
+    '<p class="section-label">🌟 あなたのラッキー</p>' +
+    '<div class="lucky-grid">' +
+      '<div class="lucky-item"><div class="lucky-icon">🎨</div><div class="lucky-label">ラッキーカラー</div><div class="lucky-value">' + d.lucky.color + '</div></div>' +
+      '<div class="lucky-item"><div class="lucky-icon">✨</div><div class="lucky-label">ラッキーアイテム</div><div class="lucky-value">' + d.lucky.item + '</div></div>' +
+    '</div>';
+
+  buildCompatCheckPanel(type);
+  showScreen('result');
+}
+
+function buildCompatCheckPanel(myType) {
+  var panel = document.getElementById('compat-check-panel');
+  var buttonsHtml = Object.keys(MBTI_ANIMALS).map(function(t) {
+    var a = MBTI_ANIMALS[t];
+    return '<button class="compat-animal-btn" data-type="' + t + '">' + a.emoji + '<small>' + a.animal + '</small></button>';
+  }).join('');
+
+  panel.innerHTML =
+    '<p class="compat-check-title">💕 友だちとの相性をチェック！</p>' +
+    '<p class="compat-check-sub">友だちに診断してもらったら、その子のどうぶつを選んでね</p>' +
+    '<div class="compat-animals-grid">' + buttonsHtml + '</div>' +
+    '<div id="compat-result-box" class="compat-result-box"></div>';
+
+  panel.querySelectorAll('.compat-animal-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      panel.querySelectorAll('.compat-animal-btn').forEach(function(b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      var friendType = btn.getAttribute('data-type');
+      var msg = getCompatMessage(myType, friendType);
+      var box = document.getElementById('compat-result-box');
+      box.textContent = msg;
+      box.classList.add('visible');
+    });
+  });
+}
+
+function shareToLine() {
+  var d = MBTI_ANIMALS[state.result];
+  var text = '🐾 どうぶつ性格診断やってみた！\n\n私は「' + d.animal + ' ' + d.emoji + '」だったよ！\n' + d.tagline + '\nMBTIで言うと' + state.result + 'タイプだって🌟\n\nあなたは何の動物？やってみてね👇\n' + location.href;
+  window.open('https://line.me/R/msg/text/?' + encodeURIComponent(text), '_blank');
+}
+
+function shareToClipboard() {
+  var d = MBTI_ANIMALS[state.result];
+  var text = '🐾 どうぶつ性格診断\n私は「' + d.animal + ' ' + d.emoji + '」（' + state.result + 'タイプ）！\n' + d.tagline + '\n' + location.href;
+  var btn = document.getElementById('btn-share-clipboard');
+  var orig = btn.textContent;
+  function onDone() {
+    btn.textContent = '✅ コピーしました！';
+    setTimeout(function() { btn.textContent = orig; }, 2000);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onDone).catch(fallback);
+  } else {
+    fallback();
+  }
+  function fallback() {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); onDone(); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function saveResult(type) {
+  try {
+    localStorage.setItem('mbtiAnimalResult', JSON.stringify({
+      type: type,
+      animal: MBTI_ANIMALS[type].animal,
+      emoji: MBTI_ANIMALS[type].emoji,
+      date: Date.now()
+    }));
+  } catch(e) {}
+}
+
+function loadLastResult() {
+  try { return JSON.parse(localStorage.getItem('mbtiAnimalResult')); } catch(e) { return null; }
+}
+
+function createStarsBg() {
+  var bg = document.getElementById('stars-bg');
+  if (!bg) return;
+  for (var i = 0; i < 60; i++) {
+    var s = document.createElement('div');
+    s.className = 'star-particle';
+    var size = Math.random() * 2.5 + 1;
+    s.style.cssText =
+      'width:' + size + 'px;' +
+      'height:' + size + 'px;' +
+      'left:' + (Math.random() * 100) + '%;' +
+      'top:' + (Math.random() * 100) + '%;' +
+      '--d:' + (Math.random() * 2 + 1.5).toFixed(1) + 's;' +
+      '--del:' + (Math.random() * 3).toFixed(1) + 's;';
+    bg.appendChild(s);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  createStarsBg();
+
+  document.getElementById('btn-start').addEventListener('click', function() {
+    state.step = 0;
+    state.scores = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+    state.result = null;
+    renderQuestion(0);
+    showScreen('quiz');
+  });
+
+  document.getElementById('btn-share-line').addEventListener('click', shareToLine);
+  document.getElementById('btn-share-clipboard').addEventListener('click', shareToClipboard);
+  document.getElementById('btn-retry').addEventListener('click', function() {
+    state.step = 0;
+    state.scores = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+    state.result = null;
+    showScreen('title');
+  });
+
+  var last = loadLastResult();
+  if (last) {
+    var hint = document.getElementById('last-result-hint');
+    hint.textContent = '前回の結果: ' + last.animal + ' ' + last.emoji + ' (' + last.type + ')';
+    hint.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
