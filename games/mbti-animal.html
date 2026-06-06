@@ -337,7 +337,7 @@ body {
         <span>🦁</span><span>🐬</span><span>🦛</span><span>🦈</span><span>🐧</span>
       </div>
       <div class="title-main">どうぶつ性格診断</div>
-      <p class="title-desc">12のしつもんに答えると<br>あなたにそっくりな<strong>どうぶつ</strong>が分かるよ！<br><small>MBTIをもとにした本格診断</small></p>
+      <p class="title-desc">28のしつもんに答えると<br>あなたにそっくりな<strong>どうぶつ</strong>が分かるよ！<br><small>MBTIをもとにした本格診断</small></p>
       <button id="btn-start" class="btn-primary">🐾 診断スタート！</button>
       <p id="last-result-hint" class="last-result-hint" style="display:none"></p>
     </div>
@@ -380,57 +380,168 @@ body {
 </div>
 
 <script>
-// ===== QUESTIONS =====
+// ===== QUESTIONS (28問: 各軸7問) =====
 var QUESTIONS = [
-  { dim:'EI', q:'休み時間、どうしたい？',
-    a:{text:'A  友だちとわいわい遊ぶ', side:'E'},
-    b:{text:'B  ひとりでのんびりする', side:'I'},
-    badge:'🤝 友だちとのすごし方' },
-  { dim:'SN', q:'遊びに行くなら？',
-    a:{text:'A  いつもの行きつけの場所', side:'S'},
-    b:{text:'B  まだ行ったことない新しい場所', side:'N'},
-    badge:'🗺️ あそびかた' },
-  { dim:'TF', q:'友だちが悩んでいたら？',
-    a:{text:'A  解決策をいっしょに考える', side:'T'},
-    b:{text:'B  まず話を聞いて気持ちに寄り添う', side:'F'},
-    badge:'💬 友だちへの接し方' },
-  { dim:'JP', q:'遠足の準備はいつする？',
-    a:{text:'A  前日までに全部準備して確認する', side:'J'},
-    b:{text:'B  当日の朝にまとめてやる', side:'P'},
-    badge:'📅 じゅんびのしかた' },
-  { dim:'EI', q:'週末のすごし方は？',
-    a:{text:'A  友だちを誘って外に出る', side:'E'},
-    b:{text:'B  家でゆっくり好きなことをする', side:'I'},
-    badge:'🌈 週末のすごし方' },
-  { dim:'SN', q:'工作の時間、どうする？',
-    a:{text:'A  説明通りにていねいに作る', side:'S'},
-    b:{text:'B  自分なりにアレンジして作る', side:'N'},
-    badge:'✂️ 工作のやり方' },
-  { dim:'TF', q:'ゲームで負けた友だちに言うなら？',
-    a:{text:'A  「次はこうすれば勝てるよ」', side:'T'},
-    b:{text:'B  「大丈夫！またいっしょにやろう」', side:'F'},
-    badge:'🎮 友だちへのひと言' },
-  { dim:'JP', q:'自由時間ができたら？',
-    a:{text:'A  何をするかあらかじめ決めておく', side:'J'},
-    b:{text:'B  そのとき気分で決める', side:'P'},
-    badge:'⏰ 自由時間のすごし方' },
-  { dim:'EI', q:'発表会の役、どっちがいい？',
-    a:{text:'A  みんなの前に立つ役', side:'E'},
-    b:{text:'B  うらで支える役', side:'I'},
-    badge:'🎤 発表会での役わり' },
-  { dim:'SN', q:'「もし空が飛べたら？」と聞かれたら？',
-    a:{text:'A  便利な使い方を考える', side:'S'},
-    b:{text:'B  どんな景色か想像する', side:'N'},
-    badge:'💭 想像力テスト' },
-  { dim:'TF', q:'班で意見が分かれたら？',
-    a:{text:'A  いちばんよい方法を論理的に説明する', side:'T'},
-    b:{text:'B  全員が納得できる答えを探す', side:'F'},
+  // EI-1
+  { dim:'EI', q:'がっこうの休み時間、どうしたい？',
+    a:{text:'みんなとわいわい外で遊ぶ', side:'E'},
+    b:{text:'ひとりでゆっくり本を読んだり考えごとをする', side:'I'},
+    badge:'🤝 休み時間のすごし方' },
+  // SN-1
+  { dim:'SN', q:'友だちと遊びに行くなら、どっちに行きたい？',
+    a:{text:'よく行くお気に入りの場所', side:'S'},
+    b:{text:'まだ行ったことない新しい場所を探険する', side:'N'},
+    badge:'🗺️ 遊ぶ場所えらび' },
+  // TF-1
+  { dim:'TF', q:'友だちが「テストで失敗してしまった」と落ち込んでいたら？',
+    a:{text:'「次はここをこうすれば上がるよ」と具体的に教える', side:'T'},
+    b:{text:'まずそばに座って「大丈夫？どうしたの？」と話を聞く', side:'F'},
+    badge:'💬 友だちの悩みを聞くとき' },
+  // JP-1
+  { dim:'JP', q:'明日が遠足！荷物のじゅんびはいつする？',
+    a:{text:'前の日のうちにリストを作って全部確認しておく', side:'J'},
+    b:{text:'当日の朝、気分で必要なものをつめる', side:'P'},
+    badge:'📅 遠足のじゅんび' },
+  // EI-2
+  { dim:'EI', q:'友だちの誕生日パーティーで3時間遊んだあと、どんな気持ちになる？',
+    a:{text:'もっと遊びたい！まだまだ元気いっぱい', side:'E'},
+    b:{text:'たのしかったけど、ひとりでゆっくりしたくなってきた', side:'I'},
+    badge:'🎉 パーティーのあとで' },
+  // SN-2
+  { dim:'SN', q:'「もし空を飛べるとしたら？」と聞かれたら、最初に思うことは？',
+    a:{text:'どんなときに便利か、どこへ行けるか考える', side:'S'},
+    b:{text:'雲の上からどんな景色が見えるか想像する', side:'N'},
+    badge:'💭 「もし〜だったら？」' },
+  // TF-2
+  { dim:'TF', q:'カードゲームで負けて悔しそうにしている友だちに声をかけるなら？',
+    a:{text:'「次はこうすれば勝てると思う！戦略を教えてあげる」', side:'T'},
+    b:{text:'「大丈夫！またいっしょにやろう、きっと楽しいから」', side:'F'},
+    badge:'🎮 ゲームで負けた友だちへ' },
+  // JP-2
+  { dim:'JP', q:'急に「明日は学校が休みだよ」と言われたら？',
+    a:{text:'何をするかすぐに計画を立てる', side:'J'},
+    b:{text:'明日の朝、気分で決めようと思う', side:'P'},
+    badge:'⏰ 自由時間のつかい方' },
+  // EI-3
+  { dim:'EI', q:'学芸会で役を選ぶなら、どっちがいい？',
+    a:{text:'セリフがたくさんあって、みんなの前に立つ主役', side:'E'},
+    b:{text:'裏方で照明や道具を担当してみんなを支える役', side:'I'},
+    badge:'🎤 学芸会の役えらび' },
+  // SN-3
+  { dim:'SN', q:'図工の時間に「好きに作っていいよ」と言われたら？',
+    a:{text:'手順書や見本を参考にしながら、ていねいに作る', side:'S'},
+    b:{text:'頭に浮かんだイメージを自分流にアレンジして作る', side:'N'},
+    badge:'✂️ 図工のつくり方' },
+  // TF-3
+  { dim:'TF', q:'班の遠足の行き先で意見がわかれたとき、あなたはどうする？',
+    a:{text:'「こっちのほうが交通費が安くて時間的にも合理的だよ」と説明する', side:'T'},
+    b:{text:'「みんなが一番楽しめるのはどっちかな？」と全員の気持ちを聞く', side:'F'},
     badge:'🏫 班の話し合い' },
-  { dim:'JP', q:'宿題はどうやってやる？',
-    a:{text:'A  毎日決まった時間にすぐやる', side:'J'},
-    b:{text:'B  ためてから一気にやる', side:'P'},
-    badge:'📚 宿題のやり方' }
+  // JP-3
+  { dim:'JP', q:'週末に宿題が5ページ出たら、どうやってやる？',
+    a:{text:'土曜日に全部終わらせて、日曜日は気持ちよく遊ぶ', side:'J'},
+    b:{text:'やる気が出たときにやって、残りは日曜日でもOK', side:'P'},
+    badge:'📚 宿題のやり方' },
+  // EI-4
+  { dim:'EI', q:'土曜日の昼、何もする予定がないとき、どっちを選ぶ？',
+    a:{text:'友だちに「あそぼ！」とメッセージを送る', side:'E'},
+    b:{text:'家で好きなこと（本・ゲーム・絵など）をひとりで楽しむ', side:'I'},
+    badge:'🏠 週末のすごし方' },
+  // SN-4
+  { dim:'SN', q:'図書館で本を1冊選ぶなら、どっちを読みたい？',
+    a:{text:'実際にあった出来事や事実を詳しく説明している本', side:'S'},
+    b:{text:'「もしこんな世界があったら？」という不思議な世界の話', side:'N'},
+    badge:'📖 本えらび' },
+  // TF-4
+  { dim:'TF', q:'グループのルールを新しく作るとき、一番大切にしたいのは？',
+    a:{text:'だれにとっても公平で、はっきりしたルールにすること', side:'T'},
+    b:{text:'グループのみんなが「いいね！」と思えるルールにすること', side:'F'},
+    badge:'⚖️ グループでのきめごと' },
+  // JP-4
+  { dim:'JP', q:'楽しみにしていた予定が急に変更になったとき、どう感じる？',
+    a:{text:'がっかりする。計画がくずれるのは気持ち悪い', side:'J'},
+    b:{text:'「じゃあ別のことしよう！」と新しい展開が楽しみになる', side:'P'},
+    badge:'🔄 計画変更のとき' },
+  // EI-5
+  { dim:'EI', q:'新しいクラスになった最初の日、あなたはどうしてる？',
+    a:{text:'いろんな人に自分から話しかけて、どんどん友だちを作る', side:'E'},
+    b:{text:'まず周りのことをよく観察して、気が合いそうな人を見つける', side:'I'},
+    badge:'🆕 新しいクラスで' },
+  // SN-5
+  { dim:'SN', q:'難しいクイズや算数の問題を解くとき、どちらのやり方が好き？',
+    a:{text:'まず知っている公式や方法を順番に試す', side:'S'},
+    b:{text:'ぱっと直感でひらめいた方法から試してみる', side:'N'},
+    badge:'🧩 問題を解くとき' },
+  // TF-5
+  { dim:'TF', q:'友だちが描いた絵を見て、正直な感想を言うとき、どっちに近い？',
+    a:{text:'「ここをこうするともっとよくなると思う」と正直に伝える', side:'T'},
+    b:{text:'まず「すごいね！」とほめてから、やさしくアドバイスする', side:'F'},
+    badge:'🗣️ 友だちへの感想' },
+  // JP-5
+  { dim:'JP', q:'おこづかいで何かを買うとき、どっちに近い？',
+    a:{text:'欲しいものを事前にリストアップして、計画通りに買う', side:'J'},
+    b:{text:'お店に行ってから「これいいな！」と思ったものを買う', side:'P'},
+    badge:'🛍️ 買い物のときの選び方' },
+  // EI-6
+  { dim:'EI', q:'友だちにれんらくするとき、どっちが好き？',
+    a:{text:'電話してすぐ話したい', side:'E'},
+    b:{text:'メッセージを送って返事を待つほうが楽', side:'I'},
+    badge:'📱 れんらくのしかた' },
+  // SN-6
+  { dim:'SN', q:'何か新しいものを作るとき、どっちから始める？',
+    a:{text:'まず設計図や手順を細かく決める', side:'S'},
+    b:{text:'イメージをふくらませながら作り始める', side:'N'},
+    badge:'🔨 ものづくりのスタート' },
+  // TF-6
+  { dim:'TF', q:'友だち同士がけんかしていたら、どうしたい？',
+    a:{text:'どちらが正しいかをはっきりさせてあげたい', side:'T'},
+    b:{text:'まず両方の話を聞いて、仲直りさせてあげたい', side:'F'},
+    badge:'🤲 けんかの仲裁' },
+  // JP-6
+  { dim:'JP', q:'カバンの中はいつもどんな状態？',
+    a:{text:'いつも必要なものだけ入れて整理されている', side:'J'},
+    b:{text:'たくさん入っているが必要なときは見つけられる', side:'P'},
+    badge:'🎒 カバンの中身' },
+  // EI-7
+  { dim:'EI', q:'グループ活動のとき、自分はどちらに近い？',
+    a:{text:'みんなをまとめたり積極的に発言する', side:'E'},
+    b:{text:'じっくり考えてから意見を言う', side:'I'},
+    badge:'👥 グループでの自分' },
+  // SN-7
+  { dim:'SN', q:'大人になったら何をしたいか聞かれたら？',
+    a:{text:'今できることを積み重ねてなりたい職業を目指す', side:'S'},
+    b:{text:'まだ想像もできないような新しいことをやってみたい', side:'N'},
+    badge:'🌟 将来の夢' },
+  // TF-7
+  { dim:'TF', q:'先生に「もっとがんばろう」と言われたとき、まず何を思う？',
+    a:{text:'「どこをどうすればよくなるか」考える', side:'T'},
+    b:{text:'「もっとがんばれたかな…」と気持ちが落ちる', side:'F'},
+    badge:'💪 先生からのひと言' },
+  // JP-7
+  { dim:'JP', q:'料理のレシピを見るとき、どっちに近い？',
+    a:{text:'手順通りに正確に作る', side:'J'},
+    b:{text:'レシピを参考に自分なりにアレンジする', side:'P'},
+    badge:'🍳 料理のやりかた' }
 ];
+
+// ===== SHUFFLER =====
+function buildShuffledQuestions() {
+  var pools = { EI: [], SN: [], TF: [], JP: [] };
+  QUESTIONS.forEach(function(q) { pools[q.dim].push(q); });
+  ['EI','SN','TF','JP'].forEach(function(dim) {
+    pools[dim].sort(function() { return Math.random() - 0.5; });
+  });
+  var result = [];
+  var rounds = pools.EI.length;
+  for (var r = 0; r < rounds; r++) {
+    var axes = ['EI','SN','TF','JP'];
+    axes.sort(function() { return Math.random() - 0.5; });
+    axes.forEach(function(dim) {
+      result.push({ data: pools[dim][r], flip: Math.random() < 0.5 });
+    });
+  }
+  return result;
+}
 
 // ===== MBTI ANIMALS DATA =====
 var MBTI_ANIMALS = {
@@ -630,7 +741,7 @@ function getCompatMessage(myType, friendType) {
 }
 
 // ===== GAME STATE =====
-var state = { step: 0, scores: {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0}, result: null };
+var state = { step: 0, scores: {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0}, result: null, questions: [] };
 var analyzeInterval = null;
 
 function showScreen(name) {
@@ -642,16 +753,19 @@ function showScreen(name) {
 }
 
 function renderQuestion(step) {
-  var q = QUESTIONS[step];
-  var pct = Math.round(step / QUESTIONS.length * 100);
+  var entry = state.questions[step];
+  var q = entry.data;
+  var total = state.questions.length;
+  var pct = Math.round(step / total * 100);
   document.getElementById('quiz-progress-bar').style.width = pct + '%';
-  document.getElementById('quiz-progress-label').textContent = 'しつもん ' + (step + 1) + ' / ' + QUESTIONS.length;
+  document.getElementById('quiz-progress-label').textContent = 'しつもん ' + (step + 1) + ' / ' + total;
   document.getElementById('dimension-badge').textContent = q.badge;
   document.getElementById('quiz-question').textContent = q.q;
 
   var container = document.getElementById('quiz-options');
   container.innerHTML = '';
-  [q.a, q.b].forEach(function(opt) {
+  var opts = entry.flip ? [q.b, q.a] : [q.a, q.b];
+  opts.forEach(function(opt) {
     var btn = document.createElement('button');
     btn.className = 'btn-option';
     btn.textContent = opt.text;
@@ -664,7 +778,7 @@ function handleAnswer(side) {
   document.querySelectorAll('.btn-option').forEach(function(b) { b.disabled = true; });
   state.scores[side]++;
   state.step++;
-  if (state.step < QUESTIONS.length) {
+  if (state.step < state.questions.length) {
     setTimeout(function() { renderQuestion(state.step); }, 150);
   } else {
     showScreen('analyzing');
@@ -865,6 +979,7 @@ document.addEventListener('DOMContentLoaded', function() {
     state.step = 0;
     state.scores = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
     state.result = null;
+    state.questions = buildShuffledQuestions();
     renderQuestion(0);
     showScreen('quiz');
   });
