@@ -13,6 +13,7 @@ window.GAME_PROJECT_GAMES = [
   { name: 'スライドパズル',      icon: '🧩', category: 'puzzle',  file: 'sliding-puzzle.html' },
   { name: '神経衰弱',           icon: '🧠', category: 'puzzle',  file: 'memory-game.html' },
   { name: 'クロスワード',        icon: '🔤', category: 'puzzle',  file: 'crossword.html' },
+  { name: 'ブロックパズル',      icon: '🧱', category: 'puzzle',  file: 'block-puzzle.html', isNew: true },
   { name: 'マルバツ',           icon: '⭕', category: 'battle',  file: 'tic-tac-toe.html' },
   { name: 'リバーシ',           icon: '⚫', category: 'battle',  file: 'reversi.html' },
   { name: '将棋',              icon: '♟️', category: 'battle',  file: 'shogi.html' },
