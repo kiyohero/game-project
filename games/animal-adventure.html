@@ -437,11 +437,19 @@
     }
 
     // ===== 絵文字の描画（中心座標で描く・当たり判定とズレないよう必ず中央そろえ） =====
-    function drawEmoji(emoji, cx, cy, size) {
+    function drawEmoji(emoji, cx, cy, size, flip) {
       ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(emoji, cx, cy);
+      if (flip) {
+        ctx.save();
+        ctx.translate(cx, cy);   // 中心を原点に
+        ctx.scale(-1, 1);        // 横だけ反転
+        ctx.fillText(emoji, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.fillText(emoji, cx, cy);
+      }
     }
 
     // ===== ステージ読み込み =====
@@ -1149,7 +1157,7 @@
         }
         if (drawIt) {
           const c = CHARACTERS[selectedChar];
-          drawEmoji(c.emoji, player.x + player.w / 2 - camera.x, player.y + player.h / 2, 34);
+          drawEmoji(c.emoji, player.x + player.w / 2 - camera.x, player.y + player.h / 2, 34, player.facing === 1);
         }
         ctx.globalAlpha = 1;
       }
