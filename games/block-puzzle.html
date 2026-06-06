@@ -170,7 +170,11 @@
     .mobile-controls {
       width: 100%;
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: auto auto;
+      grid-template-areas:
+        "left down right rotate"
+        ".    .    drop  drop";
       gap: 8px;
       max-width: 480px;
       padding-bottom: env(safe-area-inset-bottom);
@@ -297,8 +301,11 @@
         right: 12px;
         bottom: calc(8px + env(safe-area-inset-bottom));
         z-index: 130;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        grid-template-areas: "left down rotate drop right";
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-rows: auto auto;
+        grid-template-areas:
+          "left down right rotate"
+          ".    .    drop  drop";
         gap: 7px;
         max-width: 360px;
         margin: 0 auto;
@@ -310,15 +317,15 @@
       }
 
       .mobile-btn {
-        min-height: 48px;
+        min-height: 52px;
         font-size: 1rem;
       }
 
-      .mobile-btn[data-action="left"] { grid-area: left; }
+      .mobile-btn[data-action="left"]   { grid-area: left; }
+      .mobile-btn[data-action="down"]   { grid-area: down; }
+      .mobile-btn[data-action="right"]  { grid-area: right; }
       .mobile-btn[data-action="rotate"] { grid-area: rotate; }
-      .mobile-btn[data-action="right"] { grid-area: right; }
-      .mobile-btn[data-action="down"] { grid-area: down; }
-      .mobile-btn[data-action="drop"] { grid-area: drop; }
+      .mobile-btn[data-action="drop"]   { grid-area: drop; }
 
       .mobile-btn[data-action="rotate"] {
         background: #8b5fbf;
@@ -338,12 +345,12 @@
       }
 
       .mobile-btn {
-        min-height: 42px;
+        min-height: 46px;
         font-size: 0.95rem;
       }
 
       .mobile-btn.drop {
-        font-size: 0.82rem;
+        font-size: 0.88rem;
       }
     }
   </style>
@@ -390,9 +397,9 @@
 
     <section class="mobile-controls" aria-label="スマホ操作">
       <button class="mobile-btn" type="button" data-action="left" aria-label="左へ移動">←</button>
-      <button class="mobile-btn" type="button" data-action="rotate" aria-label="回転">回転</button>
+      <button class="mobile-btn" type="button" data-action="down" aria-label="下へ移動">↓</button>
       <button class="mobile-btn" type="button" data-action="right" aria-label="右へ移動">→</button>
-      <button class="mobile-btn" type="button" data-action="down" aria-label="下へ移動">下</button>
+      <button class="mobile-btn" type="button" data-action="rotate" aria-label="回転">回転</button>
       <button class="mobile-btn drop" type="button" data-action="drop" aria-label="一気に落とす">落とす</button>
     </section>
   </main>
