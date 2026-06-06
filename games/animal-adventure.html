@@ -38,7 +38,7 @@
     .controls .left-group { display: flex; gap: 12px; }
     .control-btn { width: 68px; height: 68px; background: #e8e0f0; border: 2px solid #9b8ab8; border-radius: 50%; color: #6b5b7a; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; transition: all 0.1s; }
     .control-btn:active { background: #9b8ab8; color: white; box-shadow: 0 0 20px rgba(155,138,184,0.5); }
-    .jump-btn { width: 96px; height: 96px; background: #7a6b8a; border-color: #7a6b8a; color: white; font-size: 1rem; font-weight: bold; }
+    .jump-btn { width: 96px; height: 96px; background: #7a6b8a; border-color: #7a6b8a; color: white; font-size: 1rem; font-weight: bold; touch-action: manipulation; }
     .jump-btn:active { background: #9b8ab8; box-shadow: 0 0 25px rgba(155,138,184,0.5); }
     .instructions { color: #6b5b7a; margin-top: 10px; font-size: 0.8rem; text-align: center; }
     /* ライフ（ハート） */
@@ -257,6 +257,10 @@
 
     // 入力フラグ（消費はupdate内）
     let leftHeld = false, rightHeld = false, jumpHeld = false;
+    const JUMP_BUFFER_FRAMES = 8;  // 着地前8フレームのジャンプ入力を記憶
+    const COYOTE_FRAMES = 5;       // 落下後5フレームまでジャンプ許可
+    let jumpBufferTimer = 0;
+    let coyoteTimer = 0;
 
     // ===== オーディオ関連（invader踏襲） =====
     let audioCtx = null;
@@ -667,11 +671,15 @@
     // ===== ジャンプ操作 =====
     function tryJump() {
       if (gameState !== 'playing' || !player) return;
-      if (player.onGround) {
+      if (player.onGround || coyoteTimer > 0) {
         const c = CHARACTERS[selectedChar];
         player.vy = -JUMP_VELOCITY * c.jump;
         player.onGround = false;
+        coyoteTimer = 0;
+        jumpBufferTimer = 0;
         playJumpSound();
+      } else {
+        jumpBufferTimer = JUMP_BUFFER_FRAMES;
       }
     }
 
@@ -1005,9 +1013,27 @@
       if (player.vy > MAX_FALL) player.vy = MAX_FALL;
 
       // 軸ごとに分けて衝突解決（先にX、次にY）
+      const wasOnGround = player.onGround;
       player.onGround = false; // 毎フレームfalseにして、着地で立てる
       moveX();
       moveY();
+
+      // コヨーテタイム管理（地面から離れた直後も数フレームジャンプ可）
+      if (wasOnGround && !player.onGround && player.vy >= 0) {
+        coyoteTimer = COYOTE_FRAMES;
+      } else if (player.onGround) {
+        coyoteTimer = 0;
+      } else if (coyoteTimer > 0) {
+        coyoteTimer--;
+      }
+
+      // ジャンプバッファ消化（着地した瞬間に先行入力のジャンプを実行）
+      if (player.onGround && jumpBufferTimer > 0) {
+        jumpBufferTimer = 0;
+        tryJump();
+      } else if (jumpBufferTimer > 0) {
+        jumpBufferTimer--;
+      }
 
       // タイマー系の減算
       if (player.invincibleTimer > 0) player.invincibleTimer--;
