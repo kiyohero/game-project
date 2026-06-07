@@ -41,6 +41,7 @@
     .control-btn:active { background: #9b8ab8; color: white; box-shadow: 0 0 20px rgba(155,138,184,0.5); }
     .jump-btn { width: 96px; height: 96px; background: #7a6b8a; border-color: #7a6b8a; color: white; font-size: 1rem; font-weight: bold; touch-action: manipulation; }
     .jump-btn:active { background: #9b8ab8; box-shadow: 0 0 25px rgba(155,138,184,0.5); }
+    .control-btn.fire-disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
     .instructions { color: #6b5b7a; margin-top: 10px; font-size: 0.8rem; text-align: center; }
     /* ライフ（ハート） */
     .lives { display: flex; gap: 4px; font-size: 1.3rem; }
@@ -201,11 +202,11 @@
         rows: [
           "                                                  ",
           "                                                  ",
-          "            o o                  o                 ",
-          "                        o        ?                 ",
-          "        ?         o o        o o          o   X   ",
-          "                                       o          ",
-          "   P        E          E          E          o    ",
+          "                                                  ",
+          "               o o                    o           ",
+          "       ?   o        o o   ?     o o        o  X   ",
+          "      BBB           BBB          BBB               ",
+          "   P        E          E          E         o     ",
           "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
         ],
       },
@@ -216,10 +217,10 @@
         rows: [
           "                                                              ",
           "                                                              ",
-          "       o o         o o      *           o o          o o      ",
-          "      BBB     F   BBB       BBB       F BBB         F         ",
-          "   o          o          o          o          o          o   ",
           "                                                              ",
+          "       o o         o o                    o o          o o   ",
+          "   o              F    *    o           F       o          o  ",
+          "      BBB     F   BBB       BBB       F BBB         F         ",
           "   P            E           E           E              E   X  ",
           "GGGGGGGGGG  GGGGGGGGGG  GGGGGGGGGG  GGGGGGGGGG  GGGGGGGGGGGGGG",
         ],
@@ -231,11 +232,11 @@
         rows: [
           "                                                                          ",
           "                                                                          ",
-          "        ooo         W     ooo              *                 ooo          ",
-          "        BBB  F            BBB         F    BBB   F        F  BBB          ",
-          "   o         o        o       o        o        o        o          o     ",
           "                                                                          ",
-          "  P          E        E                E        E        E            X   ",
+          "        o o                    o o                 o                 o o  ",
+          "        W  F o        o   ooo        *   o      o     F      o        o   ",
+          "        BBB  F         BBB         F    BBB   F        F  BBB          X  ",
+          "  P          E        E                E        E        E                ",
           "GGGGGGGG  GGGGGGG  GGGGGGG  GGGGGG  GGGGGGG  GGGGGGG  GGGGGGG  GGGGGGGGGGG",
         ],
       },
@@ -245,11 +246,11 @@
         rows: [
           "                                                                    ",
           "                                                                    ",
-          "          o o              o o              *              o        ",
-          "          BBB    F         BBB    F         BBB             ?      ",
-          "   o            o     o         o     o           o      o   X    ",
           "                                                                    ",
-          "   P     E      E      E        E      E      E                    ",
+          "          o o              o o              o               o o     ",
+          "   o         F o     o        F o   *    ?    F   o      o      X  ",
+          "          BBB    F         BBB    F         BBB             BBB     ",
+          "   P     E      E      E        E      E      E                     ",
           "GGGGGGG   GGGGG   GGGGGG   GGGGG   GGGGGG   GGGGGGGGGGGGGGGGGGGGGG",
         ],
       },
@@ -259,10 +260,10 @@
         rows: [
           "                                                                              ",
           "                                                                              ",
-          "        o o          o o          *           o o                             ",
-          "        BBB    F     BBB    F     BBB    F    BBB                             ",
-          "   o         o           o           o            o                  X       ",
           "                                                                              ",
+          "        o o          o o                        o o                          ",
+          "   o        F o    o      F o  *   F      o   F      o                X      ",
+          "        BBB    F     BBB    F     BBB    F    BBB                             ",
           "   P    E        E       E        E        E                                  ",
           "GGGGGG   GGGGG   GGGGG   GGGGG   GGGGG   GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
         ],
@@ -741,6 +742,7 @@
       leftHeld = false;
       rightHeld = false;
       jumpHeld = false;
+      updateFireButton();
     }
 
     // ===== タイルがソリッドか判定 =====
@@ -765,6 +767,7 @@
       updateScore();
       updateLives();
       gameState = 'playing';
+      updateFireButton();
     }
 
     // ===== ゲーム全体のリセット（さいしょから） =====
@@ -882,10 +885,18 @@
       }
     }
 
+    // 🔥ボタンのdisabled表示を更新
+    function updateFireButton() {
+      const btn = document.getElementById('attackBtn');
+      const canFire = player && player.firePower > 0 && gameState === 'playing';
+      btn.classList.toggle('fire-disabled', !canFire);
+    }
+
     // 🔥ファイヤーボールを発射
     function tryFire() {
       if (gameState !== 'playing' || !player || player.firePower <= 0) return;
       player.firePower--;
+      updateFireButton();
       fireballs.push({
         x: player.x + (player.facing === 1 ? player.w : 0),
         y: player.y + player.h / 2,
@@ -916,6 +927,7 @@
       if (lives <= 0) {
         // ゲームオーバー
         gameState = 'gameover';
+        updateFireButton();
         stopBGM();
         playGameOverSound();
         showResult('ゲームオーバー', true);
@@ -1115,6 +1127,7 @@
             showScorePopup(it.x, it.y - 10, 'むてき!');
           } else if (it.type === 'melon') {
             player.firePower = 10;
+            updateFireButton();
             playPowerUpSound();
             createParticles(it.x, it.y, '#ff4444', 14);
             showScorePopup(it.x, it.y - 10, '🔥パワー!');
