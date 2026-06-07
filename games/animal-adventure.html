@@ -36,6 +36,7 @@
     /* そうさボタン */
     .controls { display: flex; gap: 12px; margin-top: 14px; width: 100%; max-width: 480px; align-items: center; justify-content: space-between; }
     .controls .left-group { display: flex; gap: 12px; }
+    .controls .right-group { display: flex; gap: 12px; align-items: center; }
     .control-btn { width: 68px; height: 68px; background: #e8e0f0; border: 2px solid #9b8ab8; border-radius: 50%; color: #6b5b7a; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; transition: all 0.1s; }
     .control-btn:active { background: #9b8ab8; color: white; box-shadow: 0 0 20px rgba(155,138,184,0.5); }
     .jump-btn { width: 96px; height: 96px; background: #7a6b8a; border-color: #7a6b8a; color: white; font-size: 1rem; font-weight: bold; touch-action: manipulation; }
@@ -105,7 +106,10 @@
       <button class="control-btn" id="leftBtn">←</button>
       <button class="control-btn" id="rightBtn">→</button>
     </div>
-    <button class="control-btn jump-btn" id="jumpBtn">ジャンプ</button>
+    <div class="right-group">
+      <button class="control-btn" id="attackBtn">🔥</button>
+      <button class="control-btn jump-btn" id="jumpBtn">ジャンプ</button>
+    </div>
   </div>
   <p class="instructions">ボタン、またはキーボードの ←→ ＋ スペース／↑ で操作</p>
   <details class="how-to-play">
@@ -221,16 +225,184 @@
       {
         // 主な足場は すべて行7。穴(2タイル)を多めにして 連続ジャンプを楽しめるように。
         // 行3の BBB は コイン用の任意足場。敵は多めだが ふむ・とびこす・よけるで突破できる。
-        name: 'チャレンジロード', timeLimit: 240,
+        name: 'チャレンジロード', timeLimit: 240, theme: 'forest',
         rows: [
           "                                                                          ",
           "                                                                          ",
-          "        ooo               ooo              *                 ooo          ",
+          "        ooo         W     ooo              *                 ooo          ",
           "        BBB  F            BBB         F    BBB   F        F  BBB          ",
           "   o         o        o       o        o        o        o          o     ",
           "                                                                          ",
           "  P          E        E                E        E        E            X   ",
           "GGGGGGGG  GGGGGGG  GGGGGGG  GGGGGG  GGGGGGG  GGGGGGG  GGGGGGG  GGGGGGGGGGG",
+        ],
+      },
+      // インデックス3: ステージ4 - 森テーマ
+      {
+        name: 'やまみち', timeLimit: 230, theme: 'forest',
+        rows: [
+          "                                                                    ",
+          "                                                                    ",
+          "          o o              o o              *              o        ",
+          "          BBB    F         BBB    F         BBB             ?      ",
+          "   o            o     o         o     o           o      o   X    ",
+          "                                                                    ",
+          "   P     E      E      E        E      E      E                    ",
+          "GGGGGGG   GGGGG   GGGGGG   GGGGG   GGGGGG   GGGGGGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス4: ステージ5 - 森テーマ、ボスステージ（ボスはコードで自動配置）
+      {
+        name: 'ボスのもり', timeLimit: 250, theme: 'forest',
+        rows: [
+          "                                                                              ",
+          "                                                                              ",
+          "        o o          o o          *           o o                             ",
+          "        BBB    F     BBB    F     BBB    F    BBB                             ",
+          "   o         o           o           o            o                  X       ",
+          "                                                                              ",
+          "   P    E        E       E        E        E                                  ",
+          "GGGGGG   GGGGG   GGGGG   GGGGG   GGGGG   GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス5: ステージ6 - 水中テーマ、🍉
+      {
+        name: '🌊みずのせかい', timeLimit: 220, theme: 'underwater',
+        rows: [
+          "                                                        ",
+          "                                                        ",
+          "         W      o o         o o         o               ",
+          "         BBB    BBB    F    BBB    F     ?              ",
+          "   o          o          o          o        o  X      ",
+          "                                                        ",
+          "   P    E          E         E         E               ",
+          "GGGGGGGGGGGGGGG   GGGGGGG   GGGGGGG   GGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス6: ステージ7 - 水中テーマ
+      {
+        name: '🌊さんごのうみ', timeLimit: 240, theme: 'underwater',
+        rows: [
+          "                                                              ",
+          "                                                              ",
+          "    o o         o o           o          o o                  ",
+          "    BBB    F    BBB    F      ?    F      BBB                  ",
+          "        o           o          o              o           X   ",
+          "                                                              ",
+          "   P        E       E    E         E    E                     ",
+          "GGGGGGGGG   GGGGG  GGGGG   GGGGGG   GGGGGG   GGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス7: ステージ8 - 水中テーマ
+      {
+        name: '🌊ふかいうみ', timeLimit: 250, theme: 'underwater',
+        rows: [
+          "                                                                    ",
+          "                                                                    ",
+          "   o o      o o         o o         *         o o                  ",
+          "   BBB F    BBB   F     BBB   F     BBB   F   BBB                  ",
+          "       o        o           o          o           o         X     ",
+          "                                                                    ",
+          "   P    E   E       E   E      E   E      E   E                    ",
+          "GGGGG   GGGGG   GGGGGG   GGGGG   GGGGG   GGGGG   GGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス8: ステージ9 - 水中テーマ、🍉
+      {
+        name: '🌊うずしお', timeLimit: 260, theme: 'underwater',
+        rows: [
+          "                                                                         ",
+          "                                                                         ",
+          "       W        o o          o o           *           o o              ",
+          "       BBB F    BBB   F F    BBB   F F     BBB   F F   BBB              ",
+          "   o       o        o          o        o          o         o  X       ",
+          "                                                                         ",
+          "   P   E    E     E    E    E    E    E    E    E    E                   ",
+          "GGGGGG   GGGGGG   GGGGG   GGGGGG   GGGGGG   GGGGG   GGGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス9: ステージ10 - 水中テーマ、ボスステージ
+      {
+        name: '🌊うみのボス', timeLimit: 280, theme: 'underwater',
+        rows: [
+          "                                                                                  ",
+          "                                                                                  ",
+          "       o o         o o         *           o o                                    ",
+          "       BBB   F     BBB   F     BBB   F F   BBB                                    ",
+          "   o        o           o           o          o                       X          ",
+          "                                                                                  ",
+          "   P   E       E    E      E     E      E                                         ",
+          "GGGGG   GGGGGG   GGGGG   GGGGGG   GGGGG   GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス10: ステージ11 - 宇宙テーマ
+      {
+        name: '🚀うちゅうのいりぐち', timeLimit: 250, theme: 'space',
+        rows: [
+          "                                                              ",
+          "                                                              ",
+          "        o o          o o          *           o               ",
+          "        BBB    F     BBB    F     BBB    F    ?               ",
+          "   o         o           o          o        o          X    ",
+          "                                                              ",
+          "   P    E        E       E       E       E                    ",
+          "GGGGGG   GGGGG   GGGGGG   GGGGGG   GGGG   GGGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス11: ステージ12 - 宇宙テーマ、🍉
+      {
+        name: '🚀ほしのみち', timeLimit: 260, theme: 'space',
+        rows: [
+          "                                                                    ",
+          "                                                                    ",
+          "   o o    W      o o          o o          *          o o          ",
+          "   BBB F  BBB    BBB   F F    BBB   F F    BBB   F F  BBB          ",
+          "       o       o           o          o         o          o X    ",
+          "                                                                    ",
+          "   P   E   E      E   E      E   E      E   E      E               ",
+          "GGGGG   GGGGG   GGGGGG   GGGGG   GGGGGG   GGGGG   GGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス12: ステージ13 - 宇宙テーマ
+      {
+        name: '🚀えいせいのうえ', timeLimit: 270, theme: 'space',
+        rows: [
+          "                                                                         ",
+          "                                                                         ",
+          "      o     o o       *       o o       *      o o                      ",
+          "      ? F   BBB  F F  BBB F F BBB  F F  BBB F  BBB                      ",
+          "   o       o       o       o      o         o         o          X      ",
+          "                                                                         ",
+          "   P   E     E   E   E   E   E   E   E   E                              ",
+          "GGGG   GGGGG   GGGGG   GGGGG   GGGGG   GGGGGG   GGGGGGGGGGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス13: ステージ14 - 宇宙テーマ（最難）
+      {
+        name: '🚀ほしのまよいみち', timeLimit: 280, theme: 'space',
+        rows: [
+          "                                                                              ",
+          "                                                                              ",
+          "    o     o     *      o     o     *      o     o      *      o              ",
+          "    ? F   ? F   BBB F  ? F   ? F   BBB F  ? F   ? F    BBB F  ?             ",
+          "  o      o         o      o       o        o       o         o      o X     ",
+          "                                                                              ",
+          "  P  E   E   E   E   E   E   E   E   E   E   E   E   E   E   E               ",
+          "GGG   GGG   GGG   GGG   GGG   GGG   GGG   GGG   GGG   GGG   GGGGGGGGGGGGGGG",
+        ],
+      },
+      // インデックス14: ステージ15 - 宇宙テーマ、ボスステージ、🍉
+      {
+        name: '🚀うちゅうのボス', timeLimit: 300, theme: 'space',
+        rows: [
+          "                                                                                        ",
+          "                                                                                        ",
+          "       o o         o o          W          *           o o                              ",
+          "       BBB   F     BBB   F      BBB   F    BBB   F F   BBB                              ",
+          "   o        o           o           o           o          o                   X        ",
+          "                                                                                        ",
+          "   P   E       E    E      E     E      E    E      E                                   ",
+          "GGGGG   GGGGG   GGGGG   GGGGGG   GGGGG   GGGGG   GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
         ],
       },
     ];
@@ -257,6 +429,8 @@
 
     // 入力フラグ（消費はupdate内）
     let leftHeld = false, rightHeld = false, jumpHeld = false;
+    let fireballs = [];
+    let attackHeld = false;
     const JUMP_BUFFER_FRAMES = 8;  // 着地前8フレームのジャンプ入力を記憶
     const COYOTE_FRAMES = 5;       // 落下後5フレームまでジャンプ許可
     let jumpBufferTimer = 0;
@@ -356,6 +530,21 @@
       osc.stop(audioCtx.currentTime + 0.35);
     }
 
+    // 🔥ファイヤー発射音
+    function playFireSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    }
+
     // ゲームオーバー音（下降音階）
     function playGameOverSound() {
       if (!audioCtx) return;
@@ -441,14 +630,15 @@
     }
 
     // ===== 絵文字の描画（中心座標で描く・当たり判定とズレないよう必ず中央そろえ） =====
-    function drawEmoji(emoji, cx, cy, size, flip) {
+    function drawEmoji(emoji, cx, cy, size, flip, rotation) {
       ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      if (flip) {
+      if (flip || rotation) {
         ctx.save();
-        ctx.translate(cx, cy);   // 中心を原点に
-        ctx.scale(-1, 1);        // 横だけ反転
+        ctx.translate(cx, cy);
+        if (flip) ctx.scale(-1, 1);
+        if (rotation) ctx.rotate(rotation);
         ctx.fillText(emoji, 0, 0);
         ctx.restore();
       } else {
@@ -461,7 +651,7 @@
       const stage = STAGES[idx];
       const rows = stage.rows;
       stageRows = rows.length;
-      stageNameEl.textContent = stage.name;
+      stageNameEl.textContent = `${idx + 1}/${STAGES.length} ${stage.name}`;
 
       // 横はばは最長の行で決める
       let maxLen = 0;
@@ -496,6 +686,9 @@
             } else if (ch === 'F') {
               // 飛ぶ敵（こうもり）
               enemies.push({ type: 'flyer', x: wx + 2, y: wy + 4, w: 28, h: 26, baseY: wy + 4, t: Math.random() * Math.PI * 2, alive: true });
+            } else if (ch === 'W') {
+              // スイカ（🍉）ファイヤーパワーアイテム
+              items.push({ x: wx + TILE / 2, y: wy + TILE / 2, type: 'melon', taken: false, t: Math.random() * Math.PI * 2 });
             } else if (ch === 'X') {
               // ゴール旗（中心座標）
               goal = { x: wx + TILE / 2, y: wy + TILE / 2 };
@@ -518,12 +711,15 @@
         goal.floorY = floorTopY;
       }
 
-      // 最終ステージは ゴールの手前に ラスボス（大きな🐥）を配置する
-      if (idx === STAGES.length - 1 && goal) {
-        const bw = 44, bh = 44;
-        const bx = goal.x - TILE * 3; // ゴールの3マス手前
-        const by = (goal.floorY != null ? goal.floorY : (stageRows - 1) * TILE) - bh; // 地面の上に立たせる
-        enemies.push({ type: 'boss', x: bx, y: by, w: bw, h: bh, vx: -0.7, dir: -1, baseX: bx, hp: 3, maxHp: 3, hurt: 0, alive: true });
+      // ボスステージ（5ステージごと）にボスを配置。出るたびに大きくなる
+      const BOSS_STAGES = [4, 9, 14];
+      if (BOSS_STAGES.includes(idx) && goal) {
+        const bossNum = BOSS_STAGES.indexOf(idx); // 0, 1, 2
+        const bossSize = 44 + bossNum * 22;       // 44, 66, 88
+        const bossHp = 3 + bossNum * 2;           // 3, 5, 7
+        const bx = goal.x - TILE * 4;
+        const by = (goal.floorY != null ? goal.floorY : (stageRows - 1) * TILE) - bossSize;
+        enemies.push({ type: 'boss', x: bx, y: by, w: bossSize, h: bossSize, vx: -0.7, dir: -1, baseX: bx, hp: bossHp, maxHp: bossHp, hurt: 0, alive: true });
       }
     }
 
@@ -536,6 +732,7 @@
         invincibleTimer: 0, // スター無敵の残りフレーム
         hurtTimer: 0,       // ダメージ後の短い無敵
         extraHits: c.hits,  // カバ用の追加耐久
+        firePower: 0,       // 🔥ファイヤーパワー残弾数
       };
       camera.x = 0;
       // 入力フラグもリセット（ミス復活・ステージ遷移のときに押しっぱなしを持ち越して暴走しないように）
@@ -683,6 +880,20 @@
       }
     }
 
+    // 🔥ファイヤーボールを発射
+    function tryFire() {
+      if (gameState !== 'playing' || !player || player.firePower <= 0) return;
+      player.firePower--;
+      fireballs.push({
+        x: player.x + (player.facing === 1 ? player.w : 0),
+        y: player.y + player.h / 2,
+        vx: player.facing * 8,
+        alive: true,
+        t: 0,
+      });
+      playFireSound();
+    }
+
     // ジャンプボタンを はなしたとき（上昇を打ち切って低いジャンプに）
     function releaseJump() {
       jumpHeld = false;
@@ -825,6 +1036,53 @@
       }
     }
 
+    // ===== ファイヤーボールの更新 =====
+    function updateFireballs() {
+      fireballs = fireballs.filter(fb => {
+        if (!fb.alive) return false;
+        fb.x += fb.vx;
+        fb.t++;
+        // 壁に当たったら消える
+        const tx = Math.floor(fb.x / TILE);
+        const ty = Math.floor(fb.y / TILE);
+        if (isSolid(tx, ty)) return false;
+        // 画面外
+        if (fb.x < camera.x - 64 || fb.x > camera.x + W + 64) return false;
+        // 敵との当たり判定
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          if (fb.x > e.x && fb.x < e.x + e.w && fb.y > e.y && fb.y < e.y + e.h) {
+            if (e.type === 'boss') {
+              if (e.hurt === 0) {
+                e.hp--;
+                e.hurt = 25;
+                createParticles(e.x + e.w / 2, e.y + e.h / 2, '#ffb3c1', 12);
+                if (e.hp <= 0) {
+                  e.alive = false;
+                  score += 1000;
+                  updateScore();
+                  showScorePopup(e.x + e.w / 2, e.y, 'ボスげきは!');
+                  createParticles(e.x + e.w / 2, e.y + e.h / 2, '#ffd93d', 28);
+                  clearStage();
+                } else {
+                  showScorePopup(e.x + e.w / 2, e.y - 8, 'あと' + e.hp);
+                }
+              }
+            } else {
+              e.alive = false;
+              score += 100;
+              updateScore();
+              playStompSound();
+              createParticles(e.x + e.w / 2, e.y + e.h / 2, '#ff6644', 10);
+              showScorePopup(e.x + e.w / 2, e.y, 100);
+            }
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
     // ===== プレイヤーと敵・アイテム・ゴールの当たり判定 =====
     function checkCollisions() {
       const px = player.x, py = player.y, pw = player.w, ph = player.h;
@@ -853,6 +1111,11 @@
             playPowerUpSound();
             createParticles(it.x, it.y, '#fff176', 14);
             showScorePopup(it.x, it.y - 10, 'むてき!');
+          } else if (it.type === 'melon') {
+            player.firePower = 10;
+            playPowerUpSound();
+            createParticles(it.x, it.y, '#ff4444', 14);
+            showScorePopup(it.x, it.y - 10, '🔥パワー!');
           }
         }
       }
@@ -1008,9 +1271,12 @@
       if (player.vx > maxSpd) player.vx = maxSpd;
       if (player.vx < -maxSpd) player.vx = -maxSpd;
 
-      // じゅうりょく
-      player.vy += GRAVITY;
-      if (player.vy > MAX_FALL) player.vy = MAX_FALL;
+      // じゅうりょく（テーマによって変化）
+      const theme = (STAGES[stageIndex] && STAGES[stageIndex].theme) || 'forest';
+      const frameGravity = theme === 'underwater' ? 0.32 : theme === 'space' ? 0.18 : GRAVITY;
+      const frameMaxFall = theme === 'underwater' ? 6 : theme === 'space' ? 5 : MAX_FALL;
+      player.vy += frameGravity;
+      if (player.vy > frameMaxFall) player.vy = frameMaxFall;
 
       // 軸ごとに分けて衝突解決（先にX、次にY）
       const wasOnGround = player.onGround;
@@ -1046,6 +1312,7 @@
       }
 
       updateEnemies();
+      updateFireballs();
       checkCollisions();
       if (gameState !== 'playing') return; // 判定中にミス／クリアしたら以降スキップ
       updateParticles();
@@ -1060,24 +1327,54 @@
 
     // ===== 描画 =====
     function draw() {
-      // 空（縦グラデ 水色→淡い緑）
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, '#aee3ff');
-      grad.addColorStop(1, '#d9f5e3');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H);
+      // テーマ取得
+      const theme = (STAGES[stageIndex] && STAGES[stageIndex].theme) || 'forest';
 
-      // 雲（パララックス）
+      // 背景（テーマ別）
+      if (theme === 'underwater') {
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#0055aa');
+        grad.addColorStop(1, '#002244');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+      } else if (theme === 'space') {
+        ctx.fillStyle = '#000814';
+        ctx.fillRect(0, 0, W, H);
+      } else {
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#aee3ff');
+        grad.addColorStop(1, '#d9f5e3');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // 雲・泡・星（パララックス）
       for (const cl of clouds) {
         const sx = (cl.x - camera.x * 0.3) % (stageW + 400);
         let drawX = sx;
         if (drawX < -60) drawX += (stageW + 400);
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.beginPath();
-        ctx.ellipse(drawX, cl.y, cl.size, cl.size * 0.6, 0, 0, Math.PI * 2);
-        ctx.ellipse(drawX + cl.size * 0.8, cl.y + 4, cl.size * 0.7, cl.size * 0.5, 0, 0, Math.PI * 2);
-        ctx.ellipse(drawX - cl.size * 0.8, cl.y + 4, cl.size * 0.7, cl.size * 0.5, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (theme === 'space') {
+          // 星（小さな白い点）
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.beginPath();
+          ctx.arc(drawX, cl.y, Math.max(1, cl.size * 0.08), 0, Math.PI * 2);
+          ctx.fill();
+        } else if (theme === 'underwater') {
+          // 泡（白い円の輪郭）
+          ctx.strokeStyle = 'rgba(180,220,255,0.5)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(drawX, cl.y, cl.size * 0.25, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          // 雲（元の描画）
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.beginPath();
+          ctx.ellipse(drawX, cl.y, cl.size, cl.size * 0.6, 0, 0, Math.PI * 2);
+          ctx.ellipse(drawX + cl.size * 0.8, cl.y + 4, cl.size * 0.7, cl.size * 0.5, 0, 0, Math.PI * 2);
+          ctx.ellipse(drawX - cl.size * 0.8, cl.y + 4, cl.size * 0.7, cl.size * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       // タイル（矩形で軽量に描画。画面外はカリング）
@@ -1090,13 +1387,17 @@
           const sx = x * TILE - camera.x;
           const sy = y * TILE;
           if (t === 'G') {
-            // 地面: 土色＋上面に草色のライン
-            ctx.fillStyle = '#c98b4f';
-            ctx.fillRect(sx, sy, TILE, TILE);
-            ctx.fillStyle = '#7cc36b';
-            ctx.fillRect(sx, sy, TILE, 7);
-            ctx.fillStyle = 'rgba(0,0,0,0.06)';
-            ctx.fillRect(sx, sy + TILE - 4, TILE, 4);
+            if (theme === 'underwater') {
+              ctx.fillStyle = '#4477aa'; ctx.fillRect(sx, sy, TILE, TILE);
+              ctx.fillStyle = '#ff7aaa'; ctx.fillRect(sx, sy, TILE, 7);
+            } else if (theme === 'space') {
+              ctx.fillStyle = '#334455'; ctx.fillRect(sx, sy, TILE, TILE);
+              ctx.fillStyle = '#778899'; ctx.fillRect(sx, sy, TILE, 7);
+            } else {
+              ctx.fillStyle = '#c98b4f'; ctx.fillRect(sx, sy, TILE, TILE);
+              ctx.fillStyle = '#7cc36b'; ctx.fillRect(sx, sy, TILE, 7);
+              ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(sx, sy + TILE - 4, TILE, 4);
+            }
           } else if (t === 'B') {
             // ブロック: レンガ調
             ctx.fillStyle = '#d98b5f';
@@ -1136,14 +1437,18 @@
         drawEmoji('🪙', sx, c.y + bob, 22);
       }
 
-      // アイテム（スター）
+      // アイテム（スター・スイカ）
       for (const it of items) {
         if (it.taken) continue;
         const sx = it.x - camera.x;
         if (sx < -64 || sx > W + 64) continue;
         it.t += 0.1;
         const bob = Math.sin(it.t) * 3;
-        drawEmoji('⭐', sx, it.y + bob, 26);
+        if (it.type === 'star') {
+          drawEmoji('⭐', sx, it.y + bob, 26);
+        } else if (it.type === 'melon') {
+          drawEmoji('🍉', sx, it.y + bob, 26);
+        }
       }
 
       // 敵
@@ -1154,7 +1459,7 @@
         if (e.type === 'boss') {
           // ラスボス（大きな🐥）。ふまれた直後は点滅
           ctx.globalAlpha = (e.hurt > 0 && Math.floor(e.hurt / 3) % 2 === 0) ? 0.4 : 1;
-          drawEmoji('🐥', sx, e.y + e.h / 2, 48);
+          drawEmoji('🐥', sx, e.y + e.h / 2, e.h + 4);
           ctx.globalAlpha = 1;
           // HP（ハート）を頭の上に表示
           for (let i = 0; i < e.maxHp; i++) {
@@ -1162,8 +1467,22 @@
           }
           continue;
         }
-        const emoji = e.type === 'walker' ? '🐛' : '🦇';
+        const walkerEmoji = theme === 'underwater' ? '🐠' : theme === 'space' ? '👾' : '🐛';
+        const flyerEmoji  = theme === 'underwater' ? '🪼' : theme === 'space' ? '🛸' : '🦇';
+        const emoji = e.type === 'walker' ? walkerEmoji : flyerEmoji;
         drawEmoji(emoji, sx, e.y + e.h / 2, 30);
+      }
+
+      // ファイヤーボール（🔥を進行方向に回転して描画）
+      for (const fb of fireballs) {
+        if (!fb.alive) continue;
+        const sx = fb.x - camera.x;
+        if (sx < -32 || sx > W + 32) continue;
+        // 先端がプレイヤー側（発射元）を向くように回転
+        // 右向き: -Math.PI/2（反時計回り90°）で🔥の先端が左へ
+        // 左向き: +Math.PI/2（時計回り90°）で🔥の先端が右へ
+        const angle = fb.vx > 0 ? -Math.PI / 2 : Math.PI / 2;
+        drawEmoji('🔥', sx, fb.y, 20, false, angle);
       }
 
       // プレイヤー（スター無敵中は点滅）
@@ -1206,6 +1525,17 @@
 
       // パーティクル
       drawParticles();
+
+      // 🔥ファイヤーパワー残弾表示
+      if (player && player.firePower > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(4, 44, 94, 22);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`🔥 × ${player.firePower}`, 8, 55);
+      }
     }
 
     // ===== メインループ =====
@@ -1267,11 +1597,15 @@
         if (!jumpHeld) tryJump();
         jumpHeld = true;
       }
+      else if (e.key === 'z' || e.key === 'Z') {
+        if (!attackHeld) { tryFire(); attackHeld = true; }
+      }
     });
     document.addEventListener('keyup', e => {
       if (e.key === 'ArrowLeft') leftHeld = false;
       else if (e.key === 'ArrowRight') rightHeld = false;
       else if (e.key === ' ' || e.key === 'ArrowUp') releaseJump();
+      else if (e.key === 'z' || e.key === 'Z') { attackHeld = false; }
     });
 
     // ===== 入力: タッチ／マウス共通の長押しバインド =====
@@ -1294,6 +1628,9 @@
     bindHold(document.getElementById('jumpBtn'),
       () => { tryJump(); jumpHeld = true; },
       () => { releaseJump(); });
+    bindHold(document.getElementById('attackBtn'),
+      () => { if (!attackHeld) { tryFire(); attackHeld = true; initAudio(); } },
+      () => { attackHeld = false; });
 
     // ===== キャラせんたく =====
     const charCards = document.querySelectorAll('.char-card');
