@@ -1,17 +1,14 @@
 // GitHub DB設定 - Game Project
 //
-// 共有ランキング機能を有効にする場合は、window.GAME_PROJECT_GITHUB_CONFIG に実値を設定してください。
-// 実値はコミットしないこと。
-//
-// 専用リポジトリ(game-rankings)を作成し、Fine-grained PATを発行して設定します。
-// 設定方法: https://github.com/settings/personal-access-tokens
+// game-ranking リポジトリを GitHub Contents API 経由で読み書きするための設定。
+// token は GitHub Actions によりデプロイ時に注入される（git 履歴には残らない）。
+// GitHub Actions Secret: RANKINGS_TOKEN に Fine-grained PAT を設定してください。
 
 (function () {
-  // ★ここに実値を入れる（コミットしないこと）
   const runtimeConfig = window.GAME_PROJECT_GITHUB_CONFIG || {
-    token: 'YOUR_GITHUB_TOKEN',
-    owner: 'YOUR_GITHUB_USERNAME',
-    repo: 'YOUR_RANKINGS_REPO'
+    token: '__RANKINGS_TOKEN__',
+    owner: 'kiyohero',
+    repo: 'game-ranking'
   };
 
   function hasUsableConfig(config) {
