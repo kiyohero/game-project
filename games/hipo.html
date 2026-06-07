@@ -281,6 +281,31 @@
     .card-not-playable {
       opacity: 0.5;
     }
+    .card-selected {
+      transform: translateY(-14px);
+      box-shadow: 0 0 0 3px #fff, 0 0 0 5px #9b8ab8, 0 8px 18px rgba(0,0,0,0.4);
+      cursor: pointer;
+      z-index: 2;
+    }
+    .card-selected:hover { transform: translateY(-16px); }
+    .card-group-selectable {
+      cursor: pointer;
+      opacity: 1 !important;
+      box-shadow: 0 0 0 2px #9b8ab8, 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .play-group-btn {
+      background: linear-gradient(135deg, #27ae60, #1e8449);
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(39,174,96,0.5);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .play-group-btn:active { transform: scale(0.93); }
 
     /* プレイヤー手札エリア */
     #area-0 {
@@ -521,6 +546,7 @@
 
     <!-- ヒポボタン -->
     <button id="hipoBtnEl" class="hipo-btn" style="display:none">🦛 ヒポ！</button>
+    <button id="playGroupBtnEl" class="play-group-btn" style="display:none">▶ 出す (<span id="playGroupCount">1</span>枚)</button>
 
     <button id="restartBtn" class="btn">リスタート</button>
   </div>
@@ -574,6 +600,9 @@
     let gameOver = false;
     let isProcessing = false;
     let hipoDeclared = false; // プレイヤーがヒポを宣言したか
+    let selectedCardIndices = []; // 選択中のカードインデックス
+    let groupingValue = null;     // 選択中の数字
+    let pendingDraws = 0;         // +2チェーンで累積されたドロー枚数
 
     // ============================================================
     // UI要素参照
@@ -587,6 +616,8 @@
     const hipoBtnEl      = document.getElementById('hipoBtnEl');
     const drawPileEl     = document.getElementById('drawPileEl');
     const colorPickerOvl = document.getElementById('colorPickerOverlay');
+    const playGroupBtnEl = document.getElementById('playGroupBtnEl');
+    const playGroupCount = document.getElementById('playGroupCount');
 
     // ============================================================
     // デッキ生成
@@ -637,9 +668,13 @@
       gameOver = false;
       isProcessing = false;
       hipoDeclared = false;
+      selectedCardIndices = [];
+      groupingValue = null;
+      pendingDraws = 0;
 
       overlay.classList.remove('show');
       hipoBtnEl.style.display = 'none';
+      playGroupBtnEl.style.display = 'none';
 
       // 7枚ずつ配る
       for (let i = 0; i < 7 * NUM_PLAYERS; i++) {
@@ -679,15 +714,54 @@
     }
 
     function scheduleTurn() {
+      clearSelectionMode();
       if (gameOver) return;
       renderAll();
       updateTurnDisplay();
       updateColorDisplay();
 
+      // ドロー2スタック処理
+      if (pendingDraws > 0) {
+        if (currentTurn === 0) {
+          const hasDraw2 = hands[0].some(c => c.value === 'draw2');
+          if (hasDraw2) {
+            setStatus(`+2スタック！${pendingDraws}枚になってる。+2で返すか、山札から${pendingDraws}枚引くかえらんで！`);
+            renderAll();
+            return; // プレイヤー操作待ち
+          } else {
+            setStatus(`+2スタック！${pendingDraws}枚引く...`);
+            isProcessing = true;
+            const n = pendingDraws; pendingDraws = 0;
+            drawCards(0, n, () => {
+              currentTurn = getNextPlayer(0);
+              isProcessing = false;
+              scheduleTurn();
+            });
+            return;
+          }
+        } else {
+          const hasDraw2 = hands[currentTurn].some(c => c.value === 'draw2');
+          if (!hasDraw2) {
+            const p = PLAYERS[currentTurn];
+            setStatus(`${p.emoji} ${p.name}が${pendingDraws}まいひいた！`);
+            isProcessing = true;
+            const n = pendingDraws; const who = currentTurn; pendingDraws = 0;
+            drawCards(who, n, () => {
+              currentTurn = getNextPlayer(who);
+              isProcessing = false;
+              scheduleTurn();
+            });
+            return;
+          }
+          // draw2を持っているCPUはそのまま下のCPUターン処理へ
+        }
+      }
+
       if (currentTurn === 0) {
         // プレイヤーのターン
         // ヒポ宣言忘れペナルティチェック
         if (hands[0].length === 1 && !hipoDeclared) {
+          clearSelectionMode();
           setStatus('ヒポをわすれた！2まいひく...');
           isProcessing = true;
           drawCards(0, 2, () => {
@@ -715,8 +789,39 @@
     // ============================================================
     function canPlay(card) {
       if (card.color === 'wild') return true;
+      if (pendingDraws > 0) {
+        // スタック中は draw2 のみ返せる（色に関わらず）
+        return card.value === 'draw2';
+      }
       const top = discardPile[discardPile.length - 1];
       return card.color === currentColor || card.value === top.value;
+    }
+
+    function isNumberCard(card) {
+      return typeof card.value === 'number';
+    }
+
+    function enterSelectionMode(firstCardIdx) {
+      drawAgainMode = false;
+      selectedCardIndices = [firstCardIdx];
+      groupingValue = hands[0][firstCardIdx].value;
+      updatePlayGroupButton();
+      renderHand(0);
+    }
+
+    function updatePlayGroupButton() {
+      if (selectedCardIndices.length === 0) {
+        playGroupBtnEl.style.display = 'none';
+      } else {
+        playGroupBtnEl.style.display = '';
+        playGroupCount.textContent = selectedCardIndices.length;
+      }
+    }
+
+    function clearSelectionMode() {
+      selectedCardIndices = [];
+      groupingValue = null;
+      updatePlayGroupButton();
     }
 
     // ============================================================
@@ -760,15 +865,11 @@
           break;
 
         case 'draw2': {
-          const p2 = PLAYERS[next];
-          if (who >= 0) setStatus(`+2 ${p2.emoji} ${p2.name}が2まいひく！`);
-          currentTurn = next; // 先にturnを進める
-          drawCards(next, 2, () => {
-            // drawした後、スキップ（次のターンはdraw2の次の次）
-            currentTurn = getNextPlayer(next);
-            cb();
-          });
-          return; // drawCardsがcbを呼ぶのでここではcbを呼ばない
+          pendingDraws += 2;
+          if (who >= 0) setStatus(`+2 スタック！ ${pendingDraws}枚になった！`);
+          currentTurn = next;
+          cb(); // scheduleTurnで累積ドロー処理
+          return;
         }
 
         case 'wild':
@@ -912,24 +1013,40 @@
       // プレイするカードを選ぶ（colored > wild を優先、特殊カードを優先）
       const colored = playable.filter(({ c }) => c.color !== 'wild');
       const pool = colored.length > 0 ? colored : playable;
-      // 特殊カードを優先
       const specials = pool.filter(({ c }) => typeof c.value === 'string');
-      const chosen = specials.length > 0
-        ? specials[Math.floor(Math.random() * specials.length)]
-        : pool[Math.floor(Math.random() * pool.length)];
 
       const p = PLAYERS[who];
-      const label = cardLabel(chosen.c);
-      setStatus(`${p.emoji} ${p.name}が「${label}」を出した！`);
-
       isProcessing = true;
-      // CPUがプレイするカードを視覚的にアニメーション（捨て札更新で表現）
-      playCard(who, chosen.i, () => {
-        checkWin(() => {
-          isProcessing = false;
-          scheduleTurn();
+
+      if (specials.length > 0) {
+        // 特殊カード1枚プレイ（従来通り）
+        const chosen = specials[Math.floor(Math.random() * specials.length)];
+        setStatus(`${p.emoji} ${p.name}が「${cardLabel(chosen.c)}」を出した！`);
+        playCard(who, chosen.i, () => {
+          checkWin(() => { isProcessing = false; scheduleTurn(); });
         });
-      });
+      } else {
+        // 数字カード: 同じ数字を全部まとめて出す
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        const groupIndices = hands[who]
+          .map((c, i) => ({ c, i }))
+          .filter(({ c }) => isNumberCard(c) && c.value === chosen.c.value)
+          .map(({ i }) => i);
+
+        const sortedDesc = [...groupIndices].sort((a, b) => b - a);
+        const sortedAsc  = [...groupIndices].sort((a, b) => a - b);
+        const cardsToPlay = sortedAsc.map(i => hands[who][i]);
+
+        for (const idx of sortedDesc) hands[who].splice(idx, 1);
+        for (const c of cardsToPlay) { discardPile.push(c); currentColor = c.color; }
+
+        const labels = cardsToPlay.map(c => cardLabel(c)).join('、');
+        const countMsg = cardsToPlay.length > 1 ? `${cardsToPlay.length}枚まとめて` : '';
+        setStatus(`${p.emoji} ${p.name}が「${labels}」を${countMsg}出した！`);
+        currentTurn = getNextPlayer(who);
+        renderAll();
+        checkWin(() => { isProcessing = false; scheduleTurn(); });
+      }
     }
 
     // canPlayのエイリアス（引いたカードチェック用）
@@ -1006,42 +1123,101 @@
     function playerPlayCard(cardIdx) {
       if (isProcessing || gameOver || currentTurn !== 0) return;
       const card = hands[0][cardIdx];
+
+      // 選択モード中
+      if (groupingValue !== null) {
+        if (isNumberCard(card) && card.value === groupingValue) {
+          if (selectedCardIndices.includes(cardIdx)) {
+            // 選択解除
+            if (selectedCardIndices.length > 1) {
+              selectedCardIndices = selectedCardIndices.filter(i => i !== cardIdx);
+              updatePlayGroupButton();
+              renderHand(0);
+            } else {
+              clearSelectionMode();
+              renderHand(0);
+            }
+          } else {
+            // 同じ数字を追加選択
+            selectedCardIndices.push(cardIdx);
+            updatePlayGroupButton();
+            renderHand(0);
+          }
+        }
+        return; // 違うカードは無視
+      }
+
+      // 通常モード
       if (!canPlay(card)) return;
+
+      // アクション・ワイルドは即プレイ（従来通り）
+      if (!isNumberCard(card)) {
+        isProcessing = true;
+        hipoBtnEl.style.display = 'none';
+        const handEl = document.getElementById('hand-0');
+        const cardEls = handEl.querySelectorAll('.card');
+        if (cardEls[cardIdx]) cardEls[cardIdx].classList.add('card-playing');
+        setTimeout(() => {
+          setStatus(`🦛 あなたが「${cardLabel(card)}」を出した！`);
+          playCard(0, cardIdx, () => {
+            if (hands[0].length === 1) { hipoBtnEl.style.display = ''; hipoDeclared = false; }
+            else { hipoBtnEl.style.display = 'none'; }
+            checkWin(() => { isProcessing = false; scheduleTurn(); });
+          });
+        }, 320);
+        return;
+      }
+
+      // 数字カード → 選択モードへ
+      enterSelectionMode(cardIdx);
+    }
+
+    // まとめて出すボタン押下
+    function commitGroupPlay() {
+      if (selectedCardIndices.length === 0 || isProcessing || gameOver || currentTurn !== 0) return;
 
       isProcessing = true;
       hipoBtnEl.style.display = 'none';
+      playGroupBtnEl.style.display = 'none';
 
-      // アニメーション用にDOM要素を取得
-      const handEl = document.getElementById('hand-0');
-      const cardEls = handEl.querySelectorAll('.card');
-      if (cardEls[cardIdx]) {
-        cardEls[cardIdx].classList.add('card-playing');
-      }
+      // 降順ソートで安全に削除（後ろから削除してインデックスずれを防ぐ）
+      const sortedDesc = [...selectedCardIndices].sort((a, b) => b - a);
+      const sortedAsc  = [...selectedCardIndices].sort((a, b) => a - b);
+      const cardsToPlay = sortedAsc.map(i => hands[0][i]);
 
-      setTimeout(() => {
-        const label = cardLabel(card);
-        setStatus(`🦛 あなたが「${label}」を出した！`);
+      for (const idx of sortedDesc) hands[0].splice(idx, 1);
+      for (const c of cardsToPlay) { discardPile.push(c); currentColor = c.color; }
 
-        playCard(0, cardIdx, () => {
-          // ヒポボタン表示チェック
-          if (hands[0].length === 1) {
-            hipoBtnEl.style.display = '';
-            hipoDeclared = false;
-          } else {
-            hipoBtnEl.style.display = 'none';
-          }
+      const labels = cardsToPlay.map(c => cardLabel(c)).join('、');
+      const countMsg = cardsToPlay.length > 1 ? `${cardsToPlay.length}枚まとめて` : '';
+      setStatus(`🦛 あなたが「${labels}」を${countMsg}出した！`);
 
-          checkWin(() => {
-            isProcessing = false;
-            scheduleTurn();
-          });
-        });
-      }, 320);
+      currentTurn = getNextPlayer(0);
+      clearSelectionMode();
+
+      if (hands[0].length === 1) { hipoBtnEl.style.display = ''; hipoDeclared = false; }
+
+      renderAll();
+      checkWin(() => { isProcessing = false; scheduleTurn(); });
     }
 
     // プレイヤー操作：山札をクリック（1枚引く）
     function playerDraw() {
       if (isProcessing || gameOver || currentTurn !== 0) return;
+      clearSelectionMode();
+
+      // ドロー2スタック中は累積枚数をドロー
+      if (pendingDraws > 0) {
+        isProcessing = true;
+        const n = pendingDraws; pendingDraws = 0;
+        setStatus(`🦛 ${n}まいひいた！`);
+        drawCards(0, n, () => {
+          currentTurn = getNextPlayer(0);
+          isProcessing = false;
+          scheduleTurn();
+        });
+        return;
+      }
 
       isProcessing = true;
       setStatus('🦛 1まいひいた');
@@ -1072,6 +1248,7 @@
 
     function playerPassTurn() {
       if (!drawAgainMode || currentTurn !== 0) return;
+      clearSelectionMode();
       drawAgainMode = false;
       currentTurn = getNextPlayer(0);
       isProcessing = false;
@@ -1111,24 +1288,33 @@
 
         if (playerIdx === 0) {
           // プレイヤーは表向き
-          const playable = !isProcessing && !gameOver && currentTurn === 0 && canPlay(card);
+          const inSelMode = groupingValue !== null;
+          const isSelected = inSelMode && selectedCardIndices.includes(idx);
+          const isSameNumber = inSelMode && isNumberCard(card) && card.value === groupingValue;
+          const normalPlayable = !inSelMode && !isProcessing && !gameOver
+                               && currentTurn === 0 && canPlay(card);
           const isLastDrawn = drawAgainMode && idx === hands[0].length - 1;
-          const baseClass = cardColorClass(card);
-          el.className = `card ${baseClass}` +
-            (playable || isLastDrawn ? ' card-playable' : '') +
-            (!playable && !isLastDrawn && currentTurn === 0 && !isProcessing ? ' card-not-playable' : '');
+
+          let classes = `card ${cardColorClass(card)}`;
+          let clickable = false;
+
+          if (inSelMode) {
+            if (isSelected) { classes += ' card-selected'; clickable = true; }
+            else if (isSameNumber) { classes += ' card-group-selectable'; clickable = true; }
+            else { classes += ' card-not-playable'; }
+          } else {
+            if (normalPlayable || isLastDrawn) { classes += ' card-playable'; clickable = true; }
+            else if (currentTurn === 0 && !isProcessing) { classes += ' card-not-playable'; }
+          }
+
+          el.className = classes;
           el.innerHTML = buildCardHTML(card);
 
-          if (playable || isLastDrawn) {
+          if (clickable) {
             const i = idx;
             el.addEventListener('click', () => {
-              if (drawAgainMode) {
-                // 引いたカードをプレイ
-                drawAgainMode = false;
-                playerPlayCard(i);
-              } else {
-                playerPlayCard(i);
-              }
+              if (drawAgainMode && !inSelMode) drawAgainMode = false;
+              playerPlayCard(i);
             });
           }
         } else {
@@ -1219,6 +1405,7 @@
     drawPileEl.addEventListener('click', () => {
       if (gameOver || isProcessing) return;
       if (currentTurn !== 0) return;
+      if (groupingValue !== null) return; // 選択モード中は山札クリック無効
 
       if (drawAgainMode) {
         // パス（ターンを渡す）
@@ -1227,6 +1414,8 @@
         playerDraw();
       }
     });
+
+    playGroupBtnEl.addEventListener('click', commitGroupPlay);
 
     // 山札のdisabled状態更新（ターンに応じて）
     function updateDrawPile() {
