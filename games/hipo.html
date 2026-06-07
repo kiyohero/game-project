@@ -321,11 +321,12 @@
       background: linear-gradient(135deg, #e74c3c, #c0392b);
       color: white;
       border: none;
-      padding: 12px 28px;
+      padding: 16px 40px;
       border-radius: 30px;
-      font-size: 1.1rem;
+      font-size: 1.25rem;
       font-weight: bold;
       cursor: pointer;
+      touch-action: manipulation;
       box-shadow: 0 3px 10px rgba(231,76,60,0.5);
       animation: hipoPulse 0.9s ease infinite;
     }
@@ -335,8 +336,8 @@
 
     /* アニメーション */
     @keyframes hipoPulse {
-      0%, 100% { transform: scale(1); }
-      50%       { transform: scale(1.08); }
+      0%, 100% { box-shadow: 0 3px 10px rgba(231,76,60,0.5); }
+      50%       { box-shadow: 0 0 24px 8px rgba(231,76,60,0.85); }
     }
     @keyframes cardPlay {
       0%   { transform: scale(1); }
@@ -1428,7 +1429,7 @@
     // ヒポボタン
     // ============================================================
     hipoBtnEl.addEventListener('click', () => {
-      if (currentTurn !== 0) return;
+      if (gameOver || hands[0].length !== 1) return;
       hipoDeclared = true;
       hipoBtnEl.style.display = 'none';
       setStatus('🦛 ヒポ！');
