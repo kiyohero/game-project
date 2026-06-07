@@ -6,6 +6,7 @@
   <title>パーソナルカラー診断</title>
   <link rel="stylesheet" href="common.css">
   <script src="common.js" defer></script>
+  <script src="share-result.js" defer></script>
   <style>
     body {
       padding: 60px 16px 40px;
@@ -1059,6 +1060,15 @@
         '</p>';
 
       document.getElementById('btn-result-retry').addEventListener('click', resetApp);
+
+      // URLシェアボタンを追加
+      if (window.ShareResult) {
+        var actionsDiv = card.querySelector('.result-actions');
+        if (actionsDiv && !actionsDiv.querySelector('.share-result-btn')) {
+          ShareResult.renderShareButton(actionsDiv, {season: season});
+        }
+      }
+
       showScreen('result');
     }
 
@@ -1148,6 +1158,12 @@
     document.getElementById('btn-photo-back').addEventListener('click', function () {
       showScreen('camera');
     });
+
+    // URLから結果を復元
+    var shared = window.ShareResult && ShareResult.getFromUrl('r');
+    if (shared && shared.season) {
+      showResult(shared.season);
+    }
 
   })();
   </script>
