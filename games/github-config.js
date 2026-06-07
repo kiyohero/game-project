@@ -1,17 +1,20 @@
 // GitHub DB設定 - Game Project
 //
-// 共有ランキング機能を有効にする場合は、window.GAME_PROJECT_GITHUB_CONFIG に実値を設定してください。
-// 実値はコミットしないこと。
+// 共有ランキング機能を有効にする場合は、token に Fine-grained PAT を設定してください。
+// token の実値はコミットしないこと。
 //
-// 専用リポジトリ(game-rankings)を作成し、Fine-grained PATを発行して設定します。
-// 設定方法: https://github.com/settings/personal-access-tokens
+// PAT の発行手順:
+//   1. https://github.com/settings/personal-access-tokens/new を開く
+//   2. Repository access → Only select repositories → kiyohero/game-rankings を選択
+//   3. Permissions → Contents → Read and write
+//   4. 発行したトークンを下の token に設定する
 
 (function () {
-  // ★ここに実値を入れる（コミットしないこと）
+  // ★token にのみ実値を入れる（コミットしないこと）
   const runtimeConfig = window.GAME_PROJECT_GITHUB_CONFIG || {
     token: 'YOUR_GITHUB_TOKEN',
-    owner: 'YOUR_GITHUB_USERNAME',
-    repo: 'YOUR_RANKINGS_REPO'
+    owner: 'kiyohero',
+    repo: 'game-rankings'
   };
 
   function hasUsableConfig(config) {
