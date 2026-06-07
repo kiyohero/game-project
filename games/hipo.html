@@ -1226,12 +1226,10 @@
         const newCard = hands[0][hands[0].length - 1];
         if (canPlay(newCard)) {
           // 引いたカードがプレイ可能 → プレイヤーに選択させる（そのままターン継続）
-          renderAll();
-          isProcessing = false;
-          setStatus('🦛 ひいたカードが出せる！タップして出すか、もう一度山札をタップでスキップ');
-          // 引いたカードをハイライト（最後のカード）
-          // drawAgainModeフラグを立てる
           drawAgainMode = true;
+          isProcessing = false;
+          renderAll();
+          setStatus('🦛 ひいたカードが出せる！タップして出すか、もう一度山札をタップでスキップ');
         } else {
           // プレイできない → ターン終了
           renderAll();
