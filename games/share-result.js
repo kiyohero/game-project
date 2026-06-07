@@ -3,15 +3,15 @@
 
 (function () {
   const ShareResult = {
-    // 結果データをURLセーフなBase64文字列にエンコード
+    // 結果データをURLセーフなBase64文字列にエンコード（日本語対応）
     encode(data) {
-      return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      return btoa(encodeURIComponent(JSON.stringify(data)).replace(/%([0-9A-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))));
     },
 
     // URLパラメータの文字列をデコードして元のオブジェクトに戻す
     decode(encoded) {
       try {
-        return JSON.parse(decodeURIComponent(escape(atob(encoded))));
+        return JSON.parse(decodeURIComponent(Array.from(atob(encoded), c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')));
       } catch (e) {
         return null;
       }
