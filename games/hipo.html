@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>HIPO</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    body {
+      padding: 15px 10px;
+    }
+    h1 {
+      font-size: 2rem;
+      color: #6b5b7a;
+      margin-bottom: 10px;
+    }
+    .game-container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .how-to-play {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* プレイヤー情報 */
+    .players-info {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+      justify-content: center;
+    }
+    .player-info {
+      background: #e8e0f0;
+      border-radius: 8px;
+      padding: 6px 8px;
+      text-align: center;
+      flex: 1;
+      min-width: 0;
+      transition: background 0.3s;
+    }
+    .player-info.active-turn {
+      background: #c5b8d8;
+      box-shadow: 0 0 0 2px #7a6b8a;
+    }
+    .player-name {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #6b5b7a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-count {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #7a6b8a;
+    }
+    .player-count span {
+      font-size: 0.65rem;
+    }
+
+    /* ステータス行 */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .turn-display {
+      background: #9b8ab8;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    .color-display {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: white;
+      white-space: nowrap;
+      transition: background 0.3s;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .color-display.red    { background: #e74c3c; }
+    .color-display.blue   { background: #3498db; }
+    .color-display.green  { background: #27ae60; }
+    .color-display.yellow { background: #d4890b; color: #2c3e50; text-shadow: none; }
+    .color-display.wild   { background: linear-gradient(90deg,#e74c3c,#3498db,#27ae60,#d4890b); }
+    .status-message {
+      width: 100%;
+      color: #6b5b7a;
+      font-size: 0.85rem;
+      min-height: 22px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    /* CPU手札エリア */
+    .cpu-hands {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .hand-area {
+      width: 100%;
+      background: #e8e0f0;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .hand-label {
+      font-size: 0.72rem;
+      font-weight: bold;
+      color: #6b5b7a;
+      margin-bottom: 5px;
+    }
+    .hand-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      min-height: 50px;
+      align-items: center;
+    }
+
+    /* プレイエリア（山札・捨て札） */
+    .play-area {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 0;
+    }
+    .pile-label {
+      font-size: 0.72rem;
+      color: #6b5b7a;
+      text-align: center;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    .pile-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 山札（奥行き感） */
+    .draw-pile-stack {
+      position: relative;
+      width: 58px;
+      height: 88px;
+    }
+    .draw-pile-stack::before,
+    .draw-pile-stack::after {
+      content: '';
+      position: absolute;
+      width: 58px;
+      height: 88px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, #1a7a5e, #0e5f47);
+      border: 2px solid #0a4535;
+    }
+    .draw-pile-stack::before {
+      top: -4px;
+      left: -4px;
+      z-index: 1;
+    }
+    .draw-pile-stack::after {
+      top: -2px;
+      left: -2px;
+      z-index: 2;
+    }
+    .draw-pile-top {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      border-radius: 10px;
+      background: linear-gradient(145deg, #1a7a5e, #0e5f47);
+      border: 2px solid #0a4535;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .draw-pile-top:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+    }
+    .draw-pile-top.disabled {
+      cursor: default;
+      opacity: 0.7;
+    }
+    .draw-pile-top.disabled:hover {
+      transform: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .draw-pile-count {
+      font-size: 0.7rem;
+      color: #6b5b7a;
+      margin-top: 4px;
+      font-weight: bold;
+    }
+
+    /* カード */
+    .card {
+      width: 58px;
+      height: 88px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      transition: transform 0.15s;
+      cursor: default;
+      user-select: none;
+    }
+    .card-red    { background: linear-gradient(145deg, #e74c3c, #c0392b); color: #fff; border: 2px solid #a93226; }
+    .card-blue   { background: linear-gradient(145deg, #3498db, #2471a3); color: #fff; border: 2px solid #1a5276; }
+    .card-green  { background: linear-gradient(145deg, #27ae60, #1e8449); color: #fff; border: 2px solid #196f3d; }
+    .card-yellow { background: linear-gradient(145deg, #f39c12, #d4890b); color: #2c3e50; border: 2px solid #b7770d; }
+    .card-wild   {
+      background: conic-gradient(#e74c3c 0deg 90deg, #3498db 90deg 180deg,
+                                 #27ae60 180deg 270deg, #f39c12 270deg 360deg);
+      color: #fff; border: 2px solid #555;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+    .card-back   {
+      background: linear-gradient(145deg, #1a7a5e, #0e5f47);
+      border: 2px solid #0a4535;
+      font-size: 1.4rem;
+    }
+
+    /* カード内コンテンツ */
+    .card-corner {
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      font-size: 0.6rem;
+      line-height: 1.2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .card-center {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+    .card-number .card-center {
+      font-size: 1.8rem;
+    }
+
+    /* プレイヤー手札（インタラクティブ） */
+    .card-playable {
+      cursor: pointer;
+    }
+    .card-playable:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+    }
+    .card-playable:active {
+      transform: translateY(-5px) scale(0.95);
+    }
+    .card-not-playable {
+      opacity: 0.5;
+    }
+
+    /* プレイヤー手札エリア */
+    #area-0 {
+      width: 100%;
+      background: #ddd5ec;
+      border-radius: 10px;
+      padding: 10px;
+      border: 2px solid #c5b8d8;
+    }
+
+    /* ヒポボタン */
+    .hipo-btn {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(231,76,60,0.5);
+      animation: hipoPulse 0.9s ease infinite;
+    }
+    .hipo-btn:active {
+      transform: scale(0.93);
+    }
+
+    /* アニメーション */
+    @keyframes hipoPulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.08); }
+    }
+    @keyframes cardPlay {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.2) translateY(-8px); }
+      100% { transform: scale(0.1); opacity: 0; }
+    }
+    .card-playing {
+      animation: cardPlay 0.3s ease forwards;
+      pointer-events: none;
+    }
+    @keyframes drawAnim {
+      0%   { transform: scale(0.5) translateY(-15px); opacity: 0; }
+      60%  { transform: scale(1.1) translateY(0); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .card-drawn {
+      animation: drawAnim 0.35s ease forwards;
+    }
+
+    /* カラーピッカーモーダル */
+    .color-picker-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(50, 38, 64, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 110;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .color-picker-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .color-picker-modal {
+      background: #faf7ff;
+      border-radius: 16px;
+      padding: 22px 24px;
+      text-align: center;
+      font-weight: bold;
+      color: #6b5b7a;
+      font-size: 1rem;
+      box-shadow: 0 6px 24px rgba(107,91,122,0.3);
+    }
+    .color-picker-modal > div:first-child {
+      margin-bottom: 16px;
+    }
+    .color-picker-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .color-picker-buttons button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      transition: transform 0.1s, box-shadow 0.1s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .color-picker-buttons button:active {
+      transform: scale(0.95);
+    }
+    .color-picker-buttons button[data-color="red"]    { background: #e74c3c; }
+    .color-picker-buttons button[data-color="blue"]   { background: #3498db; }
+    .color-picker-buttons button[data-color="green"]  { background: #27ae60; }
+    .color-picker-buttons button[data-color="yellow"] { background: #d4890b; }
+
+    /* オーバーレイ */
+    .overlay h2 {
+      font-size: 2rem;
+    }
+    .overlay-result {
+      color: #6b5b7a;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* 空手札 */
+    .empty-hand {
+      color: #aaa;
+      font-size: 0.8rem;
+      width: 100%;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 420px) {
+      .card {
+        width: 42px;
+        height: 62px;
+      }
+      .card-center {
+        font-size: 1.1rem;
+      }
+      .card-number .card-center {
+        font-size: 1.3rem;
+      }
+      .card-corner {
+        font-size: 0.5rem;
+      }
+      .draw-pile-stack {
+        width: 42px;
+        height: 62px;
+      }
+      .draw-pile-stack::before,
+      .draw-pile-stack::after {
+        width: 42px;
+        height: 62px;
+      }
+      .draw-pile-top {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🦛 HIPO</h1>
+
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
+    <ul>
+      <li>手札のカードを全部出したら勝ち！</li>
+      <li>場のカードと「同じ色」か「同じ数字・記号」のカードが出せます</li>
+      <li>出せるカードがないときは山札から1枚引きます</li>
+      <li>⊘スキップ：次の人がお休み</li>
+      <li>⇄リバース：順番が逆になる</li>
+      <li>+2：次の人が2枚引いてお休み</li>
+      <li>🦛ワイルド：色を自分で選べる</li>
+      <li>+4🦛ワイルドドロー4：色を選んで次の人が4枚引いてお休み</li>
+      <li>手札が1枚になったら「🦛 ヒポ！」ボタンを押してね！忘れると2枚引くよ</li>
+    </ul>
+  </details>
+
+  <div class="game-container">
+    <!-- プレイヤー情報 -->
+    <div class="players-info">
+      <div class="player-info" id="info-0">
+        <div class="player-name">🦛あなた</div>
+        <div class="player-count" id="count-0">7<span>枚</span></div>
+      </div>
+      <div class="player-info" id="info-1">
+        <div class="player-name">🦈サメ</div>
+        <div class="player-count" id="count-1">7<span>枚</span></div>
+      </div>
+      <div class="player-info" id="info-2">
+        <div class="player-name">🐥ひよこ</div>
+        <div class="player-count" id="count-2">7<span>枚</span></div>
+      </div>
+      <div class="player-info" id="info-3">
+        <div class="player-name">🐬イルカ</div>
+        <div class="player-count" id="count-3">7<span>枚</span></div>
+      </div>
+    </div>
+
+    <!-- ステータス行 -->
+    <div class="status-row">
+      <div class="turn-display" id="turnDisplay">ゲーム開始中...</div>
+      <div class="color-display" id="colorDisplay">？</div>
+    </div>
+    <div class="status-message" id="statusMessage"></div>
+
+    <!-- CPU手札エリア -->
+    <div class="cpu-hands">
+      <div class="hand-area" id="area-3">
+        <div class="hand-label">🐬 イルカの手札</div>
+        <div class="hand-cards" id="hand-3"></div>
+      </div>
+      <div class="hand-area" id="area-2">
+        <div class="hand-label">🐥 ひよこの手札</div>
+        <div class="hand-cards" id="hand-2"></div>
+      </div>
+      <div class="hand-area" id="area-1">
+        <div class="hand-label">🦈 サメの手札</div>
+        <div class="hand-cards" id="hand-1"></div>
+      </div>
+    </div>
+
+    <!-- プレイエリア（山札・捨て札） -->
+    <div class="play-area">
+      <div class="pile-wrap">
+        <div class="pile-label">捨て札</div>
+        <div id="discardTop"></div>
+      </div>
+      <div class="pile-wrap">
+        <div class="pile-label">山札</div>
+        <div class="draw-pile-stack">
+          <div class="draw-pile-top" id="drawPileEl">🦛</div>
+        </div>
+        <div class="draw-pile-count" id="deckCount">0枚</div>
+      </div>
+    </div>
+
+    <!-- プレイヤー手札 -->
+    <div id="area-0">
+      <div class="hand-label">🦛 あなたの手札</div>
+      <div class="hand-cards" id="hand-0"></div>
+    </div>
+
+    <!-- ヒポボタン -->
+    <button id="hipoBtnEl" class="hipo-btn" style="display:none">🦛 ヒポ！</button>
+
+    <button id="restartBtn" class="btn">リスタート</button>
+  </div>
+
+  <!-- カラーピッカーモーダル -->
+  <div id="colorPickerOverlay" class="color-picker-overlay">
+    <div class="color-picker-modal">
+      <div>🦛 ワイルドカード！いろをえらんでね</div>
+      <div class="color-picker-buttons">
+        <button data-color="red">🔴 赤</button>
+        <button data-color="blue">🔵 青</button>
+        <button data-color="green">🟢 緑</button>
+        <button data-color="yellow">🟡 黄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ゲームオーバーオーバーレイ -->
+  <div class="overlay" id="overlay">
+    <h2 id="overlayTitle">🎉 かった！</h2>
+    <p class="overlay-result" id="overlayResult">てふだをなくした！</p>
+    <button class="btn" id="retryBtn">もう一度あそぶ</button>
+  </div>
+
+  <script>
+    // ============================================================
+    // 定数・設定
+    // ============================================================
+    const NUM_PLAYERS = 4;
+    const PLAYERS = [
+      { name: 'あなた',   emoji: '🦛', isCpu: false },
+      { name: 'サメ',     emoji: '🦈', isCpu: true  },
+      { name: 'ひよこ',   emoji: '🐥', isCpu: true  },
+      { name: 'イルカ',   emoji: '🐬', isCpu: true  },
+    ];
+    const COLORS = ['red', 'blue', 'green', 'yellow'];
+    const COLOR_JP = { red: '赤', blue: '青', green: '緑', yellow: '黄' };
+    const VALUE_DISPLAY = {
+      skip: '⊘', reverse: '⇄', draw2: '+2', wild: '🦛', wild4: '+4🦛'
+    };
+
+    // ============================================================
+    // ゲーム状態
+    // ============================================================
+    let deck = [];
+    let discardPile = [];
+    let hands = [[], [], [], []];
+    let currentTurn = 0;
+    let turnDirection = 1;   // 1=正順, -1=逆順
+    let currentColor = '';
+    let gameOver = false;
+    let isProcessing = false;
+    let hipoDeclared = false; // プレイヤーがヒポを宣言したか
+
+    // ============================================================
+    // UI要素参照
+    // ============================================================
+    const turnDisplay    = document.getElementById('turnDisplay');
+    const colorDisplay   = document.getElementById('colorDisplay');
+    const statusMessage  = document.getElementById('statusMessage');
+    const overlay        = document.getElementById('overlay');
+    const overlayTitle   = document.getElementById('overlayTitle');
+    const overlayResult  = document.getElementById('overlayResult');
+    const hipoBtnEl      = document.getElementById('hipoBtnEl');
+    const drawPileEl     = document.getElementById('drawPileEl');
+    const colorPickerOvl = document.getElementById('colorPickerOverlay');
+
+    // ============================================================
+    // デッキ生成
+    // ============================================================
+    function createDeck() {
+      const cards = [];
+      let id = 0;
+      for (const color of COLORS) {
+        // 0は1枚、1-9は各2枚
+        cards.push({ id: id++, color, value: 0 });
+        for (let n = 1; n <= 9; n++) {
+          cards.push({ id: id++, color, value: n });
+          cards.push({ id: id++, color, value: n });
+        }
+        // スキップ×2、リバース×2、+2×2
+        for (const v of ['skip', 'reverse', 'draw2']) {
+          cards.push({ id: id++, color, value: v });
+          cards.push({ id: id++, color, value: v });
+        }
+      }
+      // ワイルド×4、ワイルド+4×4
+      for (let i = 0; i < 4; i++) {
+        cards.push({ id: id++, color: 'wild', value: 'wild' });
+        cards.push({ id: id++, color: 'wild', value: 'wild4' });
+      }
+      return cards; // 100 + 8 = 108枚
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // ============================================================
+    // 初期化
+    // ============================================================
+    function initGame() {
+      deck = shuffle(createDeck());
+      discardPile = [];
+      hands = [[], [], [], []];
+      currentTurn = 0;
+      turnDirection = 1;
+      currentColor = '';
+      gameOver = false;
+      isProcessing = false;
+      hipoDeclared = false;
+
+      overlay.classList.remove('show');
+      hipoBtnEl.style.display = 'none';
+
+      // 7枚ずつ配る
+      for (let i = 0; i < 7 * NUM_PLAYERS; i++) {
+        hands[i % NUM_PLAYERS].push(deck.pop());
+      }
+
+      // 最初の捨て札（ワイルド系は除外して引き直し）
+      let startCard;
+      do {
+        startCard = deck.pop();
+        if (startCard.value === 'wild' || startCard.value === 'wild4') {
+          deck.unshift(startCard); // 山札の底に戻す
+          startCard = null;
+        }
+      } while (!startCard);
+      discardPile.push(startCard);
+      currentColor = startCard.color;
+
+      renderAll();
+      updateTurnDisplay();
+      updateColorDisplay();
+      setStatus('');
+
+      // 最初のカードが特殊カードなら効果適用してから開始
+      if (['skip', 'reverse', 'draw2'].includes(startCard.value)) {
+        applyEffect(startCard, -1, () => scheduleTurn());
+      } else {
+        scheduleTurn();
+      }
+    }
+
+    // ============================================================
+    // ターン進行
+    // ============================================================
+    function getNextPlayer(from) {
+      return ((from + turnDirection) % NUM_PLAYERS + NUM_PLAYERS) % NUM_PLAYERS;
+    }
+
+    function scheduleTurn() {
+      if (gameOver) return;
+      renderAll();
+      updateTurnDisplay();
+      updateColorDisplay();
+
+      if (currentTurn === 0) {
+        // プレイヤーのターン
+        // ヒポ宣言忘れペナルティチェック
+        if (hands[0].length === 1 && !hipoDeclared) {
+          setStatus('ヒポをわすれた！2まいひく...');
+          isProcessing = true;
+          drawCards(0, 2, () => {
+            hipoDeclared = false;
+            hipoBtnEl.style.display = 'none';
+            isProcessing = false;
+            renderAll();
+            setStatus('🦛 あなたのばんだよ！');
+          });
+          return;
+        }
+        setStatus('🦛 あなたのばんだよ！');
+        renderAll(); // playableハイライトのため再描画
+      } else {
+        // CPUのターン
+        const p = PLAYERS[currentTurn];
+        setStatus(`${p.emoji} ${p.name}が考えてる...`);
+        const delay = 900 + Math.random() * 600;
+        setTimeout(() => cpuTurn(currentTurn), delay);
+      }
+    }
+
+    // ============================================================
+    // カードプレイ判定
+    // ============================================================
+    function canPlay(card) {
+      if (card.color === 'wild') return true;
+      const top = discardPile[discardPile.length - 1];
+      return card.color === currentColor || card.value === top.value;
+    }
+
+    // ============================================================
+    // カードをプレイする
+    // ============================================================
+    function playCard(playerIdx, cardIdx, onDone) {
+      const card = hands[playerIdx].splice(cardIdx, 1)[0];
+      discardPile.push(card);
+      if (card.color !== 'wild') {
+        currentColor = card.color;
+      }
+      applyEffect(card, playerIdx, onDone);
+    }
+
+    // ============================================================
+    // 効果適用
+    // ============================================================
+    function applyEffect(card, who, cb) {
+      // who === -1 means the initial discard card (no player played it).
+      // We treat it as though the "dealer" sits before player 0, so next = player 0.
+      const effectFrom = who === -1 ? ((0 - turnDirection + NUM_PLAYERS) % NUM_PLAYERS) : who;
+      const next = getNextPlayer(effectFrom);
+
+      switch (card.value) {
+        case 'skip':
+          // 次のプレイヤーをスキップ
+          if (who >= 0) {
+            const p = PLAYERS[next];
+            setStatus(`⊘ ${p.emoji} ${p.name}はスキップ！`);
+          }
+          currentTurn = getNextPlayer(next); // スキップされた次へ
+          cb();
+          break;
+
+        case 'reverse':
+          turnDirection *= -1;
+          if (who >= 0) setStatus(`⇄ じゅんばんがはんたいになった！`);
+          // After reverse, next player from effectFrom with new direction
+          currentTurn = getNextPlayer(effectFrom);
+          cb();
+          break;
+
+        case 'draw2': {
+          const p2 = PLAYERS[next];
+          if (who >= 0) setStatus(`+2 ${p2.emoji} ${p2.name}が2まいひく！`);
+          currentTurn = next; // 先にturnを進める
+          drawCards(next, 2, () => {
+            // drawした後、スキップ（次のターンはdraw2の次の次）
+            currentTurn = getNextPlayer(next);
+            cb();
+          });
+          return; // drawCardsがcbを呼ぶのでここではcbを呼ばない
+        }
+
+        case 'wild':
+          if (who >= 0) {
+            if (PLAYERS[who].isCpu) {
+              currentColor = cpuChooseColor(hands[who]);
+              setStatus(`🦛 ワイルドカード！いろを${COLOR_JP[currentColor]}にした`);
+              updateColorDisplay();
+              currentTurn = getNextPlayer(who);
+              cb();
+            } else {
+              showColorPicker(color => {
+                currentColor = color;
+                setStatus(`🦛 ワイルドカード！いろを${COLOR_JP[color]}にした`);
+                updateColorDisplay();
+                currentTurn = getNextPlayer(who);
+                cb();
+              });
+            }
+          } else {
+            currentTurn = getNextPlayer(currentTurn);
+            cb();
+          }
+          return;
+
+        case 'wild4': {
+          const p4next = getNextPlayer(effectFrom);
+          if (who >= 0) {
+            if (PLAYERS[who].isCpu) {
+              currentColor = cpuChooseColor(hands[who]);
+              setStatus(`🦛 ワイルド+4！いろを${COLOR_JP[currentColor]}にした`);
+              updateColorDisplay();
+              currentTurn = p4next;
+              drawCards(p4next, 4, () => {
+                currentTurn = getNextPlayer(p4next);
+                cb();
+              });
+            } else {
+              showColorPicker(color => {
+                currentColor = color;
+                const p4 = PLAYERS[p4next];
+                setStatus(`🦛 ワイルド+4！${p4.emoji} ${p4.name}が4まいひく！`);
+                updateColorDisplay();
+                currentTurn = p4next;
+                drawCards(p4next, 4, () => {
+                  currentTurn = getNextPlayer(p4next);
+                  cb();
+                });
+              });
+            }
+          } else {
+            currentTurn = getNextPlayer(currentTurn);
+            cb();
+          }
+          return;
+        }
+
+        default:
+          // 通常カード：次のプレイヤーへ
+          if (who >= 0) {
+            currentTurn = getNextPlayer(who);
+          }
+          cb();
+      }
+    }
+
+    // ============================================================
+    // カードを引く
+    // ============================================================
+    function drawCards(who, n, cb) {
+      let drawn = 0;
+
+      function drawOne() {
+        if (drawn >= n) { cb(); return; }
+
+        if (deck.length === 0) {
+          reshuffleDiscard();
+          if (deck.length === 0) {
+            // それでもデッキが空なら引けない
+            cb();
+            return;
+          }
+        }
+
+        const card = deck.pop();
+        hands[who].push(card);
+        drawn++;
+        renderAll();
+        drawOne();
+      }
+
+      drawOne();
+    }
+
+    function reshuffleDiscard() {
+      if (discardPile.length <= 1) return;
+      const top = discardPile.pop(); // 一番上は残す
+      const rest = shuffle(discardPile);
+      deck = rest;
+      discardPile = [top];
+      setStatus('🔄 山札をシャッフルした！');
+    }
+
+    // ============================================================
+    // CPUの行動
+    // ============================================================
+    function cpuTurn(who) {
+      if (gameOver) return;
+
+      const hand = hands[who];
+      const playable = hand.map((c, i) => ({ c, i })).filter(({ c }) => canPlay(c));
+
+      if (playable.length === 0) {
+        // 引く
+        const p = PLAYERS[who];
+        setStatus(`${p.emoji} ${p.name}が1まいひいた`);
+        drawCards(who, 1, () => {
+          // 引いたカードがプレイ可能か確認
+          const newCard = hands[who][hands[who].length - 1];
+          if (canCard(newCard)) {
+            // 引いたカードをプレイ
+            setTimeout(() => {
+              isProcessing = true;
+              playCard(who, hands[who].length - 1, () => {
+                checkWin(() => {
+                  isProcessing = false;
+                  scheduleTurn();
+                });
+              });
+            }, 600);
+          } else {
+            // プレイできない→ターン終了
+            currentTurn = getNextPlayer(who);
+            isProcessing = false;
+            scheduleTurn();
+          }
+        });
+        return;
+      }
+
+      // プレイするカードを選ぶ（colored > wild を優先、特殊カードを優先）
+      const colored = playable.filter(({ c }) => c.color !== 'wild');
+      const pool = colored.length > 0 ? colored : playable;
+      // 特殊カードを優先
+      const specials = pool.filter(({ c }) => typeof c.value === 'string');
+      const chosen = specials.length > 0
+        ? specials[Math.floor(Math.random() * specials.length)]
+        : pool[Math.floor(Math.random() * pool.length)];
+
+      const p = PLAYERS[who];
+      const label = cardLabel(chosen.c);
+      setStatus(`${p.emoji} ${p.name}が「${label}」を出した！`);
+
+      isProcessing = true;
+      // CPUがプレイするカードを視覚的にアニメーション（捨て札更新で表現）
+      playCard(who, chosen.i, () => {
+        checkWin(() => {
+          isProcessing = false;
+          scheduleTurn();
+        });
+      });
+    }
+
+    // canPlayのエイリアス（引いたカードチェック用）
+    function canCard(card) {
+      return canPlay(card);
+    }
+
+    // CPUが選ぶ色（手札で最も多い色）
+    function cpuChooseColor(hand) {
+      const count = { red: 0, blue: 0, green: 0, yellow: 0 };
+      for (const c of hand) {
+        if (c.color !== 'wild') count[c.color]++;
+      }
+      let best = 'red', max = -1;
+      for (const col of COLORS) {
+        if (count[col] > max) { max = count[col]; best = col; }
+      }
+      return best;
+    }
+
+    // ============================================================
+    // カラーピッカー
+    // ============================================================
+    function showColorPicker(cb) {
+      colorPickerOvl.classList.add('show');
+      function handler(e) {
+        const btn = e.target.closest('button[data-color]');
+        if (!btn) return;
+        colorPickerOvl.classList.remove('show');
+        colorPickerOvl.removeEventListener('click', handler);
+        cb(btn.dataset.color);
+      }
+      colorPickerOvl.addEventListener('click', handler);
+    }
+
+    // ============================================================
+    // 勝利判定
+    // ============================================================
+    function checkWin(onContinue) {
+      if (gameOver) return;
+      for (let i = 0; i < NUM_PLAYERS; i++) {
+        if (hands[i].length === 0) {
+          endGame(i);
+          return;
+        }
+      }
+      onContinue();
+    }
+
+    function endGame(winnerIdx) {
+      gameOver = true;
+      hipoBtnEl.style.display = 'none';
+      renderAll();
+      updateTurnDisplay();
+
+      const winner = PLAYERS[winnerIdx];
+      let title, result;
+      if (winnerIdx === 0) {
+        title = '🎉 かった！';
+        result = `${winner.emoji} あなたが手札をなくした！すごい！`;
+      } else {
+        title = '😢 まけた...';
+        result = `${winner.emoji} ${winner.name}が手札をなくしたよ。<br>つぎはがんばろう！`;
+      }
+
+      overlayTitle.textContent = title;
+      overlayResult.innerHTML = result;
+      setTimeout(() => overlay.classList.add('show'), 600);
+    }
+
+    // ============================================================
+    // プレイヤー操作：手札のカードをクリック
+    // ============================================================
+    function playerPlayCard(cardIdx) {
+      if (isProcessing || gameOver || currentTurn !== 0) return;
+      const card = hands[0][cardIdx];
+      if (!canPlay(card)) return;
+
+      isProcessing = true;
+      hipoBtnEl.style.display = 'none';
+
+      // アニメーション用にDOM要素を取得
+      const handEl = document.getElementById('hand-0');
+      const cardEls = handEl.querySelectorAll('.card');
+      if (cardEls[cardIdx]) {
+        cardEls[cardIdx].classList.add('card-playing');
+      }
+
+      setTimeout(() => {
+        const label = cardLabel(card);
+        setStatus(`🦛 あなたが「${label}」を出した！`);
+
+        playCard(0, cardIdx, () => {
+          // ヒポボタン表示チェック
+          if (hands[0].length === 1) {
+            hipoBtnEl.style.display = '';
+            hipoDeclared = false;
+          } else {
+            hipoBtnEl.style.display = 'none';
+          }
+
+          checkWin(() => {
+            isProcessing = false;
+            scheduleTurn();
+          });
+        });
+      }, 320);
+    }
+
+    // プレイヤー操作：山札をクリック（1枚引く）
+    function playerDraw() {
+      if (isProcessing || gameOver || currentTurn !== 0) return;
+
+      isProcessing = true;
+      setStatus('🦛 1まいひいた');
+
+      drawCards(0, 1, () => {
+        const newCard = hands[0][hands[0].length - 1];
+        if (canPlay(newCard)) {
+          // 引いたカードがプレイ可能 → プレイヤーに選択させる（そのままターン継続）
+          renderAll();
+          isProcessing = false;
+          setStatus('🦛 ひいたカードが出せる！タップして出すか、もう一度山札をタップでスキップ');
+          // 引いたカードをハイライト（最後のカード）
+          // drawAgainModeフラグを立てる
+          drawAgainMode = true;
+        } else {
+          // プレイできない → ターン終了
+          renderAll();
+          currentTurn = getNextPlayer(0);
+          isProcessing = false;
+          drawAgainMode = false;
+          scheduleTurn();
+        }
+      });
+    }
+
+    // 山札を再クリックしてターンをパス（引いたカードをプレイしない）
+    let drawAgainMode = false;
+
+    function playerPassTurn() {
+      if (!drawAgainMode || currentTurn !== 0) return;
+      drawAgainMode = false;
+      currentTurn = getNextPlayer(0);
+      isProcessing = false;
+      scheduleTurn();
+    }
+
+    // ============================================================
+    // 描画
+    // ============================================================
+    function renderAll() {
+      for (let i = 0; i < NUM_PLAYERS; i++) {
+        renderHand(i);
+        document.getElementById(`count-${i}`).innerHTML =
+          `${hands[i].length}<span>枚</span>`;
+      }
+      renderDiscardTop();
+      document.getElementById('deckCount').textContent = `${deck.length}枚`;
+      updateDrawPile();
+      updateTurnDisplay();
+      updateColorDisplay();
+    }
+
+    function renderHand(playerIdx) {
+      const container = document.getElementById(`hand-${playerIdx}`);
+      container.innerHTML = '';
+
+      if (hands[playerIdx].length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-hand';
+        empty.textContent = 'カードなし';
+        container.appendChild(empty);
+        return;
+      }
+
+      hands[playerIdx].forEach((card, idx) => {
+        const el = document.createElement('div');
+
+        if (playerIdx === 0) {
+          // プレイヤーは表向き
+          const playable = !isProcessing && !gameOver && currentTurn === 0 && canPlay(card);
+          const isLastDrawn = drawAgainMode && idx === hands[0].length - 1;
+          const baseClass = cardColorClass(card);
+          el.className = `card ${baseClass}` +
+            (playable || isLastDrawn ? ' card-playable' : '') +
+            (!playable && !isLastDrawn && currentTurn === 0 && !isProcessing ? ' card-not-playable' : '');
+          el.innerHTML = buildCardHTML(card);
+
+          if (playable || isLastDrawn) {
+            const i = idx;
+            el.addEventListener('click', () => {
+              if (drawAgainMode) {
+                // 引いたカードをプレイ
+                drawAgainMode = false;
+                playerPlayCard(i);
+              } else {
+                playerPlayCard(i);
+              }
+            });
+          }
+        } else {
+          // CPUは裏向き
+          el.className = 'card card-back';
+          el.textContent = '🦛';
+        }
+
+        container.appendChild(el);
+      });
+    }
+
+    function renderDiscardTop() {
+      const container = document.getElementById('discardTop');
+      container.innerHTML = '';
+      if (discardPile.length === 0) return;
+      const top = discardPile[discardPile.length - 1];
+      const el = document.createElement('div');
+      el.className = `card ${cardColorClass(top)}`;
+      el.innerHTML = buildCardHTML(top);
+      container.appendChild(el);
+    }
+
+    function cardColorClass(card) {
+      return `card-${card.color}`;
+    }
+
+    function buildCardHTML(card) {
+      const v = card.value;
+      const display = VALUE_DISPLAY[v] !== undefined ? VALUE_DISPLAY[v] : String(v);
+      const isWild = card.color === 'wild';
+
+      if (isWild) {
+        return `<div class="card-center">${display}</div>`;
+      }
+
+      if (typeof v === 'number') {
+        return `<div class="card-corner"><span>${v}</span><span>🦛</span></div>
+                <div class="card-center card-number" style="font-size:1.8rem">${v}</div>`;
+      }
+
+      // 特殊カード（skip/reverse/draw2）
+      return `<div class="card-corner"><span>${display}</span><span>🦛</span></div>
+              <div class="card-center">${display}</div>`;
+    }
+
+    function cardLabel(card) {
+      const v = card.value;
+      if (typeof v === 'number') return `${COLOR_JP[card.color] || ''}${v}`;
+      return VALUE_DISPLAY[v] || v;
+    }
+
+    // ============================================================
+    // UI更新
+    // ============================================================
+    function updateTurnDisplay() {
+      if (gameOver) {
+        turnDisplay.textContent = 'ゲーム終了';
+        for (let i = 0; i < NUM_PLAYERS; i++) {
+          document.getElementById(`info-${i}`).classList.remove('active-turn');
+        }
+        return;
+      }
+      const p = PLAYERS[currentTurn];
+      turnDisplay.textContent = `${p.emoji} ${p.name}のターン`;
+      for (let i = 0; i < NUM_PLAYERS; i++) {
+        document.getElementById(`info-${i}`).classList.toggle('active-turn', i === currentTurn);
+      }
+    }
+
+    function updateColorDisplay() {
+      const cd = colorDisplay;
+      cd.className = `color-display ${currentColor}`;
+      if (currentColor === 'wild') {
+        cd.textContent = 'ワイルド';
+      } else {
+        cd.textContent = COLOR_JP[currentColor] || currentColor;
+      }
+    }
+
+    function setStatus(msg) {
+      statusMessage.textContent = msg;
+    }
+
+    // ============================================================
+    // 山札クリックイベント
+    // ============================================================
+    drawPileEl.addEventListener('click', () => {
+      if (gameOver || isProcessing) return;
+      if (currentTurn !== 0) return;
+
+      if (drawAgainMode) {
+        // パス（ターンを渡す）
+        playerPassTurn();
+      } else {
+        playerDraw();
+      }
+    });
+
+    // 山札のdisabled状態更新（ターンに応じて）
+    function updateDrawPile() {
+      if (currentTurn === 0 && !isProcessing && !gameOver) {
+        drawPileEl.classList.remove('disabled');
+      } else {
+        drawPileEl.classList.add('disabled');
+      }
+    }
+
+    // ============================================================
+    // ヒポボタン
+    // ============================================================
+    hipoBtnEl.addEventListener('click', () => {
+      if (currentTurn !== 0) return;
+      hipoDeclared = true;
+      hipoBtnEl.style.display = 'none';
+      setStatus('🦛 ヒポ！');
+    });
+
+    // ============================================================
+    // その他のイベント
+    // ============================================================
+    document.getElementById('restartBtn').addEventListener('click', initGame);
+    document.getElementById('retryBtn').addEventListener('click', () => {
+      overlay.classList.remove('show');
+      setTimeout(initGame, 300);
+    });
+
+    // ============================================================
+    // 起動
+    // ============================================================
+    initGame();
+  </script>
+</body>
+</html>

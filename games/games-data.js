@@ -18,6 +18,7 @@ window.GAME_PROJECT_GAMES = [
   { name: 'リバーシ',           icon: '⚫', category: 'battle',  file: 'reversi.html' },
   { name: '将棋',              icon: '♟️', category: 'battle',  file: 'shogi.html' },
   { name: 'ババ抜き',           icon: '🃏', category: 'battle',  file: 'old-maid.html' },
+  { name: 'HIPO',              icon: '🦛', category: 'battle',  file: 'hipo.html', isNew: true },
   { name: '人狼ゲーム',         icon: '🐺', category: 'battle',  file: 'werewolf.html' },
   { name: 'インベーダー',        icon: '👾', category: 'action',  file: 'invader.html' },
   { name: 'どうぶつ大冒険',      icon: '🦛', category: 'action',  file: 'animal-adventure.html', isNew: true },
