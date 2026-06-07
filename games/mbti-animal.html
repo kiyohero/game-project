@@ -6,6 +6,7 @@
 <title>どうぶつ性格診断</title>
 <link rel="stylesheet" href="common.css">
 <script src="common.js" defer></script>
+<script src="share-result.js" defer></script>
 <script>window.GAME_PROJECT_CURRENT_GAME = 'どうぶつ性格診断';</script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -880,6 +881,15 @@ function showResult(type) {
       '<div class="lucky-item"><div class="lucky-icon">✨</div><div class="lucky-label">ラッキーアイテム</div><div class="lucky-value">' + d.lucky.item + '</div></div>' +
     '</div>';
 
+  // URLシェアボタンを追加
+  if (window.ShareResult) {
+    var shareCard = document.getElementById('btn-share-line').parentElement;
+    // 既存のシェアボタンがある場合は重複追加しない
+    if (!shareCard.querySelector('.share-result-btn')) {
+      ShareResult.renderShareButton(shareCard, {type: type});
+    }
+  }
+
   buildCompatCheckPanel(type);
   showScreen('result');
 }
@@ -974,6 +984,12 @@ function createStarsBg() {
 
 document.addEventListener('DOMContentLoaded', function() {
   createStarsBg();
+
+  // URLから結果を復元
+  var shared = window.ShareResult && ShareResult.getFromUrl('r');
+  if (shared && shared.type && MBTI_ANIMALS[shared.type]) {
+    showResult(shared.type);
+  }
 
   document.getElementById('btn-start').addEventListener('click', function() {
     state.step = 0;

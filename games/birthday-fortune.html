@@ -1071,6 +1071,26 @@
     document.getElementById('btn-line-share').onclick = () =>
       shareFortuneToLine(zodiac.name, ETOS[etoIdx], fl.label, LUCKY_COLORS[colorIdx], LUCKY_ITEMS[itemIdx], year, month, day);
 
+    // URLコピーボタン（?bd=YYYY-MM-DD 形式の既存URLをコピー）
+    const btnRow = document.querySelector('.btn-row');
+    if (btnRow && !btnRow.querySelector('.copy-url-btn')) {
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-sm copy-url-btn';
+      copyBtn.textContent = '🔗 URLをコピー';
+      copyBtn.addEventListener('click', function() {
+        const shareUrl = location.href.split('?')[0] + '?bd=' + year + '-' + fmt2(month) + '-' + fmt2(day);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(shareUrl).then(function() {
+            copyBtn.textContent = '✅ コピーしました';
+            setTimeout(function() { copyBtn.textContent = '🔗 URLをコピー'; }, 2500);
+          }).catch(function() { prompt('URLをコピーしてください', shareUrl); });
+        } else {
+          prompt('URLをコピーしてください', shareUrl);
+        }
+      });
+      btnRow.appendChild(copyBtn);
+    }
+
     showScreen('fortune');
   }
 

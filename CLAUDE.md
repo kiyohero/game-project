@@ -60,6 +60,18 @@
 - **静的ファイルオンリー**: GitHub Pagesで動作するため、APIサーバーなし
 - **クライアントサイド処理**: すべてのゲームロジックはブラウザで実行
 
+### データ基盤ファイルについて
+
+- **github-db.js**: GitHub Contents API を使った汎用 JSON ファイル読み書き基盤
+  - `GithubDB.addToCollection(path, item, opts)` - 配列に追記（ランキング用）
+  - `GithubDB.getCollection(path)` - 配列を取得
+  - `GithubDB.setDocument(path, key, value)` - オブジェクトにキーセット
+  - `GithubDB.getDocument(path, key)` - キーで値を取得
+  - データは `kiyohero/game-ranking` リポジトリに保存
+- **github-config.js**: GithubDB の接続設定スタブ。トークンは GitHub Actions Secret から注入
+- **ranking.js**: GithubDB を使ったスコアランキング UI（モーダル表示）
+- **share-result.js**: 診断結果を Base64 URL パラメータでシェアするユーティリティ
+
 ## プロジェクト構造
 
 ```
