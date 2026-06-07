@@ -844,6 +844,25 @@ function showResult(analysis, data) {
 
   document.getElementById('btn-share-result').addEventListener('click', () => shareResult(shareText));
 
+  // URLシェアボタンを追加
+  if (window.ShareResult) {
+    const shareData = {
+      lines: {
+        life:  analysis.lines.life.level,
+        heart: analysis.lines.heart.level,
+        head:  analysis.lines.head.level,
+        fate:  analysis.lines.fate.level,
+        sun:   analysis.lines.sun.level
+      },
+      handType:      analysis.handType,
+      dominantMount: analysis.dominantMount,
+      season:        analysis.season
+    };
+    if (!sec5.querySelector('.share-result-btn')) {
+      ShareResult.renderShareButton(sec5, shareData);
+    }
+  }
+
   showScreen('result');
 }
 
@@ -927,6 +946,30 @@ document.getElementById('btn-again').addEventListener('click', () => {
   document.getElementById('file-input').value = '';
   showScreen('title');
 });
+
+// ===== URLから結果を復元 =====
+(function() {
+  const shared = window.ShareResult && ShareResult.getFromUrl('r');
+  if (shared && shared.lines) {
+    const levelToNorm = function(lv) { return lv === 'high' ? 0.7 : lv === 'mid' ? 0.5 : 0.3; };
+    const analysis = {
+      lines: {
+        life:  { level: shared.lines.life,  norm: levelToNorm(shared.lines.life)  },
+        heart: { level: shared.lines.heart, norm: levelToNorm(shared.lines.heart) },
+        head:  { level: shared.lines.head,  norm: levelToNorm(shared.lines.head)  },
+        fate:  { level: shared.lines.fate,  norm: levelToNorm(shared.lines.fate)  },
+        sun:   { level: shared.lines.sun,   norm: levelToNorm(shared.lines.sun)   }
+      },
+      handType:      shared.handType,
+      dominantMount: shared.dominantMount,
+      season:        shared.season
+    };
+    fetch('palm-reading-data.json')
+      .then(function(r) { return r.json(); })
+      .then(function(data) { showResult(analysis, data); })
+      .catch(function() {});
+  }
+})();
 
 // ===== 背景星パーティクル =====
 (function() {
