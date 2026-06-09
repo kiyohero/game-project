@@ -72,8 +72,12 @@ def main():
     print('ポケモンリストを取得中...')
 
     # 全ポケモン種族のリストを取得
-    species_index = fetch_json(f'{BASE_URL}/pokemon-species/index.json')
-    total_count = species_index['count']
+    try:
+        species_index = fetch_json(f'{BASE_URL}/pokemon-species/index.json')
+        total_count = species_index['count']
+    except Exception as e:
+        print(f'エラー: ポケモンリストの取得に失敗しました: {e}', file=sys.stderr)
+        sys.exit(1)
     print(f'全{total_count}種類のポケモンを処理します')
 
     pokemon_list = []
