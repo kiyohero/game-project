@@ -413,7 +413,8 @@ const Ranking = {
       `;
     } else {
       const items = captures.map(entry => {
-        const isValidColor = (v) => /^(#[0-9a-f]{3,8}|rgba?\([\d\s,%.]+\)|[a-z]+)$/i.test(v);
+        // リモートDB由来の値をstyle属性に埋め込むため、属性を破壊できないHEXカラーのみ許可
+        const isValidColor = (v) => /^#[0-9a-f]{3,8}$/i.test(v);
         const badgeStyle = entry.charTypeColor && isValidColor(entry.charTypeColor)
           ? `background:${entry.charTypeColor};`
           : 'background:#9b8ab8;';
