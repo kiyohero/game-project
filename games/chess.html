@@ -58,6 +58,11 @@
     <button class="btn mode-btn" id="vsCPU">CPUと対戦</button>
     <button class="btn" id="restart">リスタート</button>
   </div>
+  <div class="controls" id="difficultyControls" style="display: none;">
+    <button class="btn mode-btn" id="diffEasy">かんたん</button>
+    <button class="btn mode-btn active" id="diffNormal">ふつう</button>
+    <button class="btn mode-btn" id="diffHard">むずかしい</button>
+  </div>
   <details class="how-to-play">
     <summary>あそびかた</summary>
     <div class="content">
@@ -70,11 +75,19 @@
         <li>ポーンが一番奥まで行くと、強いクイーンに変身するよ！</li>
         <li>しろ（⚪）とくろ（⚫）が交互に動かして対戦するよ</li>
         <li>「CPUと対戦」を選ぶと、コンピューターと対戦できるよ！</li>
+        <li>「CPUと対戦」では、むずかしさ（かんたん・ふつう・むずかしい）を選べるよ！</li>
       </ul>
     </div>
   </details>
   <div class="overlay" id="overlay">
     <h2 id="winner">かち！</h2>
+    <div id="levelUpBanner" style="display: none; margin-bottom: 15px; flex-direction: column; align-items: center; gap: 10px;">
+      <p id="levelUpText"></p>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+        <button class="btn" id="levelUpAccept">ちょうせんする</button>
+        <button class="btn" id="levelUpDecline">まだこのままでいい</button>
+      </div>
+    </div>
     <button class="btn" id="retryBtn">もう一度</button>
   </div>
 
@@ -93,6 +106,8 @@
     let gameOver = false;
     let vsCPU = false;
     let cpuMoveTimer = null;
+    let difficulty = 'normal'; // 'easy' | 'normal' | 'hard'
+    let pendingLevelUpTarget = null;
 
     const boardEl = document.getElementById('board');
     const turnIndicatorEl = document.getElementById('turnIndicator');
@@ -120,6 +135,7 @@
       lastMove = null;
       gameOver = false;
       overlay.classList.remove('show');
+      document.getElementById('levelUpBanner').style.display = 'none';
       if (cpuMoveTimer !== null) {
         clearTimeout(cpuMoveTimer);
         cpuMoveTimer = null;
@@ -348,16 +364,59 @@
 
       if (moves.length === 0) return; // defensive guard, should not normally happen
 
+      const RANDOM_CHANCE = { easy: 0.6, normal: 0, hard: 0 };
+      const TIE_WINDOW = { easy: 1, normal: 1, hard: 0.3 };
+
+      if (Math.random() < RANDOM_CHANCE[difficulty]) {
+        const move = moves[Math.floor(Math.random() * moves.length)];
+        movePiece(move.from[0], move.from[1], move.to[0], move.to[1]);
+        return;
+      }
+
       moves.sort((a, b) => b.score - a.score);
-      const topMoves = moves.filter(m => m.score >= moves[0].score - 1);
+      const topMoves = moves.filter(m => m.score >= moves[0].score - TIE_WINDOW[difficulty]);
       const move = topMoves[Math.floor(Math.random() * topMoves.length)];
 
       movePiece(move.from[0], move.from[1], move.to[0], move.to[1]);
     }
 
+    const NEXT_DIFFICULTY = { easy: 'normal', normal: 'hard' };
+    const STREAK_KEY = { easy: 'chess-streak-easy', normal: 'chess-streak-normal', hard: 'chess-streak-hard' };
+
     function showGameOver(winnerColor) {
       winnerEl.textContent = (winnerColor === 'w' ? 'しろ' : 'くろ') + 'の かち！';
       overlay.classList.add('show');
+
+      const levelUpBanner = document.getElementById('levelUpBanner');
+      levelUpBanner.style.display = 'none';
+      pendingLevelUpTarget = null;
+
+      if (!vsCPU) return;
+
+      const key = STREAK_KEY[difficulty];
+      if (winnerColor === 'w') {
+        const streak = (parseInt(localStorage.getItem(key), 10) || 0) + 1;
+        localStorage.setItem(key, String(streak));
+
+        const next = NEXT_DIFFICULTY[difficulty];
+        if (streak >= 3 && next) {
+          pendingLevelUpTarget = next;
+          document.getElementById('levelUpText').textContent =
+            difficulty === 'easy'
+              ? 'つよくなったね！つぎは「ふつう」にちょうせんしてみる？'
+              : 'すごい！つぎは「むずかしい」にちょうせんしてみる？';
+          levelUpBanner.style.display = 'flex';
+        }
+      } else {
+        localStorage.setItem(key, '0');
+      }
+    }
+
+    function setDifficulty(newDifficulty) {
+      difficulty = newDifficulty;
+      document.getElementById('diffEasy').classList.toggle('active', difficulty === 'easy');
+      document.getElementById('diffNormal').classList.toggle('active', difficulty === 'normal');
+      document.getElementById('diffHard').classList.toggle('active', difficulty === 'hard');
     }
 
     document.getElementById('restart').addEventListener('click', initBoard);
@@ -366,13 +425,40 @@
       vsCPU = false;
       document.getElementById('vsPlayer').classList.add('active');
       document.getElementById('vsCPU').classList.remove('active');
+      document.getElementById('difficultyControls').style.display = 'none';
       initBoard();
     });
     document.getElementById('vsCPU').addEventListener('click', () => {
       vsCPU = true;
       document.getElementById('vsCPU').classList.add('active');
       document.getElementById('vsPlayer').classList.remove('active');
+      document.getElementById('difficultyControls').style.display = 'flex';
       initBoard();
+    });
+
+    document.getElementById('diffEasy').addEventListener('click', () => {
+      setDifficulty('easy');
+      initBoard();
+    });
+    document.getElementById('diffNormal').addEventListener('click', () => {
+      setDifficulty('normal');
+      initBoard();
+    });
+    document.getElementById('diffHard').addEventListener('click', () => {
+      setDifficulty('hard');
+      initBoard();
+    });
+
+    document.getElementById('levelUpAccept').addEventListener('click', () => {
+      if (pendingLevelUpTarget) {
+        setDifficulty(pendingLevelUpTarget);
+      }
+      document.getElementById('levelUpBanner').style.display = 'none';
+      pendingLevelUpTarget = null;
+      initBoard();
+    });
+    document.getElementById('levelUpDecline').addEventListener('click', () => {
+      document.getElementById('levelUpBanner').style.display = 'none';
     });
 
     // 初期化
