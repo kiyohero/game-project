@@ -22,6 +22,8 @@
     .btn { background: #7a6b8a; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
     .btn:hover { background: #6b5b7a; }
     .btn:active { transform: scale(0.95); }
+    .mode-btn { background: #c5b8d8; color: #6b5b7a; }
+    .mode-btn.active { background: #7a6b8a; color: white; }
     .turn-indicator { background: #e8e0f0; padding: 8px 16px; border-radius: 6px; margin-bottom: 10px; color: #6b5b7a; font-weight: bold; font-size: 1.1rem; }
     .game-area { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 10px; }
     .board { background: #8b5e3c; padding: 4px; border-radius: 4px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
@@ -52,6 +54,8 @@
     <div class="board" id="board"></div>
   </div>
   <div class="controls">
+    <button class="btn mode-btn active" id="vsPlayer">2人で対戦</button>
+    <button class="btn mode-btn" id="vsCPU">CPUと対戦</button>
     <button class="btn" id="restart">リスタート</button>
   </div>
   <details class="how-to-play">
@@ -65,6 +69,7 @@
         <li>王さま（キング）を取られたら負けだよ！</li>
         <li>ポーンが一番奥まで行くと、強いクイーンに変身するよ！</li>
         <li>しろ（⚪）とくろ（⚫）が交互に動かして対戦するよ</li>
+        <li>「CPUと対戦」を選ぶと、コンピューターと対戦できるよ！</li>
       </ul>
     </div>
   </details>
@@ -86,6 +91,8 @@
     let validMoves = [];
     let lastMove = null; // { from: [r,c], to: [r,c] }
     let gameOver = false;
+    let vsCPU = false;
+    let cpuMoveTimer = null;
 
     const boardEl = document.getElementById('board');
     const turnIndicatorEl = document.getElementById('turnIndicator');
@@ -113,6 +120,10 @@
       lastMove = null;
       gameOver = false;
       overlay.classList.remove('show');
+      if (cpuMoveTimer !== null) {
+        clearTimeout(cpuMoveTimer);
+        cpuMoveTimer = null;
+      }
       render();
     }
 
@@ -248,12 +259,13 @@
       } else if (currentPlayer === 'w') {
         turnIndicatorEl.textContent = '⚪ しろの ばん';
       } else {
-        turnIndicatorEl.textContent = '⚫ くろの ばん';
+        turnIndicatorEl.textContent = vsCPU ? '⚫ CPUの ばん' : '⚫ くろの ばん';
       }
     }
 
     function onCellClick(row, col) {
       if (gameOver) return;
+      if (vsCPU && currentPlayer === 'b') return;
 
       const piece = board[row][col];
 
@@ -303,6 +315,44 @@
 
       currentPlayer = currentPlayer === 'w' ? 'b' : 'w';
       render();
+
+      if (vsCPU && currentPlayer === 'b' && !gameOver) {
+        cpuMoveTimer = setTimeout(cpuMove, 500);
+      }
+    }
+
+    const PIECE_VALUES = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 100 };
+
+    function cpuMove() {
+      cpuMoveTimer = null;
+      if (gameOver || !vsCPU || currentPlayer !== 'b') return;
+
+      const moves = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const piece = board[r][c];
+          if (piece !== null && piece.color === 'b') {
+            const pieceMoves = getMoves(piece, r, c);
+            for (const [tr, tc] of pieceMoves) {
+              let score = 0;
+              const target = board[tr][tc];
+              if (target !== null) {
+                score += PIECE_VALUES[target.type] || 0;
+              }
+              score += (3.5 - Math.abs(3.5 - tr)) * 0.1 + (3.5 - Math.abs(3.5 - tc)) * 0.1;
+              moves.push({ from: [r, c], to: [tr, tc], score });
+            }
+          }
+        }
+      }
+
+      if (moves.length === 0) return; // defensive guard, should not normally happen
+
+      moves.sort((a, b) => b.score - a.score);
+      const topMoves = moves.filter(m => m.score >= moves[0].score - 1);
+      const move = topMoves[Math.floor(Math.random() * topMoves.length)];
+
+      movePiece(move.from[0], move.from[1], move.to[0], move.to[1]);
     }
 
     function showGameOver(winnerColor) {
@@ -312,6 +362,18 @@
 
     document.getElementById('restart').addEventListener('click', initBoard);
     document.getElementById('retryBtn').addEventListener('click', initBoard);
+    document.getElementById('vsPlayer').addEventListener('click', () => {
+      vsCPU = false;
+      document.getElementById('vsPlayer').classList.add('active');
+      document.getElementById('vsCPU').classList.remove('active');
+      initBoard();
+    });
+    document.getElementById('vsCPU').addEventListener('click', () => {
+      vsCPU = true;
+      document.getElementById('vsCPU').classList.add('active');
+      document.getElementById('vsPlayer').classList.remove('active');
+      initBoard();
+    });
 
     // 初期化
     initBoard();
