@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>チェス</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f0fa; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 15px; user-select: none; -webkit-user-select: none; }
+    h1 { font-size: 2rem; color: #6b5b7a; margin-bottom: 10px; }
+    .how-to-play { background: #e8e0f0; border-radius: 8px; margin-bottom: 15px; max-width: 360px; width: 100%; }
+    .how-to-play summary { color: #6b5b7a; font-size: 1.1rem; font-weight: bold; padding: 12px 15px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    .how-to-play summary::-webkit-details-marker { display: none; }
+    .how-to-play summary::after { content: '+'; font-size: 1.3rem; }
+    .how-to-play[open] summary::after { content: '-'; }
+    .how-to-play .content { color: #6b5b7a; font-size: 0.9rem; line-height: 1.8; padding: 0 15px 15px 15px; }
+    .how-to-play ul { padding-left: 20px; }
+    .how-to-play li { margin-bottom: 5px; }
+    .controls { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; }
+    .btn { background: #7a6b8a; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
+    .btn:hover { background: #6b5b7a; }
+    .btn:active { transform: scale(0.95); }
+    .turn-indicator { background: #e8e0f0; padding: 8px 16px; border-radius: 6px; margin-bottom: 10px; color: #6b5b7a; font-weight: bold; font-size: 1.1rem; }
+    .game-area { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .board { background: #8b5e3c; padding: 4px; border-radius: 4px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .cell { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+    .cell.light { background: #eed9b7; }
+    .cell.dark { background: #8b5e3c; }
+    .cell.selected { background: #FFD700; }
+    .cell.can-move { background: #90EE90; }
+    .cell.can-move:hover { background: #7ddc7d; }
+    .cell.last-move { background: #b8d4a8; }
+    .piece { font-size: 2rem; line-height: 1; pointer-events: none; }
+    .piece.piece-w { color: #fff; text-shadow: -1px -1px 0 #444, 1px -1px 0 #444, -1px 1px 0 #444, 1px 1px 0 #444; }
+    .piece.piece-b { color: #2b2b2b; }
+    .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .overlay h2 { font-size: 2rem; color: #6b5b7a; margin-bottom: 15px; }
+    .overlay p { color: #6b5b7a; margin-bottom: 20px; }
+    @media (max-width: 400px) {
+      .cell { width: 34px; height: 34px; }
+      .piece { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>チェス</h1>
+  <div class="turn-indicator" id="turnIndicator">⚪ しろの ばん</div>
+  <div class="game-area">
+    <div class="board" id="board"></div>
+  </div>
+  <div class="controls">
+    <button class="btn" id="restart">リスタート</button>
+  </div>
+  <details class="how-to-play">
+    <summary>あそびかた</summary>
+    <div class="content">
+      <ul>
+        <li>じぶんの駒（こま）をタップすると、動けるところが<span style="color: green;">緑色</span>に光るよ！</li>
+        <li>緑のマスをタップすると、そこに動けるよ</li>
+        <li>ポーン（歩）は前に1マス、最初は2マス動けるよ。相手の駒を取るときだけ、ななめに動くよ</li>
+        <li>ナイトだけは、ほかの駒を飛びこえて動けるよ！</li>
+        <li>王さま（キング）を取られたら負けだよ！</li>
+        <li>ポーンが一番奥まで行くと、強いクイーンに変身するよ！</li>
+        <li>しろ（⚪）とくろ（⚫）が交互に動かして対戦するよ</li>
+      </ul>
+    </div>
+  </details>
+  <div class="overlay" id="overlay">
+    <h2 id="winner">かち！</h2>
+    <button class="btn" id="retryBtn">もう一度</button>
+  </div>
+
+  <script>
+    // 駒の種類: K(キング) Q(クイーン) R(ルーク) B(ビショップ) N(ナイト) P(ポーン)
+    const GLYPHS = {
+      w: { K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙' },
+      b: { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' }
+    };
+
+    let board = [];
+    let currentPlayer = 'w'; // 'w': しろ, 'b': くろ
+    let selectedCell = null;
+    let validMoves = [];
+    let lastMove = null; // { from: [r,c], to: [r,c] }
+    let gameOver = false;
+
+    const boardEl = document.getElementById('board');
+    const turnIndicatorEl = document.getElementById('turnIndicator');
+    const overlay = document.getElementById('overlay');
+    const winnerEl = document.getElementById('winner');
+
+    // 初期配置
+    function initBoard() {
+      board = [];
+      for (let r = 0; r < 8; r++) {
+        board[r] = [];
+        for (let c = 0; c < 8; c++) board[r][c] = null;
+      }
+      const backRank = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
+      for (let c = 0; c < 8; c++) {
+        board[0][c] = { type: backRank[c], color: 'b' };
+        board[1][c] = { type: 'P', color: 'b' };
+        board[6][c] = { type: 'P', color: 'w' };
+        board[7][c] = { type: backRank[c], color: 'w' };
+      }
+
+      currentPlayer = 'w';
+      selectedCell = null;
+      validMoves = [];
+      lastMove = null;
+      gameOver = false;
+      overlay.classList.remove('show');
+      render();
+    }
+
+    // 駒の動きを取得
+    function getMoves(piece, row, col) {
+      const moves = [];
+      const color = piece.color;
+
+      // 1マス移動（空マス or 相手の駒なら移動可、味方の駒ならダメ）
+      const addMove = (r, c) => {
+        if (r < 0 || r > 7 || c < 0 || c > 7) return;
+        const target = board[r][c];
+        if (target === null || target.color !== color) {
+          moves.push([r, c]);
+        }
+      };
+
+      // スライド移動（ルーク・ビショップ・クイーン用）
+      const addLine = (dr, dc) => {
+        for (let i = 1; i <= 7; i++) {
+          const r = row + dr * i;
+          const c = col + dc * i;
+          if (r < 0 || r > 7 || c < 0 || c > 7) break;
+          const target = board[r][c];
+          if (target === null) {
+            moves.push([r, c]);
+          } else {
+            if (target.color !== color) moves.push([r, c]);
+            break;
+          }
+        }
+      };
+
+      switch (piece.type) {
+        case 'K':
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              addMove(row + dr, col + dc);
+            }
+          }
+          break;
+        case 'Q':
+          addLine(-1, 0); addLine(1, 0); addLine(0, -1); addLine(0, 1);
+          addLine(-1, -1); addLine(-1, 1); addLine(1, -1); addLine(1, 1);
+          break;
+        case 'R':
+          addLine(-1, 0); addLine(1, 0); addLine(0, -1); addLine(0, 1);
+          break;
+        case 'B':
+          addLine(-1, -1); addLine(-1, 1); addLine(1, -1); addLine(1, 1);
+          break;
+        case 'N':
+          // ナイトは他の駒を飛びこえる（addMoveの経路チェック不要）
+          addMove(row - 2, col - 1); addMove(row - 2, col + 1);
+          addMove(row + 2, col - 1); addMove(row + 2, col + 1);
+          addMove(row - 1, col - 2); addMove(row - 1, col + 2);
+          addMove(row + 1, col - 2); addMove(row + 1, col + 2);
+          break;
+        case 'P': {
+          const dir = color === 'w' ? -1 : 1;
+          const startRow = color === 'w' ? 6 : 1;
+          // 前に1マス（空マスのみ）
+          const r1 = row + dir;
+          if (r1 >= 0 && r1 <= 7 && board[r1][col] === null) {
+            moves.push([r1, col]);
+            // 最初の位置なら2マス（両方空いている場合のみ）
+            const r2 = row + dir * 2;
+            if (row === startRow && board[r2][col] === null) {
+              moves.push([r2, col]);
+            }
+          }
+          // ななめは相手の駒を取るときだけ
+          for (const dc of [-1, 1]) {
+            const nc = col + dc;
+            const nr = row + dir;
+            if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+            const target = board[nr][nc];
+            if (target !== null && target.color !== color) {
+              moves.push([nr, nc]);
+            }
+          }
+          break;
+        }
+      }
+
+      return moves;
+    }
+
+    // 描画
+    function render() {
+      boardEl.innerHTML = '';
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+
+          if (lastMove && (
+            (lastMove.from[0] === r && lastMove.from[1] === c) ||
+            (lastMove.to[0] === r && lastMove.to[1] === c)
+          )) {
+            cell.classList.add('last-move');
+          }
+          if (selectedCell && selectedCell[0] === r && selectedCell[1] === c) {
+            cell.classList.add('selected');
+          }
+          if (validMoves.some(m => m[0] === r && m[1] === c)) {
+            cell.classList.add('can-move');
+          }
+
+          const piece = board[r][c];
+          if (piece !== null) {
+            const pieceEl = document.createElement('div');
+            pieceEl.className = 'piece piece-' + piece.color;
+            pieceEl.textContent = GLYPHS[piece.color][piece.type];
+            cell.appendChild(pieceEl);
+          }
+
+          cell.addEventListener('click', () => onCellClick(r, c));
+          boardEl.appendChild(cell);
+        }
+      }
+
+      updateTurnIndicator();
+    }
+
+    function updateTurnIndicator() {
+      if (gameOver) {
+        turnIndicatorEl.textContent = 'ゲーム終了';
+      } else if (currentPlayer === 'w') {
+        turnIndicatorEl.textContent = '⚪ しろの ばん';
+      } else {
+        turnIndicatorEl.textContent = '⚫ くろの ばん';
+      }
+    }
+
+    function onCellClick(row, col) {
+      if (gameOver) return;
+
+      const piece = board[row][col];
+
+      // 移動可能なマスをクリックした場合
+      if (selectedCell && validMoves.some(m => m[0] === row && m[1] === col)) {
+        movePiece(selectedCell[0], selectedCell[1], row, col);
+        return;
+      }
+
+      // 自分の駒を選択
+      if (piece !== null && piece.color === currentPlayer) {
+        selectedCell = [row, col];
+        validMoves = getMoves(piece, row, col);
+        render();
+      } else {
+        selectedCell = null;
+        validMoves = [];
+        render();
+      }
+    }
+
+    function movePiece(fromRow, fromCol, toRow, toCol) {
+      const piece = board[fromRow][fromCol];
+      const captured = board[toRow][toCol];
+
+      board[toRow][toCol] = piece;
+      board[fromRow][fromCol] = null;
+      lastMove = { from: [fromRow, fromCol], to: [toRow, toCol] };
+      selectedCell = null;
+      validMoves = [];
+
+      // ポーンが一番奥まで到達したらクイーンに自動昇格
+      if (piece.type === 'P') {
+        const farRow = piece.color === 'w' ? 0 : 7;
+        if (toRow === farRow) {
+          piece.type = 'Q';
+        }
+      }
+
+      // 王さまを取ったらゲーム終了
+      if (captured !== null && captured.type === 'K') {
+        gameOver = true;
+        showGameOver(currentPlayer);
+        render();
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'w' ? 'b' : 'w';
+      render();
+    }
+
+    function showGameOver(winnerColor) {
+      winnerEl.textContent = (winnerColor === 'w' ? 'しろ' : 'くろ') + 'の かち！';
+      overlay.classList.add('show');
+    }
+
+    document.getElementById('restart').addEventListener('click', initBoard);
+    document.getElementById('retryBtn').addEventListener('click', initBoard);
+
+    // 初期化
+    initBoard();
+  </script>
+</body>
+</html>
