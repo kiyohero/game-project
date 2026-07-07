@@ -27,6 +27,7 @@ window.GAME_PROJECT_GAMES = [
   { name: '算術堂へようこそ',    icon: '🏮', category: 'learn',   file: 'arithmetic-game.html' },
   { name: '投資シミュレーター',  icon: '📈', category: 'learn',   file: 'investment-game.html' },
   { name: 'バーコードバトル',    icon: '📱', category: 'learn',   file: 'barcode-battle.html' },
+  { name: '将棋道場',           icon: '🥋', category: 'learn',   file: 'shogi-dojo.html', isNew: true },
   { name: '手相占い',           icon: '🤚', category: 'fortune', file: 'palm-reading.html' },
   { name: 'パーソナルカラー診断', icon: '💄', category: 'fortune', file: 'personal-color.html', isNew: true },
   { name: '誕生日占い',         icon: '🎂', category: 'fortune', file: 'birthday-fortune.html', isNew: true },
