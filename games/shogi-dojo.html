@@ -670,8 +670,11 @@ const LESSONS = [
     ],
     playerHand: { KAKU: 1 },
     answer: { drop: 'KAKU', to: [4, 4] },
+    accepts: [
+      { drop: 'KAKU', to: [0, 4] },  // 5一角も王手飛車取り
+    ],
     hint: '王さまへのななめの線と、飛車へのななめの線。2本の線がまじわるマスじゃ！',
-    explain: '「王手飛車取り」じゃ！王手されたら相手は王さまをにげすしかない。そのあいだに、ゆうゆうと飛車をいただくのじゃ。角の2本のななめの線を、いつも意識するのじゃぞ。',
+    explain: '「王手飛車取り」じゃ！王手されたら相手は王さまをにがすしかない。そのあいだに、ゆうゆうと飛車をいただくのじゃ。角の2本のななめの線を、いつも意識するのじゃぞ。',
     wrongText: 'そこからだと、王さまと飛車を同時にはねらえないぞ。',
   },
   {
@@ -695,6 +698,7 @@ const LESSONS = [
       { drop: 'KYOU', to: [5, 4] },
       { drop: 'KYOU', to: [4, 4] },
       { drop: 'KYOU', to: [7, 4] },
+      { drop: 'KYOU', to: [8, 4] },
     ],
     hint: '王さまと同じたての列、ただし王さまのとなりだと取られてしまう。すこしはなして打つのじゃ。',
     explain: '「<ruby>田楽刺<rt>でんがくざ</rt></ruby>し」じゃ！おだんごをくしに刺すように、王さまと金をつらぬく形。王さまがよけたら、うしろの金をいただきじゃ！',
@@ -1122,12 +1126,22 @@ let glowAnswer = false; // 救済: 正解マスを光らせる
 let busy = false;       // 演出中の入力ロック
 let overlayAction = null;
 let pendingPromotion = null;
+let runId = 0;          // レッスンの世代番号。離脱後に残ったタイマーを無効化するためのガード
 
 function senseiSay(html) { senseiTextEl.innerHTML = html; }
 
+// レッスン離脱・再入場後に発火する残留タイマーを無効化するためのガード付きsetTimeout
+function guardedTimeout(fn, delay) {
+  const id = runId;
+  setTimeout(() => { if (id === runId) fn(); }, delay);
+}
+
 function startLesson(lesson) {
+  runId++;
   cur = { lesson, st: makeLessonState(lesson), guideIdx: 0, guideStage: 'from', wrongCount: 0, turn: 'player', over: false };
   sel = null; validMoves = []; lastMove = null; glowAnswer = false; busy = false;
+  pendingPromotion = null;
+  promoteDialog.classList.remove('show');
   $('lessonTitleBar').innerHTML = '第' + lesson.chapter + '章 ' + lesson.title;
   senseiSay(lesson.intro);
   showScreen('lesson');
@@ -1269,7 +1283,7 @@ function quizSuccess(move, text) {
   lastMove = move.to;
   glowAnswer = false;
   render();
-  setTimeout(() => showClear('⭕', 'せいかい！', text, 'つぎへ', () => finishLesson(cur.lesson)), 600);
+  guardedTimeout(() => showClear('⭕', 'せいかい！', text, 'つぎへ', () => finishLesson(cur.lesson)), 600);
 }
 
 function quizWrong(message, move) {
@@ -1309,20 +1323,20 @@ function onGuideClick(r, c) {
     if (cur.guideIdx >= cur.lesson.steps.length) {
       busy = true;
       const isCastle = cur.lesson.chapter === 3;
-      setTimeout(() => showClear(isCastle ? '🏰' : '⚔️', isCastle ? 'できあがり！' : 'ミッション<ruby>達成<rt>たっせい</rt></ruby>！', cur.lesson.explain, 'つぎへ', () => finishLesson(cur.lesson)), 700);
+      guardedTimeout(() => showClear(isCastle ? '🏰' : '⚔️', isCastle ? 'できあがり！' : 'ミッション<ruby>達成<rt>たっせい</rt></ruby>！', cur.lesson.explain, 'つぎへ', () => finishLesson(cur.lesson)), 700);
     }
     render();
   };
   if (step.cpu) {
-    setTimeout(() => {
+    guardedTimeout(() => {
       applyMove(cur.st, step.cpu, true);
       lastMove = step.cpu.to;
       render();
       if (step.cpuSay) senseiSay(step.cpuSay);
-      setTimeout(proceed, 400);
+      guardedTimeout(proceed, 400);
     }, 700);
   } else {
-    setTimeout(proceed, 400);
+    guardedTimeout(proceed, 400);
   }
 }
 
@@ -1333,7 +1347,7 @@ function battlePlayerMove(move) {
     applyMove(cur.st, move, false);
     lastMove = move.to; cur.over = true;
     render();
-    setTimeout(() => showClear('🎉', 'ごうかく！！', '相手の王さまをつかまえた！みごとじゃ！！', 'やったー！', () => finishLesson(cur.lesson)), 500);
+    guardedTimeout(() => showClear('🎉', 'ごうかく！！', '相手の王さまをつかまえた！みごとじゃ！！', 'やったー！', () => finishLesson(cur.lesson)), 500);
     return;
   }
   // 成り選択
@@ -1341,6 +1355,7 @@ function battlePlayerMove(move) {
     const piece = cur.st.bd[move.from[0]][move.from[1]];
     if (canPromote(piece, move.from[0], move.to[0]) && !mustPromote(piece, move.to[0])) {
       pendingPromotion = move;
+      busy = true;
       promoteDialog.classList.add('show');
       render();
       return;
@@ -1355,7 +1370,7 @@ function executeBattlePlayerMove(move) {
   render();
   cur.turn = 'enemy';
   senseiSay('相手が考え中…🤔');
-  setTimeout(cpuMoveWeak, 700);
+  guardedTimeout(cpuMoveWeak, 700);
 }
 
 // 卒業試験用の弱めCPU（shogi.html の cpuMove を土台に弱体化）
@@ -1406,7 +1421,7 @@ function cpuMoveWeak() {
       applyMove(st, move, true);
       lastMove = move.to; cur.over = true;
       render();
-      setTimeout(() => showClear('😢', 'ざんねん…', '王さまを取られてしまった…。でも負けて学ぶのが道場じゃ。囲いをかためて、もういちど挑戦するのじゃ！', 'もういちど！', () => startLesson(cur.lesson)), 500);
+      guardedTimeout(() => showClear('😢', 'ざんねん…', '王さまを取られてしまった…。でも負けて学ぶのが道場じゃ。囲いをかためて、もういちど挑戦するのじゃ！', 'もういちど！', () => startLesson(cur.lesson)), 500);
       return;
     }
     const piece = st.bd[move.from[0]][move.from[1]];
@@ -1473,7 +1488,15 @@ $('startBtn').addEventListener('click', () => { renderHome(); showScreen('home')
 $('toMapBtn').addEventListener('click', () => { renderMap(); showScreen('map'); });
 $('mapBackBtn').addEventListener('click', () => { renderHome(); showScreen('home'); });
 $('lessonsBackBtn').addEventListener('click', () => { renderMap(); showScreen('map'); });
-$('quitBtn').addEventListener('click', () => { cur = null; renderLessonList(currentChapterNum); showScreen('lessons'); });
+$('quitBtn').addEventListener('click', () => {
+  runId++;
+  cur = null;
+  busy = false;
+  pendingPromotion = null;
+  promoteDialog.classList.remove('show');
+  renderLessonList(currentChapterNum);
+  showScreen('lessons');
+});
 $('hintBtn').addEventListener('click', () => { if (cur && cur.lesson.hint) senseiSay('💡 ' + cur.lesson.hint); });
 $('endingHomeBtn').addEventListener('click', () => { renderHome(); showScreen('home'); });
 $('clearNextBtn').addEventListener('click', () => {
@@ -1488,12 +1511,14 @@ $('promoteYes').addEventListener('click', () => {
   if (!pendingPromotion) return;
   const move = pendingPromotion; pendingPromotion = null;
   promoteDialog.classList.remove('show');
+  busy = false;
   executeBattlePlayerMove({ from: move.from, to: move.to, promote: true });
 });
 $('promoteNo').addEventListener('click', () => {
   if (!pendingPromotion) return;
   const move = pendingPromotion; pendingPromotion = null;
   promoteDialog.classList.remove('show');
+  busy = false;
   executeBattlePlayerMove(move);
 });
 
