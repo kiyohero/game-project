@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>将棋道場</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f0fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #game-root { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; animation: fadeIn 0.3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    h1 { font-size: 2rem; color: #6b5b7a; margin: 10px 0; text-align: center; }
+    h2 { font-size: 1.3rem; color: #6b5b7a; margin-bottom: 12px; text-align: center; }
+    .btn { background: #7a6b8a; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .btn:active { transform: scale(0.95); }
+    .btn.big { font-size: 1.2rem; padding: 14px 32px; }
+    .btn.sub { background: #c5b8d8; color: #6b5b7a; }
+    .btn.small { padding: 8px 14px; font-size: 0.85rem; }
+
+    /* ===== タイトル画面 ===== */
+    .title-emblem { font-size: 4.5rem; margin: 20px 0 8px; }
+    .title-sub { color: #9b8ab8; font-size: 0.95rem; margin-bottom: 24px; text-align: center; line-height: 1.7; }
+    .title-btns { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+    .link-shogi { color: #9b8ab8; font-size: 0.9rem; margin-top: 20px; text-decoration: none; }
+    .link-shogi:hover { color: #6b5b7a; }
+
+    /* ===== ホーム画面（級位・帯） ===== */
+    .rank-card { background: white; border-radius: 16px; padding: 20px; width: 100%; text-align: center; box-shadow: 0 4px 12px rgba(107,91,122,0.15); margin-bottom: 14px; }
+    .rank-label { color: #9b8ab8; font-size: 0.85rem; margin-bottom: 4px; }
+    .rank-value { font-size: 3rem; font-weight: bold; color: #6b5b7a; line-height: 1.2; }
+    .belt { height: 18px; border-radius: 9px; margin: 12px auto 4px; width: 85%; border: 1px solid rgba(107,91,122,0.25); position: relative; }
+    .belt::after { content: ''; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 14px; transform: translateX(-50%); background: inherit; border: inherit; border-radius: 3px; }
+    .belt.white { background: #fdfdfd; }
+    .belt.brown { background: #8a5a2b; }
+    .belt.purple { background: #7a5aa8; }
+    .belt.black { background: #2b2b33; }
+    .belt-name { color: #9b8ab8; font-size: 0.8rem; }
+    .progress-note { color: #9b8ab8; font-size: 0.85rem; margin: 4px 0 12px; }
+    .badge-shelf { display: flex; justify-content: center; gap: 14px; margin: 10px 0 16px; }
+    .badge { text-align: center; font-size: 2rem; opacity: 0.22; filter: grayscale(0.8); transition: all 0.4s; }
+    .badge.earned { opacity: 1; filter: none; transform: scale(1.08); }
+    .badge .badge-label { font-size: 0.65rem; color: #9b8ab8; margin-top: 2px; }
+
+    /* ===== 章マップ ===== */
+    .chapter-card { background: white; border-radius: 14px; padding: 16px; width: 100%; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(107,91,122,0.12); border: 2px solid transparent; transition: border-color 0.2s; }
+    .chapter-card:not(.locked):hover { border-color: #b8a5d8; }
+    .chapter-card:not(.locked):active { transform: scale(0.98); }
+    .chapter-card.locked { opacity: 0.5; cursor: default; }
+    .chapter-card.done { border-color: rgba(120,190,120,0.6); }
+    .chapter-icon { font-size: 2.2rem; }
+    .chapter-info { flex: 1; }
+    .chapter-name { font-weight: bold; color: #6b5b7a; font-size: 1.05rem; }
+    .chapter-desc { color: #9b8ab8; font-size: 0.8rem; margin-top: 2px; }
+    .chapter-progress { color: #7a6b8a; font-weight: bold; font-size: 0.95rem; }
+
+    /* ===== レッスン一覧 ===== */
+    .lesson-row { background: white; border-radius: 12px; padding: 12px 16px; width: 100%; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 2px 6px rgba(107,91,122,0.1); }
+    .lesson-row.locked { opacity: 0.45; cursor: default; }
+    .lesson-row:not(.locked):active { transform: scale(0.98); }
+    .lesson-status { font-size: 1.3rem; width: 30px; text-align: center; }
+    .lesson-name { flex: 1; color: #6b5b7a; font-weight: bold; font-size: 0.95rem; }
+    .lesson-type { font-size: 0.7rem; color: #9b8ab8; background: #f0eaf8; border-radius: 10px; padding: 2px 8px; }
+
+    /* ===== レッスン画面（盤・駒 shogi.html 流用） ===== */
+    .lesson-title-bar { color: #6b5b7a; font-weight: bold; font-size: 1.05rem; margin-bottom: 6px; text-align: center; }
+    .game-area { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+    .hand { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: #d4c8e0; border-radius: 6px; min-height: 46px; min-width: 200px; justify-content: center; align-items: center; }
+    .hand-label { font-size: 0.75rem; color: #6b5b7a; margin-bottom: 2px; text-align: center; }
+    .hand-piece { width: 34px; height: 38px; background: #f5e6c8; border: 1px solid #c9a96e; border-radius: 4px 4px 8px 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: bold; color: #333; cursor: pointer; position: relative; clip-path: polygon(10% 0%, 90% 0%, 100% 15%, 100% 100%, 0% 100%, 0% 15%); }
+    .hand-piece.selected { background: #90EE90; }
+    .hand-piece .count { position: absolute; bottom: 2px; right: 2px; font-size: 0.6rem; background: #7a6b8a; color: white; border-radius: 50%; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; }
+    .board { background: #d4a855; padding: 2px; border-radius: 4px; display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .cell { width: 38px; height: 42px; background: #e8c97a; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; border: 1px solid #c9a96e; }
+    .cell.can-move { background: #90EE90; }
+    .cell.last-move { background: #b8d4a8; }
+    .cell.selected { background: #FFD700; }
+    .piece { width: 34px; height: 38px; background: #f5e6c8; border: 1px solid #c9a96e; border-radius: 4px 4px 8px 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; color: #333; position: relative; clip-path: polygon(10% 0%, 90% 0%, 100% 15%, 100% 100%, 0% 100%, 0% 15%); transition: transform 0.1s; }
+    .piece.enemy { transform: rotate(180deg); }
+    .piece.promoted { color: #c41e3a; }
+    /* ガイド発光・正解発光 */
+    @keyframes guidePulse { 0%,100% { box-shadow: inset 0 0 0 3px rgba(255,180,40,0.9); } 50% { box-shadow: inset 0 0 4px 5px rgba(255,140,0,0.6); } }
+    .cell.guide-from { animation: guidePulse 1s infinite; background: #ffe9a8; }
+    .cell.guide-to { animation: guidePulse 1s infinite; background: #ffd98a; }
+    @keyframes answerGlow { 0%,100% { box-shadow: inset 0 0 0 3px rgba(80,180,255,0.95); } 50% { box-shadow: inset 0 0 6px 6px rgba(80,180,255,0.55); } }
+    .cell.answer-glow, .hand-piece.answer-glow { animation: answerGlow 0.9s infinite; }
+    @keyframes softShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    .cell.shake { animation: softShake 0.25s; }
+    /* 師範メッセージバー */
+    .sensei-bar { display: flex; align-items: flex-start; gap: 8px; background: #fff; border: 2px solid #d4c8e0; border-radius: 12px; padding: 10px 12px; width: 100%; min-height: 58px; margin-top: 8px; }
+    .sensei-face { font-size: 1.6rem; flex-shrink: 0; }
+    .sensei-text { color: #6b5b7a; font-size: 0.88rem; line-height: 1.6; }
+    .sensei-text ruby rt { font-size: 0.55em; color: #9b8ab8; }
+    .lesson-btns { display: flex; gap: 10px; margin-top: 10px; }
+
+    /* ===== 卒業画面 ===== */
+    .ending-box { text-align: center; padding: 24px 0; }
+    .ending-trophy { font-size: 4.5rem; margin-bottom: 10px; }
+    .ending-title { font-size: 1.8rem; color: #6b5b7a; font-weight: bold; margin-bottom: 10px; }
+    .ending-msg { color: #9b8ab8; line-height: 1.8; margin-bottom: 20px; }
+
+    /* ===== オーバーレイ ===== */
+    .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; padding: 20px; text-align: center; }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .overlay .ov-icon { font-size: 3.5rem; margin-bottom: 10px; }
+    .overlay h2 { font-size: 1.7rem; color: #6b5b7a; margin-bottom: 12px; }
+    .overlay p { color: #6b5b7a; margin-bottom: 20px; line-height: 1.8; max-width: 340px; }
+    .overlay p ruby rt { font-size: 0.55em; color: #9b8ab8; }
+    /* 昇級演出 */
+    #rankUpOverlay h2 { font-size: 2.2rem; }
+    .rankup-value { font-size: 3.2rem; font-weight: bold; color: #7a5aa8; margin-bottom: 14px; animation: rankPop 0.5s ease; }
+    @keyframes rankPop { 0% { transform: scale(0.3); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+    .confetti { position: absolute; top: -20px; width: 10px; height: 14px; opacity: 0.9; animation: confettiFall linear forwards; }
+    @keyframes confettiFall { to { transform: translateY(110vh) rotate(720deg); } }
+    /* 成りダイアログ */
+    .promote-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 200; display: none; flex-direction: column; align-items: center; gap: 15px; }
+    .promote-dialog.show { display: flex; }
+    .promote-dialog h3 { color: #6b5b7a; }
+    .promote-dialog .buttons { display: flex; gap: 10px; }
+
+    @media (max-width: 400px) {
+      .cell { width: 34px; height: 38px; }
+      .piece { width: 30px; height: 34px; font-size: 0.85rem; }
+      .hand-piece { width: 32px; height: 36px; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+<div id="game-root">
+
+  <!-- タイトル画面 -->
+  <div id="screen-title" class="screen active">
+    <div class="title-emblem">🥋</div>
+    <h1>将棋道場</h1>
+    <p class="title-sub">師範（しはん）といっしょに<br><ruby>戦法<rt>せんぽう</rt></ruby>や<ruby>詰<rt>つ</rt></ruby>め<ruby>方<rt>かた</rt></ruby>をれんしゅうして、<br>初段（しょだん）をめざそう！</p>
+    <div class="title-btns">
+      <button class="btn big" id="startBtn">入門する</button>
+    </div>
+    <a class="link-shogi" href="shogi.html">🏯 将棋で対局する</a>
+  </div>
+
+  <!-- ホーム画面 -->
+  <div id="screen-home" class="screen">
+    <div class="rank-card">
+      <div class="rank-label">いまのきみは…</div>
+      <div class="rank-value" id="rankValue">10級</div>
+      <div class="belt white" id="beltBar"></div>
+      <div class="belt-name" id="beltName">白帯（しろおび）</div>
+    </div>
+    <div class="progress-note" id="progressNote">レッスン 0 / 16 クリア</div>
+    <div class="badge-shelf">
+      <div class="badge" id="badge-ch1">🎯<div class="badge-label">手筋</div></div>
+      <div class="badge" id="badge-ch2">🗡️<div class="badge-label">詰め</div></div>
+      <div class="badge" id="badge-ch3">🏰<div class="badge-label">囲い</div></div>
+      <div class="badge" id="badge-ch4">⚔️<div class="badge-label">戦法</div></div>
+    </div>
+    <button class="btn big" id="toMapBtn">しゅぎょうする</button>
+    <a class="link-shogi" href="shogi.html">🏯 将棋で対局する</a>
+  </div>
+
+  <!-- 章マップ画面 -->
+  <div id="screen-map" class="screen">
+    <h2>しゅぎょうの間（ま）</h2>
+    <div id="chapterList" style="width:100%"></div>
+    <button class="btn sub" id="mapBackBtn" style="margin-top:8px">← もどる</button>
+  </div>
+
+  <!-- レッスン一覧画面 -->
+  <div id="screen-lessons" class="screen">
+    <h2 id="lessonsTitle">第1章</h2>
+    <div id="lessonList" style="width:100%"></div>
+    <button class="btn sub" id="lessonsBackBtn" style="margin-top:8px">← もどる</button>
+  </div>
+
+  <!-- レッスン画面 -->
+  <div id="screen-lesson" class="screen">
+    <div class="lesson-title-bar" id="lessonTitleBar"></div>
+    <div class="game-area">
+      <div>
+        <div class="hand-label">相手の持ち駒</div>
+        <div class="hand" id="enemyHand"></div>
+      </div>
+      <div class="board" id="board"></div>
+      <div>
+        <div class="hand-label">あなたの持ち駒</div>
+        <div class="hand" id="playerHand"></div>
+      </div>
+    </div>
+    <div class="sensei-bar">
+      <div class="sensei-face">🥋</div>
+      <div class="sensei-text" id="senseiText"></div>
+    </div>
+    <div class="lesson-btns">
+      <button class="btn small" id="hintBtn">💡 ヒント</button>
+      <button class="btn small sub" id="quitBtn">レッスンをやめる</button>
+    </div>
+  </div>
+
+  <!-- 卒業画面 -->
+  <div id="screen-ending" class="screen">
+    <div class="ending-box">
+      <div class="ending-trophy">🎓</div>
+      <div class="ending-title">きみは初段（しょだん）！</div>
+      <p class="ending-msg">道場のしゅぎょうをぜんぶやりとげたな。<br>手筋・詰め・囲い・戦法……<br>もう立派（りっぱ）な将棋指しじゃ！<br>つぎは本番の対局で力をためすのじゃ！</p>
+      <a class="btn big" href="shogi.html" style="text-decoration:none; display:inline-block;">🏯 本番で使ってみよう</a>
+      <div style="margin-top:14px"><button class="btn sub" id="endingHomeBtn">道場にもどる</button></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 正解オーバーレイ -->
+<div class="overlay" id="clearOverlay">
+  <div class="ov-icon" id="clearIcon">⭕</div>
+  <h2 id="clearTitle">せいかい！</h2>
+  <p id="clearText"></p>
+  <button class="btn big" id="clearNextBtn">つぎへ</button>
+</div>
+
+<!-- 昇級オーバーレイ -->
+<div class="overlay" id="rankUpOverlay">
+  <div class="ov-icon">🎉</div>
+  <h2>昇級（しょうきゅう）！</h2>
+  <div class="rankup-value" id="rankUpValue">9級</div>
+  <p>しゅぎょうの成果（せいか）じゃ！<br>そのちょうしでがんばるのじゃ！</p>
+  <button class="btn big" id="rankUpOkBtn">やったー！</button>
+</div>
+
+<!-- 成りダイアログ（卒業試験用） -->
+<div class="promote-dialog" id="promoteDialog">
+  <h3>成りますか？</h3>
+  <div class="buttons">
+    <button class="btn" id="promoteYes">成る</button>
+    <button class="btn" id="promoteNo">成らない</button>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// 将棋道場
+// 盤面規約: board[r][c] / r=0が上(後手陣・一段目)〜r=8が下(先手陣・九段目)
+//           c=0が左(9筋)〜c=8が右(1筋)。例:「5五」=board[4][4]、「2八」=board[7][7]
+// プレイヤーは常に先手(下側・上向きに進む)。駒の整数表現は shogi.html と同一。
+// ================================================================
+// @@ENGINE-START このマーカー区間はDOM非依存(Nodeでのレッスン検証にも使う)
+
+// 駒の種類
+const PIECES = {
+  EMPTY: 0,
+  // 先手
+  OU: 1, HI: 2, KAKU: 3, KIN: 4, GIN: 5, KEI: 6, KYOU: 7, FU: 8,
+  // 成り駒
+  RYU: 12, UMA: 13, NGIN: 15, NKEI: 16, NKYOU: 17, TO: 18,
+  // 後手（+20）
+  E_OU: 21, E_HI: 22, E_KAKU: 23, E_KIN: 24, E_GIN: 25, E_KEI: 26, E_KYOU: 27, E_FU: 28,
+  E_RYU: 32, E_UMA: 33, E_NGIN: 35, E_NKEI: 36, E_NKYOU: 37, E_TO: 38
+};
+
+// 駒の表示名
+const PIECE_NAMES = {
+  [PIECES.OU]: '王', [PIECES.HI]: '飛', [PIECES.KAKU]: '角', [PIECES.KIN]: '金',
+  [PIECES.GIN]: '銀', [PIECES.KEI]: '桂', [PIECES.KYOU]: '香', [PIECES.FU]: '歩',
+  [PIECES.RYU]: '竜', [PIECES.UMA]: '馬', [PIECES.NGIN]: '全', [PIECES.NKEI]: '圭',
+  [PIECES.NKYOU]: '杏', [PIECES.TO]: 'と',
+  [PIECES.E_OU]: '王', [PIECES.E_HI]: '飛', [PIECES.E_KAKU]: '角', [PIECES.E_KIN]: '金',
+  [PIECES.E_GIN]: '銀', [PIECES.E_KEI]: '桂', [PIECES.E_KYOU]: '香', [PIECES.E_FU]: '歩',
+  [PIECES.E_RYU]: '竜', [PIECES.E_UMA]: '馬', [PIECES.E_NGIN]: '全', [PIECES.E_NKEI]: '圭',
+  [PIECES.E_NKYOU]: '杏', [PIECES.E_TO]: 'と'
+};
+
+// 持ち駒用の名前
+const HAND_NAMES = { 'HI': '飛', 'KAKU': '角', 'KIN': '金', 'GIN': '銀', 'KEI': '桂', 'KYOU': '香', 'FU': '歩' };
+const HAND_ORDER = ['HI', 'KAKU', 'KIN', 'GIN', 'KEI', 'KYOU', 'FU'];
+
+const isPromoted = (p) => [12,13,15,16,17,18,32,33,35,36,37,38].includes(p);
+const isEnemy = (p) => p >= 21;
+
+// 駒を持ち駒に変換
+const toHandPiece = (p) => {
+  const base = p >= 21 ? p - 20 : p;
+  if (base === 12) return 'HI';
+  if (base === 13) return 'KAKU';
+  if (base >= 15 && base <= 17) return ['GIN', 'KEI', 'KYOU'][base - 15];
+  if (base === 18) return 'FU';
+  if (base === 1) return null; // 王は取れない（ゲーム終了）
+  return ['', 'OU', 'HI', 'KAKU', 'KIN', 'GIN', 'KEI', 'KYOU', 'FU'][base];
+};
+
+// 持ち駒を盤上の駒に変換
+const handToPiece = (name, isEnemySide) => {
+  const map = { 'HI': 2, 'KAKU': 3, 'KIN': 4, 'GIN': 5, 'KEI': 6, 'KYOU': 7, 'FU': 8 };
+  return map[name] + (isEnemySide ? 20 : 0);
+};
+
+function emptyHand() { return { HI: 0, KAKU: 0, KIN: 0, GIN: 0, KEI: 0, KYOU: 0, FU: 0 }; }
+
+// 平手の初期配置を作って返す
+function standardSetup() {
+  const bd = [];
+  for (let r = 0; r < 9; r++) { bd[r] = []; for (let c = 0; c < 9; c++) bd[r][c] = PIECES.EMPTY; }
+  // 後手（上側）
+  bd[0][0] = PIECES.E_KYOU; bd[0][1] = PIECES.E_KEI; bd[0][2] = PIECES.E_GIN;
+  bd[0][3] = PIECES.E_KIN; bd[0][4] = PIECES.E_OU; bd[0][5] = PIECES.E_KIN;
+  bd[0][6] = PIECES.E_GIN; bd[0][7] = PIECES.E_KEI; bd[0][8] = PIECES.E_KYOU;
+  bd[1][1] = PIECES.E_HI; bd[1][7] = PIECES.E_KAKU;
+  for (let c = 0; c < 9; c++) bd[2][c] = PIECES.E_FU;
+  // 先手（下側）
+  bd[8][0] = PIECES.KYOU; bd[8][1] = PIECES.KEI; bd[8][2] = PIECES.GIN;
+  bd[8][3] = PIECES.KIN; bd[8][4] = PIECES.OU; bd[8][5] = PIECES.KIN;
+  bd[8][6] = PIECES.GIN; bd[8][7] = PIECES.KEI; bd[8][8] = PIECES.KYOU;
+  bd[7][7] = PIECES.HI; bd[7][1] = PIECES.KAKU;
+  for (let c = 0; c < 9; c++) bd[6][c] = PIECES.FU;
+  return bd;
+}
+
+// 駒の動きを取得（shogi.html の getMoves を盤面引数化したもの）
+function getMoves(bd, piece, row, col) {
+  const moves = [];
+  const isE = isEnemy(piece);
+  const dir = isE ? 1 : -1; // 敵は下向き、味方は上向き
+  const base = isE ? piece - 20 : piece;
+
+  const addMove = (r, c) => {
+    if (r < 0 || r > 8 || c < 0 || c > 8) return false;
+    const target = bd[r][c];
+    if (target === PIECES.EMPTY) {
+      moves.push([r, c]);
+      return true;
+    } else if (isEnemy(target) !== isE) {
+      moves.push([r, c]);
+      return false;
+    }
+    return false;
+  };
+
+  const addLine = (dr, dc) => {
+    for (let i = 1; i <= 8; i++) {
+      if (!addMove(row + dr * i, col + dc * i)) break;
+      if (bd[row + dr * i] && bd[row + dr * i][col + dc * i] !== PIECES.EMPTY) break;
+    }
+  };
+
+  const kinMoves = () => {
+    addMove(row + dir, col);
+    addMove(row + dir, col - 1);
+    addMove(row + dir, col + 1);
+    addMove(row, col - 1);
+    addMove(row, col + 1);
+    addMove(row - dir, col);
+  };
+
+  switch (base) {
+    case 1: // 王
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        addMove(row + dr, col + dc);
+      }
+      break;
+    case 2: addLine(-1, 0); addLine(1, 0); addLine(0, -1); addLine(0, 1); break; // 飛車
+    case 3: addLine(-1, -1); addLine(-1, 1); addLine(1, -1); addLine(1, 1); break; // 角
+    case 4: kinMoves(); break; // 金
+    case 5: // 銀
+      addMove(row + dir, col);
+      addMove(row + dir, col - 1);
+      addMove(row + dir, col + 1);
+      addMove(row - dir, col - 1);
+      addMove(row - dir, col + 1);
+      break;
+    case 6: addMove(row + dir * 2, col - 1); addMove(row + dir * 2, col + 1); break; // 桂馬
+    case 7: addLine(dir, 0); break; // 香車
+    case 8: addMove(row + dir, col); break; // 歩
+    case 12: // 竜
+      addLine(-1, 0); addLine(1, 0); addLine(0, -1); addLine(0, 1);
+      addMove(row - 1, col - 1); addMove(row - 1, col + 1);
+      addMove(row + 1, col - 1); addMove(row + 1, col + 1);
+      break;
+    case 13: // 馬
+      addLine(-1, -1); addLine(-1, 1); addLine(1, -1); addLine(1, 1);
+      addMove(row - 1, col); addMove(row + 1, col);
+      addMove(row, col - 1); addMove(row, col + 1);
+      break;
+    case 15: case 16: case 17: case 18: kinMoves(); break; // 成銀、成桂、成香、と金
+  }
+  return moves;
+}
+
+// 持ち駒を置ける場所を取得（二歩・行き所のない駒を禁止）
+function getDropMoves(bd, pieceName, isEnemySide) {
+  const moves = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (bd[r][c] !== PIECES.EMPTY) continue;
+      if (pieceName === 'FU' || pieceName === 'KYOU') {
+        if ((isEnemySide && r === 8) || (!isEnemySide && r === 0)) continue;
+      }
+      if (pieceName === 'KEI') {
+        if ((isEnemySide && r >= 7) || (!isEnemySide && r <= 1)) continue;
+      }
+      if (pieceName === 'FU') {
+        let hasFu = false;
+        for (let row = 0; row < 9; row++) {
+          const p = bd[row][c];
+          if ((isEnemySide && p === PIECES.E_FU) || (!isEnemySide && p === PIECES.FU)) { hasFu = true; break; }
+        }
+        if (hasFu) continue;
+      }
+      moves.push([r, c]);
+    }
+  }
+  return moves;
+}
+
+// 成れるかどうか
+function canPromote(piece, fromRow, toRow) {
+  const base = isEnemy(piece) ? piece - 20 : piece;
+  if ([1, 4, 12, 13, 15, 16, 17, 18].includes(base)) return false;
+  return isEnemy(piece) ? (fromRow >= 6 || toRow >= 6) : (fromRow <= 2 || toRow <= 2);
+}
+
+// 必ず成らなければならないか
+function mustPromote(piece, toRow) {
+  const base = isEnemy(piece) ? piece - 20 : piece;
+  const isE = isEnemy(piece);
+  if (base === 8 || base === 7) return isE ? toRow === 8 : toRow === 0; // 歩、香
+  if (base === 6) return isE ? toRow >= 7 : toRow <= 1; // 桂
+  return false;
+}
+
+// 駒を成らせる
+function promotePiece(piece) {
+  const isE = isEnemy(piece);
+  const base = isE ? piece - 20 : piece;
+  let promoted;
+  switch (base) {
+    case 2: promoted = 12; break;
+    case 3: promoted = 13; break;
+    case 5: promoted = 15; break;
+    case 6: promoted = 16; break;
+    case 7: promoted = 17; break;
+    case 8: promoted = 18; break;
+    default: return piece;
+  }
+  return isE ? promoted + 20 : promoted;
+}
+
+// ---- 局面状態 st = { bd, pHand, eHand } ----
+function cloneBoard(bd) { return bd.map(row => row.slice()); }
+function cloneState(st) { return { bd: cloneBoard(st.bd), pHand: Object.assign({}, st.pHand), eHand: Object.assign({}, st.eHand) }; }
+
+// レッスン定義から局面状態を作る（board:null は平手初期配置）
+function makeLessonState(lesson) {
+  return {
+    bd: lesson.board ? cloneBoard(lesson.board) : standardSetup(),
+    pHand: Object.assign(emptyHand(), lesson.playerHand || {}),
+    eHand: Object.assign(emptyHand(), lesson.enemyHand || {})
+  };
+}
+
+// 手を適用する。move = {from:[r,c], to:[r,c], promote?} または {drop:'KIN', to:[r,c]}
+function applyMove(st, move, byEnemy) {
+  const [tr, tc] = move.to;
+  if (move.drop) {
+    st.bd[tr][tc] = handToPiece(move.drop, !!byEnemy);
+    (byEnemy ? st.eHand : st.pHand)[move.drop]--;
+    return PIECES.EMPTY;
+  }
+  const [fr, fc] = move.from;
+  let piece = st.bd[fr][fc];
+  const captured = st.bd[tr][tc];
+  if (captured !== PIECES.EMPTY) {
+    const hp = toHandPiece(captured);
+    if (hp) (byEnemy ? st.eHand : st.pHand)[hp]++;
+  }
+  if (move.promote || mustPromote(piece, tr)) piece = promotePiece(piece);
+  st.bd[tr][tc] = piece;
+  st.bd[fr][fc] = PIECES.EMPTY;
+  return captured;
+}
+
+// 手の一致判定（answer側に promote 指定がない場合は成り不成りを問わない）
+function sameMove(move, ans) {
+  if (!!move.drop !== !!ans.drop) return false;
+  if (move.to[0] !== ans.to[0] || move.to[1] !== ans.to[1]) return false;
+  if (move.drop) return move.drop === ans.drop;
+  if (move.from[0] !== ans.from[0] || move.from[1] !== ans.from[1]) return false;
+  if (ans.promote !== undefined && !!move.promote !== !!ans.promote) return false;
+  return true;
+}
+
+function matchesAnswer(move, lesson) {
+  return [lesson.answer].concat(lesson.accepts || []).some(ans => sameMove(move, ans));
+}
+
+// 指定側の王の位置
+function findKing(bd, enemySide) {
+  const target = enemySide ? PIECES.E_OU : PIECES.OU;
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (bd[r][c] === target) return [r, c];
+  return null;
+}
+
+// 指定側の王に王手がかかっているか
+function isCheck(bd, enemySide) {
+  const king = findKing(bd, enemySide);
+  if (!king) return false;
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const p = bd[r][c];
+      if (p === PIECES.EMPTY || isEnemy(p) === enemySide) continue;
+      if (getMoves(bd, p, r, c).some(m => m[0] === king[0] && m[1] === king[1])) return true;
+    }
+  }
+  return false;
+}
+
+// 後手側の全応手（盤上の駒の移動＋持ち駒の合駒打ち）
+function listEnemyReplies(st) {
+  const replies = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const p = st.bd[r][c];
+      if (p === PIECES.EMPTY || !isEnemy(p)) continue;
+      for (const m of getMoves(st.bd, p, r, c)) replies.push({ from: [r, c], to: m });
+    }
+  }
+  for (const name of HAND_ORDER) {
+    if (st.eHand[name] > 0) {
+      for (const m of getDropMoves(st.bd, name, true)) replies.push({ drop: name, to: m });
+    }
+  }
+  return replies;
+}
+
+// 1手詰め判定: moveを指したあとの結果
+// 'mate'=詰み / 'not-check'=王手ですらない / 'escape'=王手だが逃げられる
+function mateResult(lesson, move) {
+  const st = makeLessonState(lesson);
+  applyMove(st, move, false);
+  if (!isCheck(st.bd, true)) return 'not-check';
+  for (const reply of listEnemyReplies(st)) {
+    const sim = cloneState(st);
+    applyMove(sim, reply, true);
+    if (!isCheck(sim.bd, true)) return 'escape';
+  }
+  return 'mate';
+}
+
+// プレイヤー(先手)の手として合法か
+function isLegalPlayerMove(st, move) {
+  if (move.drop) {
+    if (!st.pHand[move.drop]) return false;
+    return getDropMoves(st.bd, move.drop, false).some(m => m[0] === move.to[0] && m[1] === move.to[1]);
+  }
+  const p = st.bd[move.from[0]][move.from[1]];
+  if (p === PIECES.EMPTY || isEnemy(p)) return false;
+  if (move.promote && !canPromote(p, move.from[0], move.to[0])) return false;
+  return getMoves(st.bd, p, move.from[0], move.from[1]).some(m => m[0] === move.to[0] && m[1] === move.to[1]);
+}
+
+// 後手の手として合法か（ガイドの定型応手の検証用）
+function isLegalEnemyMove(st, move) {
+  if (move.drop) {
+    if (!st.eHand[move.drop]) return false;
+    return getDropMoves(st.bd, move.drop, true).some(m => m[0] === move.to[0] && m[1] === move.to[1]);
+  }
+  const p = st.bd[move.from[0]][move.from[1]];
+  if (p === PIECES.EMPTY || !isEnemy(p)) return false;
+  return getMoves(st.bd, p, move.from[0], move.from[1]).some(m => m[0] === move.to[0] && m[1] === move.to[1]);
+}
+
+// ---- 級位システム ----
+const RANKS = ['10級', '9級', '8級', '7級', '6級', '5級', '4級', '3級', '2級', '1級', '初段'];
+// クリア済みレッスン数がこの値に達するたびに1つ昇級（序盤はテンポよく、後半は2レッスンで1昇級）
+const RANK_THRESHOLDS = [1, 2, 3, 4, 6, 8, 10, 12, 14, 16];
+function currentRank(clearedCount) {
+  return RANKS[RANK_THRESHOLDS.filter(t => clearedCount >= t).length];
+}
+// 帯の色（級位が上がると帯もかっこよく）
+function beltOf(rank) {
+  const i = RANKS.indexOf(rank);
+  if (i >= 10) return { cls: 'black', name: '黒帯（くろおび）' };
+  if (i >= 7) return { cls: 'purple', name: '紫帯（むらさきおび）' };
+  if (i >= 4) return { cls: 'brown', name: '茶帯（ちゃおび）' };
+  return { cls: 'white', name: '白帯（しろおび）' };
+}
+
+const CHAPTERS = [
+  { num: 1, icon: '🎯', name: '手筋（てすじ）の間', desc: '駒のじょうずな使い方を学ぶ', badge: 'ch1' },
+  { num: 2, icon: '🗡️', name: '詰（つ）めの間', desc: '1手で王さまをしとめる', badge: 'ch2' },
+  { num: 3, icon: '🏰', name: '囲（かこ）いの間', desc: '王さまのお城を組み立てる', badge: 'ch3' },
+  { num: 4, icon: '⚔️', name: '戦法（せんぽう）の間', desc: '棒銀で攻めて卒業試験！', badge: 'ch4' },
+];
+
+// ---- レッスンデータ ----
+// 局面リテラル用の短縮名（値は PIECES と同一。__=空マス、e〜=後手の駒）
+const __ = 0,
+  OU = 1, HI = 2, KA = 3, KI = 4, GI = 5, KE = 6, KY = 7, FU = 8, RY = 12, UM = 13, TO = 18,
+  eOU = 21, eHI = 22, eKA = 23, eKI = 24, eGI = 25, eKE = 26, eKY = 27, eFU = 28;
+
+const LESSONS = [
+  // ============ 第1章 手筋（quiz型: 局面を見て次の一手を指す） ============
+  {
+    id: 'c1-1', chapter: 1, type: 'quiz',
+    title: '<ruby>頭金<rt>あたまきん</rt></ruby>',
+    intro: '相手の王さまをつかまえる、いちばん有名な形を教えよう。持ちごまの金を、どこに打つのがいちばん強いかな？',
+    board: [
+      [__, __, __, __, eOU, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, __, __, FU, __, __, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { KIN: 1 },
+    answer: { drop: 'KIN', to: [1, 4] },
+    hint: '王さまの「あたま」…つまり、すぐ下のマスじゃ！5三の歩が守ってくれるぞ。',
+    explain: 'これが「<ruby>頭金<rt>あたまきん</rt></ruby>」じゃ！打った金は5三の歩が守っているから、王さまは取れん。ななめ後ろ以外ぜんぶに動ける金は、王さまをつかまえる名人なのじゃ。',
+    wrongText: 'おしい！王さまににげられてしまうぞ。もういちど！',
+  },
+  {
+    id: 'c1-2', chapter: 1, type: 'quiz',
+    title: '<ruby>桂<rt>けい</rt></ruby>のふんどし（<ruby>両取<rt>りょうど</rt></ruby>り）',
+    intro: '桂馬は、いちどに2つの駒をねらえるのじゃ。2まいの金を同時にねらえる場所に、桂馬を打ってみよ！',
+    board: [
+      [__, __, __, __, eOU, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, __, eKI, __, eKI, __, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { KEI: 1 },
+    answer: { drop: 'KEI', to: [4, 4] },
+    hint: '桂馬は「2つ前の、ななめのマス」にジャンプするぞ。2まいの金の両方に当たる場所は…まん中じゃ！',
+    explain: 'これが「桂のふんどし」じゃ！5五の桂馬は6三と4三の両方をねらっている。相手はどちらか1まいしか守れないから、金が1まい取れるのじゃ。',
+    wrongText: 'うーん、そこでは2まい同時にねらえないぞ。',
+  },
+  {
+    id: 'c1-3', chapter: 1, type: 'quiz',
+    title: '<ruby>王手飛車取<rt>おうてびしゃど</rt></ruby>り',
+    intro: '角はななめにどこまでも進める駒じゃ。王さまと飛車を同時にねらう、ひっさつの一手を打ってみよ！',
+    board: [
+      [__, __, __, __, __, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, eHI, __, __, __, eOU, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { KAKU: 1 },
+    answer: { drop: 'KAKU', to: [4, 4] },
+    hint: '王さまへのななめの線と、飛車へのななめの線。2本の線がまじわるマスじゃ！',
+    explain: '「王手飛車取り」じゃ！王手されたら相手は王さまをにげすしかない。そのあいだに、ゆうゆうと飛車をいただくのじゃ。角の2本のななめの線を、いつも意識するのじゃぞ。',
+    wrongText: 'そこからだと、王さまと飛車を同時にはねらえないぞ。',
+  },
+  {
+    id: 'c1-4', chapter: 1, type: 'quiz',
+    title: '<ruby>田楽刺<rt>でんがくざ</rt></ruby>し',
+    intro: '香車はまっすぐどこまでも進む駒じゃ。王さまと金が同じたてに並んでいるぞ。香車のかがやく一手はどこじゃ？',
+    board: [
+      [__, __, __, __, eKI, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, __, __, eOU, __, __, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, OU, __, __, __, __, __],  // 九
+    ],
+    playerHand: { KYOU: 1 },
+    answer: { drop: 'KYOU', to: [6, 4] },
+    accepts: [
+      { drop: 'KYOU', to: [5, 4] },
+      { drop: 'KYOU', to: [4, 4] },
+      { drop: 'KYOU', to: [7, 4] },
+    ],
+    hint: '王さまと同じたての列、ただし王さまのとなりだと取られてしまう。すこしはなして打つのじゃ。',
+    explain: '「<ruby>田楽刺<rt>でんがくざ</rt></ruby>し」じゃ！おだんごをくしに刺すように、王さまと金をつらぬく形。王さまがよけたら、うしろの金をいただきじゃ！',
+    wrongText: '王さまのすぐ近くだと取られてしまうぞ。同じたての列で、はなれた場所は？',
+  },
+  {
+    id: 'c1-5', chapter: 1, type: 'quiz',
+    title: '<ruby>垂<rt>た</rt></ruby>れ<ruby>歩<rt>ふ</rt></ruby>',
+    intro: '歩はいちばん弱い駒…と思ったら大まちがい！敵陣に入って成れば「と金」、金と同じ強さじゃ。つぎに「と金」を作れる場所に歩を打ってみよ。',
+    board: [
+      [__, __, eKI, __, eOU, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, __, __, __, __, __, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { FU: 1 },
+    answer: { drop: 'FU', to: [2, 2] },
+    hint: '金のいる7一の列じゃ。ただし金にすぐ取られない場所…金がとどかないのは、どこかな？',
+    explain: 'これが「<ruby>垂<rt>た</rt></ruby>れ<ruby>歩<rt>ふ</rt></ruby>」じゃ！つぎの手で7二に進んで「と金」になれば、金をねらえる。7二に直接打つと金に取られるが、7三ならとどかない。じわじわせめる、プロも使うわざじゃ！',
+    wrongText: '「つぎに成れて、すぐには取られない」場所じゃぞ。',
+  },
+  {
+    id: 'c1-6', chapter: 1, type: 'quiz',
+    title: '<ruby>十字飛車<rt>じゅうじびしゃ</rt></ruby>',
+    intro: '飛車はたてと横、十字にどこまでも進めるのじゃ。相手の金と角を、同時にねらえるマスに飛車を動かしてみよ！',
+    board: [
+      [__, __, __, __, __, __, eOU, __, __],  // 一
+      [__, __, __, __, eKI, __, __, __, __],  // 二
+      [__, __, __, __, __, __, __, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [HI, __, __, __, __, __, __, eKA, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    answer: { from: [4, 0], to: [4, 4] },
+    hint: '飛車を横にすべらせて…たての線で金、横の線で角。両方に当たるマスは1つだけじゃ！',
+    explain: '「<ruby>十字飛車<rt>じゅうじびしゃ</rt></ruby>」じゃ！5五の飛車は、たてで5二の金、横で2五の角をにらんでいる。相手はどちらかしか守れん。飛車の十字の力、おそるべしじゃ！',
+    wrongText: '金と角、りょうほうに飛車の線が当たるマスをさがすのじゃ。',
+  },
+
+  // ============ 第2章 1手詰め（tsume型: 詰む手なら別解でも正解） ============
+  {
+    id: 'c2-1', chapter: 2, type: 'tsume',
+    title: '1手詰め ①（頭金）',
+    intro: 'ここからは本物の「詰め将棋」じゃ。1手で相手の王さまを詰ませてみよ。持ちごまは金1まい！',
+    board: [
+      [__, __, __, __, eOU, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, __, RY, __, __, __, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { KIN: 1 },
+    answer: { drop: 'KIN', to: [1, 4] },
+    hint: '第1章で習った「頭金」じゃ！竜が金を守ってくれるぞ。',
+    explain: 'みごと！5二の金は竜が守っているから王さまは取れず、にげ場所もぜんぶ金がおさえている。これぞ頭金の詰みじゃ！',
+  },
+  {
+    id: 'c2-2', chapter: 2, type: 'tsume',
+    title: '1手詰め ②（はしの王さま）',
+    intro: 'はしっこににげた王さまじゃ。馬のきき（守り）を使って、金でしとめよ！',
+    board: [
+      [__, __, __, __, __, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, eOU],  // 二
+      [__, __, __, __, __, __, __, __, eFU],  // 三
+      [__, __, __, __, __, UM, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, KY],  // 九
+    ],
+    playerHand: { KIN: 1 },
+    answer: { drop: 'KIN', to: [1, 7] },
+    hint: '王さまの横っぱらに金を打つ「腹金（はらきん）」じゃ。馬が金を守っているマスは…？',
+    explain: '2二の金は4四の馬が守っている！王さまは金を取れず、上も下もにげられん。横から打つ金「腹金」もおぼえておくのじゃ。',
+  },
+  {
+    id: 'c2-3', chapter: 2, type: 'tsume',
+    title: '1手詰め ③（銀のとどめ）',
+    intro: 'こんどの持ちごまは銀じゃ。桂馬と馬がおうえんしているぞ。銀のかがやく一手は？',
+    board: [
+      [__, __, __, __, __, __, __, eOU, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, __, __, __, __, __, __, UM],  // 三
+      [__, __, __, __, __, __, __, KE, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { GIN: 1 },
+    answer: { drop: 'GIN', to: [1, 7] },
+    hint: '王さまのま下じゃ！銀はななめ後ろにも動けるから、前の3マスと合わせて王さまをがっちりおさえられる。',
+    explain: '2二の銀を王さまが取ろうとしても、馬がにらんでいる。よこにげは桂馬が、上は銀がおさえて、どこにもにげられん。銀・桂・馬のチームプレーじゃ！',
+  },
+  {
+    id: 'c2-4', chapter: 2, type: 'tsume',
+    title: '1手詰め ④（桂馬の一発）',
+    intro: '王さまのまわりは、みかたの駒でぎゅうぎゅうじゃ。こういうときこそ桂馬！ジャンプでしとめよ！',
+    board: [
+      [__, __, __, eKI, eOU, eKI, __, __, __],  // 一
+      [__, __, __, eKE, eKY, eGI, __, __, __],  // 二
+      [__, __, __, __, __, __, __, __, __],  // 三
+      [__, __, __, __, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { KEI: 1 },
+    answer: { drop: 'KEI', to: [2, 3] },
+    hint: '桂馬のジャンプで王さまに当たる場所は2つ。でも4三は相手の銀ににらまれている…もう1つは？',
+    explain: '6三の桂馬は、だれにも取られずに王手！王さまのまわりはみかたの駒でうまっていて、にげ場所ゼロ。しかも桂馬の王手は、あいだに駒を打ってふせぐこともできない。桂馬はすごいのじゃ！',
+  },
+  {
+    id: 'c2-5', chapter: 2, type: 'tsume',
+    title: '1手詰め ⑤（飛車のねらいうち）',
+    intro: 'こんどは大駒・飛車の出番じゃ。はなれた場所から、ズドンと王手で詰ませてみよ！',
+    board: [
+      [__, __, __, eKI, eKY, eKE, __, __, __],  // 一
+      [__, __, __, __, eOU, __, __, __, __],  // 二
+      [__, __, __, __, __, __, __, __, __],  // 三
+      [__, __, __, __, KI, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { HI: 1 },
+    enemyHand: {},
+    answer: { drop: 'HI', to: [1, 6] },
+    hint: '横からの王手じゃ。ただし左側（7二）だと6一の金に取られてしまう。金がとどかない右側は…？',
+    explain: '3二の飛車で横から王手！下への逃げ道は5四の金が、上はみかたの駒がふさいでいる。おなじ横でも7二だと金に取られるところじゃった。うつ場所の安全かくにん、大事じゃぞ。',
+  },
+  {
+    id: 'c2-6', chapter: 2, type: 'tsume',
+    title: '1手詰め ⑥（金か銀か？）',
+    intro: 'さいごの詰め問題じゃ。持ちごまは金と銀の2まい。どちらか正しいほうを使えば1手で詰むぞ。よーくかんがえて！',
+    board: [
+      [__, __, __, __, eOU, __, __, __, __],  // 一
+      [__, __, __, __, __, __, __, __, __],  // 二
+      [__, __, __, __, __, __, __, __, __],  // 三
+      [__, __, __, KE, __, __, __, __, __],  // 四
+      [__, __, __, __, __, __, __, __, __],  // 五
+      [__, __, __, __, __, __, __, __, __],  // 六
+      [__, __, __, __, __, __, __, __, __],  // 七
+      [__, __, __, __, __, __, __, __, __],  // 八
+      [__, __, __, __, OU, __, __, __, __],  // 九
+    ],
+    playerHand: { KIN: 1, GIN: 1 },
+    answer: { drop: 'KIN', to: [1, 4] },
+    hint: '銀を打つと、王さまは「ななめ下」ににげられてしまう。よこをおさえられるのは…どっちの駒かな？',
+    explain: 'せいかいは頭金！銀だと4二や6二ににげられるが、金なら全部おさえられる。金と銀のちがいがわかれば、きみはもう詰め将棋マスターじゃ！第2章クリア、おめでとう！',
+  },
+
+  // ============ 第3章 囲い（guide型: 光るマスの誘導どおりに組む） ============
+  {
+    id: 'c3-1', chapter: 3, type: 'guide',
+    title: 'カニ<ruby>囲<rt>がこ</rt></ruby>い',
+    intro: '攻めるだけでは勝てんぞ。王さまを守る「お城」＝囲いを作るのじゃ。まずはかんたんな「カニ囲い」から。光るマスをタップして、そのとおりに動かしてみよ！',
+    board: null, // 平手初期配置から
+    steps: [
+      { move: { from: [8, 3], to: [7, 2] }, say: '金をななめ前へ。「7八金」じゃ。',
+        cpu: { from: [2, 1], to: [3, 1] } },
+      { move: { from: [8, 5], to: [7, 4] }, say: 'もうひとつの金も前へ。「5八金」。',
+        cpu: { from: [2, 6], to: [3, 6] } },
+      { move: { from: [8, 4], to: [8, 3] }, say: '王さまは金がいた場所へおひっこし。「6九玉」。',
+        cpu: { from: [0, 2], to: [1, 3] } },
+      { move: { from: [8, 2], to: [7, 3] }, say: '銀も前へ出て、かべを作る。「6八銀」。',
+        cpu: { from: [2, 4], to: [3, 4] } },
+      { move: { from: [6, 3], to: [5, 3] }, say: 'さいごに「6六歩」で完成じゃ！' },
+    ],
+    explain: '「カニ囲い」の完成じゃ！金・銀・玉が横にならんで、カニさんみたいじゃろ？王さまのまわりを金銀で守れば、そうかんたんには負けん。囲いは強さのひみつじゃ！',
+    hint: 'オレンジ色に光っているマスを、じゅんばんにタップするのじゃ。',
+  },
+  {
+    id: 'c3-2', chapter: 3, type: 'guide',
+    title: '<ruby>美濃囲<rt>みのがこ</rt></ruby>い',
+    intro: 'つぎはプロも大好きな名城「美濃囲い」じゃ。まず飛車を左へ動かして（振り飛車）、あいた右側に王さまをかくまうぞ！',
+    board: null,
+    steps: [
+      { move: { from: [7, 7], to: [7, 3] }, say: '飛車を左へ大いどう！これが「振り飛車（ふりびしゃ）」じゃ。',
+        cpu: { from: [2, 6], to: [3, 6] } },
+      { move: { from: [8, 4], to: [7, 5] }, say: '王さまは飛車と反対の右側へにげるのじゃ。「4八玉」。',
+        cpu: { from: [2, 1], to: [3, 1] } },
+      { move: { from: [7, 5], to: [7, 6] }, say: 'もっと右へ。「3八玉」。',
+        cpu: { from: [2, 4], to: [3, 4] } },
+      { move: { from: [7, 6], to: [7, 7] }, say: '飛車がいた場所が王さまの玉座（ぎょくざ）じゃ。「2八玉」。',
+        cpu: { from: [0, 2], to: [1, 3] } },
+      { move: { from: [8, 6], to: [7, 6] }, say: '銀をまっすぐ前へ。「3八銀」でおとなりを守る。',
+        cpu: { from: [0, 4], to: [1, 5] } },
+      { move: { from: [8, 3], to: [7, 4] }, say: '金を「5八」へ。これで完成じゃ！' },
+    ],
+    explain: '「美濃囲い」の完成じゃ！玉・銀・金2まいがナナメにささえ合う、とてもじょうぶなお城。とくに横からの攻めに強いぞ。プロ棋士も大好きな囲いじゃ！',
+    hint: 'オレンジ色に光っているマスを、じゅんばんにタップするのじゃ。',
+  },
+
+  // ============ 第4章 戦法 ============
+  {
+    id: 'c4-1', chapter: 4, type: 'guide',
+    title: '<ruby>棒銀<rt>ぼうぎん</rt></ruby>ミッション',
+    intro: 'いよいよ攻めの戦法「棒銀」じゃ！銀を棒のようにまっすぐ進めて、飛車といっしょに敵陣をこじあける。プロへの第一歩、いくぞ！',
+    board: null,
+    steps: [
+      { move: { from: [6, 7], to: [5, 7] }, say: 'まず飛車の前の歩をつく。「2六歩」。',
+        cpu: { from: [2, 6], to: [3, 6] } },
+      { move: { from: [5, 7], to: [4, 7] }, say: 'もう一つ前へ。「2五歩」。',
+        cpu: { from: [2, 4], to: [3, 4] } },
+      { move: { from: [8, 6], to: [7, 6] }, say: 'ここから銀の出番じゃ。「3八銀」。',
+        cpu: { from: [0, 2], to: [1, 3] } },
+      { move: { from: [7, 6], to: [6, 7] }, say: '銀がななめに前進。「2七銀」。',
+        cpu: { from: [2, 3], to: [3, 3] } },
+      { move: { from: [6, 7], to: [5, 7] }, say: '飛車の力をせなかに、銀がまっすぐ進む。「2六銀」。',
+        cpu: { from: [2, 2], to: [3, 2] } },
+      { move: { from: [5, 7], to: [4, 8] }, say: 'はしっこへ！「1五銀」。つぎは2四のマスを銀・歩・飛車の3まいでねらうぞ。',
+        cpu: { from: [1, 3], to: [2, 3] } },
+      { move: { from: [4, 7], to: [3, 7] }, say: 'とつげき！「2四歩」！',
+        cpu: { from: [2, 7], to: [3, 7] }, cpuSay: '相手は歩で取りかえしてきた。…でも、それをまっておった！' },
+      { move: { from: [4, 8], to: [3, 7] }, say: '銀で取りかえす！「同銀」！銀が敵陣の入り口にせまった！',
+        cpu: { from: [0, 1], to: [2, 2] } },
+      { move: { from: [3, 7], to: [2, 7], promote: true }, say: '「2三銀成」！！' },
+    ],
+    explain: '大成功じゃ〜！！銀が「成銀」にパワーアップして敵陣にとつにゅう！ここから角も香車もねらえるぞ。歩→銀→飛車と力を合わせてこじあけるのが「棒銀」戦法じゃ。卒業試験で使ってみるのじゃ！',
+    hint: 'オレンジ色に光っているマスを、じゅんばんにタップするのじゃ。',
+  },
+  {
+    id: 'c4-2', chapter: 4, type: 'battle',
+    title: '<ruby>卒業試験<rt>そつぎょうしけん</rt></ruby>',
+    intro: 'ついに卒業試験じゃ！わしの弟子（でし）と本気の対局！ならった棒銀で攻めるもよし、囲ってじっくり戦うもよし。相手の王さまを取ったら合格じゃ！',
+    board: null,
+    cpuLevel: 'weak',
+    explain: '',
+    hint: 'まず「2六歩→2五歩」、銀を「3八→2七→2六→1五」と進めて、2四から攻めやぶる…棒銀を思い出すのじゃ！囲いをわすれずにな。',
+  },
+];
+
+// ---- レッスンデータの自己検証（#dev で開くと実行。Node検証でも使用） ----
+function validateLessons() {
+  const errors = [];
+  const err = (ls, msg) => errors.push('[' + ls.id + '] ' + msg);
+  const validValues = Object.keys(PIECE_NAMES).map(Number).concat([0]);
+  for (const ls of LESSONS) {
+    if (ls.board) {
+      if (ls.board.length !== 9 || ls.board.some(row => !row || row.length !== 9)) {
+        err(ls, '盤面が9x9ではない'); continue;
+      }
+      let bad = false;
+      for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+        if (!validValues.includes(ls.board[r][c])) { err(ls, '不正な駒の値: [' + r + '][' + c + ']=' + ls.board[r][c]); bad = true; }
+      }
+      if (bad) continue;
+      // 二歩チェック
+      for (let c = 0; c < 9; c++) {
+        let mine = 0, yours = 0;
+        for (let r = 0; r < 9; r++) {
+          if (ls.board[r][c] === PIECES.FU) mine++;
+          if (ls.board[r][c] === PIECES.E_FU) yours++;
+        }
+        if (mine > 1 || yours > 1) err(ls, (9 - c) + '筋が二歩');
+      }
+      // 両方の王
+      if (!findKing(ls.board, false)) err(ls, '先手の王がいない');
+      if (!findKing(ls.board, true)) err(ls, '後手の王がいない');
+      // 出題時点で後手玉に王手がかかっているのは不自然
+      if (isCheck(ls.board, true)) err(ls, '初期局面ですでに後手玉に王手がかかっている');
+    }
+    if (ls.type === 'quiz' || ls.type === 'tsume') {
+      if (!ls.board) { err(ls, 'quiz/tsumeには盤面が必要'); continue; }
+      const st = makeLessonState(ls);
+      const answers = [ls.answer].concat(ls.accepts || []);
+      for (const ans of answers) {
+        if (!isLegalPlayerMove(st, ans)) err(ls, '正解手が合法手ではない: ' + JSON.stringify(ans));
+      }
+    }
+    if (ls.type === 'tsume') {
+      const result = mateResult(ls, ls.answer);
+      if (result !== 'mate') err(ls, '正解手が詰みになっていない (' + result + ')');
+    }
+    if (ls.type === 'guide') {
+      const st = makeLessonState(ls);
+      for (let i = 0; i < ls.steps.length; i++) {
+        const step = ls.steps[i];
+        if (!isLegalPlayerMove(st, step.move)) { err(ls, 'step' + (i + 1) + ' のプレイヤー手が不正: ' + JSON.stringify(step.move)); break; }
+        applyMove(st, step.move, false);
+        if (step.cpu) {
+          if (!isLegalEnemyMove(st, step.cpu)) { err(ls, 'step' + (i + 1) + ' のCPU応手が不正: ' + JSON.stringify(step.cpu)); break; }
+          applyMove(st, step.cpu, true);
+        }
+      }
+    }
+  }
+  return errors;
+}
+
+// @@ENGINE-END ここまでDOM非依存
+
+// ================================================================
+// ここからUI（画面遷移・進捗・レッスン進行）
+// ================================================================
+const SAVE_KEY = 'shogi-dojo-progress';
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (data && Array.isArray(data.clearedLessons)) {
+      return { clearedLessons: data.clearedLessons.filter(id => LESSONS.some(l => l.id === id)), badges: Array.isArray(data.badges) ? data.badges : [] };
+    }
+  } catch (e) { /* 壊れたデータは初期化 */ }
+  return { clearedLessons: [], badges: [] };
+}
+function saveProgress() {
+  try {
+    progress.kyu = currentRank(progress.clearedLessons.length); // 表示用キャッシュ
+    localStorage.setItem(SAVE_KEY, JSON.stringify(progress));
+  } catch (e) { /* プライベートモード等では保存しない */ }
+}
+
+let progress = loadProgress();
+
+const $ = id => document.getElementById(id);
+const boardEl = $('board');
+const playerHandEl = $('playerHand');
+const enemyHandEl = $('enemyHand');
+const senseiTextEl = $('senseiText');
+const promoteDialog = $('promoteDialog');
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ---- 進捗まわりのヘルパー ----
+const isCleared = id => progress.clearedLessons.includes(id);
+const chapterLessons = num => LESSONS.filter(l => l.chapter === num);
+const isChapterCleared = num => chapterLessons(num).every(l => isCleared(l.id));
+function isChapterUnlocked(num) {
+  for (let i = 1; i < num; i++) if (!isChapterCleared(i)) return false;
+  return true;
+}
+function isLessonUnlocked(lesson) {
+  if (!isChapterUnlocked(lesson.chapter)) return false;
+  const list = chapterLessons(lesson.chapter);
+  const idx = list.indexOf(lesson);
+  return idx === 0 || isCleared(list[idx - 1].id);
+}
+
+// ---- ホーム画面 ----
+function renderHome() {
+  const n = progress.clearedLessons.length;
+  const rank = currentRank(n);
+  $('rankValue').textContent = rank;
+  const belt = beltOf(rank);
+  $('beltBar').className = 'belt ' + belt.cls;
+  $('beltName').textContent = belt.name;
+  $('progressNote').textContent = n >= LESSONS.length ? '全レッスンクリア！きみは道場の卒業生じゃ！' : 'レッスン ' + n + ' / ' + LESSONS.length + ' クリア';
+  for (const ch of CHAPTERS) {
+    $('badge-' + ch.badge).classList.toggle('earned', progress.badges.includes(ch.badge));
+  }
+}
+
+// ---- 章マップ ----
+function renderMap() {
+  const listEl = $('chapterList');
+  listEl.innerHTML = '';
+  for (const ch of CHAPTERS) {
+    const lessons = chapterLessons(ch.num);
+    const cleared = lessons.filter(l => isCleared(l.id)).length;
+    const unlocked = isChapterUnlocked(ch.num);
+    const card = document.createElement('div');
+    card.className = 'chapter-card' + (unlocked ? '' : ' locked') + (cleared === lessons.length ? ' done' : '');
+    card.innerHTML =
+      '<div class="chapter-icon">' + (unlocked ? ch.icon : '🔒') + '</div>' +
+      '<div class="chapter-info"><div class="chapter-name">第' + ch.num + '章 ' + ch.name + '</div>' +
+      '<div class="chapter-desc">' + (unlocked ? ch.desc : '前の章をクリアすると入れるぞ') + '</div></div>' +
+      '<div class="chapter-progress">' + cleared + '/' + lessons.length + (cleared === lessons.length ? ' ✅' : '') + '</div>';
+    if (unlocked) card.addEventListener('click', () => { renderLessonList(ch.num); showScreen('lessons'); });
+    listEl.appendChild(card);
+  }
+}
+
+// ---- レッスン一覧 ----
+let currentChapterNum = 1;
+const TYPE_LABELS = { quiz: '次の一手', tsume: '詰め', guide: 'おてほん', battle: '対局' };
+function renderLessonList(chapterNum) {
+  currentChapterNum = chapterNum;
+  const ch = CHAPTERS.find(c => c.num === chapterNum);
+  $('lessonsTitle').innerHTML = '第' + ch.num + '章 ' + ch.name;
+  const listEl = $('lessonList');
+  listEl.innerHTML = '';
+  for (const lesson of chapterLessons(chapterNum)) {
+    const unlocked = isLessonUnlocked(lesson);
+    const row = document.createElement('div');
+    row.className = 'lesson-row' + (unlocked ? '' : ' locked');
+    row.innerHTML =
+      '<div class="lesson-status">' + (isCleared(lesson.id) ? '⭐' : unlocked ? '▶️' : '🔒') + '</div>' +
+      '<div class="lesson-name">' + lesson.title + '</div>' +
+      '<div class="lesson-type">' + TYPE_LABELS[lesson.type] + '</div>';
+    if (unlocked) row.addEventListener('click', () => startLesson(lesson));
+    listEl.appendChild(row);
+  }
+}
+
+// ---- レッスン進行 ----
+let cur = null;        // { lesson, st, guideIdx, guideStage, wrongCount, turn, over }
+let sel = null;        // 盤上選択 {r,c} または持ち駒選択 {hand:name}
+let validMoves = [];
+let lastMove = null;
+let glowAnswer = false; // 救済: 正解マスを光らせる
+let busy = false;       // 演出中の入力ロック
+let overlayAction = null;
+let pendingPromotion = null;
+
+function senseiSay(html) { senseiTextEl.innerHTML = html; }
+
+function startLesson(lesson) {
+  cur = { lesson, st: makeLessonState(lesson), guideIdx: 0, guideStage: 'from', wrongCount: 0, turn: 'player', over: false };
+  sel = null; validMoves = []; lastMove = null; glowAnswer = false; busy = false;
+  $('lessonTitleBar').innerHTML = '第' + lesson.chapter + '章 ' + lesson.title;
+  senseiSay(lesson.intro);
+  showScreen('lesson');
+  render();
+}
+
+// ---- 盤・持ち駒の描画 ----
+function render() {
+  boardEl.innerHTML = '';
+  // ガイドの光るマス
+  let gFrom = null, gTo = null;
+  if (cur && cur.lesson.type === 'guide' && !busy && cur.guideIdx < cur.lesson.steps.length) {
+    const mv = cur.lesson.steps[cur.guideIdx].move;
+    gFrom = mv.from;
+    if (cur.guideStage === 'to') gTo = mv.to;
+  }
+  // 救済の正解発光
+  let aFrom = null, aTo = null;
+  if (cur && glowAnswer && cur.lesson.answer) {
+    const ans = cur.lesson.answer;
+    aTo = ans.to;
+    if (ans.from) aFrom = ans.from;
+  }
+  const at = (pos, r, c) => pos && pos[0] === r && pos[1] === c;
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (lastMove && at(lastMove, r, c)) cell.classList.add('last-move');
+      if (sel && sel.r === r && sel.c === c) cell.classList.add('selected');
+      if (validMoves.some(m => m[0] === r && m[1] === c)) cell.classList.add('can-move');
+      if (at(gFrom, r, c)) cell.classList.add(cur.guideStage === 'to' ? 'selected' : 'guide-from');
+      if (at(gTo, r, c)) cell.classList.add('guide-to');
+      if (at(aFrom, r, c) || at(aTo, r, c)) cell.classList.add('answer-glow');
+
+      const piece = cur ? cur.st.bd[r][c] : PIECES.EMPTY;
+      if (piece !== PIECES.EMPTY) {
+        const pieceEl = document.createElement('div');
+        pieceEl.className = 'piece';
+        if (isEnemy(piece)) pieceEl.classList.add('enemy');
+        if (isPromoted(piece)) pieceEl.classList.add('promoted');
+        pieceEl.textContent = PIECE_NAMES[piece];
+        cell.appendChild(pieceEl);
+      }
+      cell.addEventListener('click', () => onCellClick(r, c));
+      boardEl.appendChild(cell);
+    }
+  }
+  renderHands();
+}
+
+function renderHands() {
+  const ansDrop = (cur && glowAnswer && cur.lesson.answer && cur.lesson.answer.drop) || null;
+  const renderHand = (hand, el, isEnemySide) => {
+    el.innerHTML = '';
+    for (const name of HAND_ORDER) {
+      if (hand[name] > 0) {
+        const piece = document.createElement('div');
+        piece.className = 'hand-piece';
+        if (sel && sel.hand === name && !isEnemySide) piece.classList.add('selected');
+        if (!isEnemySide && name === ansDrop) piece.classList.add('answer-glow');
+        piece.textContent = HAND_NAMES[name];
+        if (hand[name] > 1) {
+          const count = document.createElement('span');
+          count.className = 'count';
+          count.textContent = hand[name];
+          piece.appendChild(count);
+        }
+        if (!isEnemySide) piece.addEventListener('click', () => onHandClick(name));
+        el.appendChild(piece);
+      }
+    }
+    if (el.children.length === 0) el.innerHTML = '<span style="color:#999;font-size:0.8rem;">なし</span>';
+  };
+  renderHand(cur ? cur.st.pHand : emptyHand(), playerHandEl, false);
+  renderHand(cur ? cur.st.eHand : emptyHand(), enemyHandEl, true);
+}
+
+function shakeCell(r, c) {
+  const cell = boardEl.children[r * 9 + c];
+  if (!cell) return;
+  cell.classList.add('shake');
+  setTimeout(() => cell.classList.remove('shake'), 300);
+}
+
+// ---- クリック処理 ----
+function onHandClick(name) {
+  if (!cur || busy || cur.over) return;
+  if (cur.lesson.type === 'guide') return;
+  if (cur.lesson.type === 'battle' && cur.turn !== 'player') return;
+  if (sel && sel.hand === name) { sel = null; validMoves = []; }
+  else { sel = { hand: name }; validMoves = getDropMoves(cur.st.bd, name, false); }
+  render();
+}
+
+function onCellClick(r, c) {
+  if (!cur || busy || cur.over) return;
+  const type = cur.lesson.type;
+  if (type === 'guide') return onGuideClick(r, c);
+  if (type === 'battle' && cur.turn !== 'player') return;
+
+  const piece = cur.st.bd[r][c];
+  if (sel && validMoves.some(m => m[0] === r && m[1] === c)) {
+    const move = sel.hand ? { drop: sel.hand, to: [r, c] } : { from: [sel.r, sel.c], to: [r, c] };
+    sel = null; validMoves = [];
+    if (type === 'battle') return battlePlayerMove(move);
+    return attemptQuizMove(move);
+  }
+  if (piece !== PIECES.EMPTY && !isEnemy(piece)) {
+    if (sel && sel.r === r && sel.c === c) { sel = null; validMoves = []; }
+    else { sel = { r, c }; validMoves = getMoves(cur.st.bd, piece, r, c); }
+  } else {
+    sel = null; validMoves = [];
+  }
+  render();
+}
+
+// ---- quiz / tsume の回答判定 ----
+function attemptQuizMove(move) {
+  const lesson = cur.lesson;
+  if (lesson.type === 'quiz') {
+    if (matchesAnswer(move, lesson)) return quizSuccess(move, lesson.explain);
+    return quizWrong(lesson.wrongText || 'おしい！もういちど考えてみるのじゃ。', move);
+  }
+  // tsume: 詰む手なら別解でも正解
+  const result = mateResult(lesson, move);
+  if (result === 'mate') {
+    const text = sameMove(move, lesson.answer) ? lesson.explain : 'なんと、それも詰みじゃ！わしの用意した答えとちがう手を見つけるとは…おぬしやるのう！';
+    return quizSuccess(move, text);
+  }
+  if (result === 'not-check') return quizWrong('それは<ruby>王手<rt>おうて</rt></ruby>ではないぞ。まず王さまに「王手！」とせまる手をさがすのじゃ。', move);
+  return quizWrong('王手じゃが…王さまににげられてしまう！にげ場所ぜんぶをおさえる手はどれじゃ？', move);
+}
+
+function quizSuccess(move, text) {
+  busy = true;
+  applyMove(cur.st, move, false);
+  lastMove = move.to;
+  glowAnswer = false;
+  render();
+  setTimeout(() => showClear('⭕', 'せいかい！', text, 'つぎへ', () => finishLesson(cur.lesson)), 600);
+}
+
+function quizWrong(message, move) {
+  cur.wrongCount++;
+  if (move && move.to) shakeCell(move.to[0], move.to[1]);
+  let text = '<strong>' + message + '</strong>';
+  if (cur.wrongCount >= 2 && cur.lesson.hint) text += '<br>💡 ' + cur.lesson.hint;
+  if (cur.wrongCount >= 3) { glowAnswer = true; text += '<br>✨ 光っているところが答えじゃ！'; }
+  senseiSay(text);
+  render();
+}
+
+// ---- guide（お手本再生） ----
+function onGuideClick(r, c) {
+  const step = cur.lesson.steps[cur.guideIdx];
+  if (!step) return;
+  const mv = step.move;
+  if (cur.guideStage === 'from') {
+    if (mv.from[0] === r && mv.from[1] === c) {
+      cur.guideStage = 'to';
+      render();
+    } else shakeCell(r, c);
+    return;
+  }
+  // stage 'to'
+  if (mv.from[0] === r && mv.from[1] === c) return; // 選択中の駒はそのまま
+  if (mv.to[0] !== r || mv.to[1] !== c) { shakeCell(r, c); return; }
+  busy = true;
+  applyMove(cur.st, mv, false);
+  lastMove = mv.to;
+  render();
+  senseiSay(step.say);
+  const proceed = () => {
+    cur.guideIdx++;
+    cur.guideStage = 'from';
+    busy = false;
+    if (cur.guideIdx >= cur.lesson.steps.length) {
+      busy = true;
+      const isCastle = cur.lesson.chapter === 3;
+      setTimeout(() => showClear(isCastle ? '🏰' : '⚔️', isCastle ? 'できあがり！' : 'ミッション<ruby>達成<rt>たっせい</rt></ruby>！', cur.lesson.explain, 'つぎへ', () => finishLesson(cur.lesson)), 700);
+    }
+    render();
+  };
+  if (step.cpu) {
+    setTimeout(() => {
+      applyMove(cur.st, step.cpu, true);
+      lastMove = step.cpu.to;
+      render();
+      if (step.cpuSay) senseiSay(step.cpuSay);
+      setTimeout(proceed, 400);
+    }, 700);
+  } else {
+    setTimeout(proceed, 400);
+  }
+}
+
+// ---- battle（卒業試験） ----
+function battlePlayerMove(move) {
+  const captured = move.drop ? PIECES.EMPTY : cur.st.bd[move.to[0]][move.to[1]];
+  if (captured === PIECES.E_OU) {
+    applyMove(cur.st, move, false);
+    lastMove = move.to; cur.over = true;
+    render();
+    setTimeout(() => showClear('🎉', 'ごうかく！！', '相手の王さまをつかまえた！みごとじゃ！！', 'やったー！', () => finishLesson(cur.lesson)), 500);
+    return;
+  }
+  // 成り選択
+  if (!move.drop) {
+    const piece = cur.st.bd[move.from[0]][move.from[1]];
+    if (canPromote(piece, move.from[0], move.to[0]) && !mustPromote(piece, move.to[0])) {
+      pendingPromotion = move;
+      promoteDialog.classList.add('show');
+      render();
+      return;
+    }
+  }
+  executeBattlePlayerMove(move);
+}
+
+function executeBattlePlayerMove(move) {
+  applyMove(cur.st, move, false);
+  lastMove = move.to;
+  render();
+  cur.turn = 'enemy';
+  senseiSay('相手が考え中…🤔');
+  setTimeout(cpuMoveWeak, 700);
+}
+
+// 卒業試験用の弱めCPU（shogi.html の cpuMove を土台に弱体化）
+function cpuMoveWeak() {
+  if (!cur || cur.over) return;
+  const st = cur.st;
+  const candidates = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const piece = st.bd[r][c];
+      if (piece !== PIECES.EMPTY && isEnemy(piece)) {
+        for (const [tr, tc] of getMoves(st.bd, piece, r, c)) {
+          let score = 0;
+          const target = st.bd[tr][tc];
+          if (target !== PIECES.EMPTY) {
+            const base = target >= 21 ? target - 20 : target;
+            score += [0, 1000, 50, 45, 30, 25, 20, 15, 5][base] || 10;
+          }
+          if (canPromote(piece, r, tr)) score += 10;
+          score += tr - r;
+          candidates.push({ type: 'move', from: [r, c], to: [tr, tc], score });
+        }
+      }
+    }
+  }
+  for (const name of HAND_ORDER) {
+    if (st.eHand[name] > 0) {
+      for (const [tr, tc] of getDropMoves(st.bd, name, true)) {
+        candidates.push({ type: 'drop', name, to: [tr, tc], score: 2 + 4 - Math.abs(tc - 4) });
+      }
+    }
+  }
+  if (candidates.length === 0) { cur.turn = 'player'; senseiSay('きみのばんじゃ！'); return; }
+
+  candidates.sort((a, b) => b.score - a.score);
+  // 弱体化: 許容幅を広げて悪手もまざる ＋ 30%は完全ランダム
+  let move;
+  if (Math.random() < 0.3) {
+    move = candidates[Math.floor(Math.random() * candidates.length)];
+  } else {
+    const topMoves = candidates.filter(m => m.score >= candidates[0].score - 25);
+    move = topMoves[Math.floor(Math.random() * topMoves.length)];
+  }
+
+  if (move.type === 'move') {
+    const captured = st.bd[move.to[0]][move.to[1]];
+    if (captured === PIECES.OU) {
+      applyMove(st, move, true);
+      lastMove = move.to; cur.over = true;
+      render();
+      setTimeout(() => showClear('😢', 'ざんねん…', '王さまを取られてしまった…。でも負けて学ぶのが道場じゃ。囲いをかためて、もういちど挑戦するのじゃ！', 'もういちど！', () => startLesson(cur.lesson)), 500);
+      return;
+    }
+    const piece = st.bd[move.from[0]][move.from[1]];
+    applyMove(st, { from: move.from, to: move.to, promote: canPromote(piece, move.from[0], move.to[0]) }, true);
+  } else {
+    applyMove(st, { drop: move.name, to: move.to }, true);
+  }
+  lastMove = move.to;
+  render();
+  cur.turn = 'player';
+  senseiSay('きみのばんじゃ！じっくり考えるのじゃ。');
+}
+
+// ---- クリア・昇級・バッジ ----
+function showClear(icon, title, text, btnLabel, action) {
+  $('clearIcon').textContent = icon;
+  $('clearTitle').innerHTML = title;
+  $('clearText').innerHTML = text || '';
+  $('clearNextBtn').textContent = btnLabel;
+  overlayAction = action;
+  $('clearOverlay').classList.add('show');
+}
+
+function finishLesson(lesson) {
+  const before = currentRank(progress.clearedLessons.length);
+  if (!isCleared(lesson.id)) {
+    progress.clearedLessons.push(lesson.id);
+    const ch = CHAPTERS.find(c => c.num === lesson.chapter);
+    if (isChapterCleared(lesson.chapter) && !progress.badges.includes(ch.badge)) progress.badges.push(ch.badge);
+    saveProgress();
+  }
+  const after = currentRank(progress.clearedLessons.length);
+  const goNext = () => {
+    if (progress.clearedLessons.length >= LESSONS.length) { renderHome(); showScreen('ending'); }
+    else { renderLessonList(lesson.chapter); showScreen('lessons'); }
+  };
+  if (after !== before) showRankUp(after, goNext);
+  else goNext();
+}
+
+function showRankUp(rank, after) {
+  const ov = $('rankUpOverlay');
+  $('rankUpValue').textContent = rank;
+  // 紙吹雪
+  const colors = ['#f6c445', '#7a5aa8', '#e8618c', '#5ab87a', '#5a9ae8'];
+  for (let i = 0; i < 24; i++) {
+    const conf = document.createElement('span');
+    conf.className = 'confetti';
+    conf.style.left = Math.random() * 100 + '%';
+    conf.style.background = colors[i % colors.length];
+    conf.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+    conf.style.animationDelay = Math.random() * 0.5 + 's';
+    ov.appendChild(conf);
+  }
+  overlayAction = () => {
+    ov.querySelectorAll('.confetti').forEach(el => el.remove());
+    after();
+  };
+  ov.classList.add('show');
+}
+
+// ---- ボタン類 ----
+$('startBtn').addEventListener('click', () => { renderHome(); showScreen('home'); });
+$('toMapBtn').addEventListener('click', () => { renderMap(); showScreen('map'); });
+$('mapBackBtn').addEventListener('click', () => { renderHome(); showScreen('home'); });
+$('lessonsBackBtn').addEventListener('click', () => { renderMap(); showScreen('map'); });
+$('quitBtn').addEventListener('click', () => { cur = null; renderLessonList(currentChapterNum); showScreen('lessons'); });
+$('hintBtn').addEventListener('click', () => { if (cur && cur.lesson.hint) senseiSay('💡 ' + cur.lesson.hint); });
+$('endingHomeBtn').addEventListener('click', () => { renderHome(); showScreen('home'); });
+$('clearNextBtn').addEventListener('click', () => {
+  $('clearOverlay').classList.remove('show');
+  if (overlayAction) { const a = overlayAction; overlayAction = null; a(); }
+});
+$('rankUpOkBtn').addEventListener('click', () => {
+  $('rankUpOverlay').classList.remove('show');
+  if (overlayAction) { const a = overlayAction; overlayAction = null; a(); }
+});
+$('promoteYes').addEventListener('click', () => {
+  if (!pendingPromotion) return;
+  const move = pendingPromotion; pendingPromotion = null;
+  promoteDialog.classList.remove('show');
+  executeBattlePlayerMove({ from: move.from, to: move.to, promote: true });
+});
+$('promoteNo').addEventListener('click', () => {
+  if (!pendingPromotion) return;
+  const move = pendingPromotion; pendingPromotion = null;
+  promoteDialog.classList.remove('show');
+  executeBattlePlayerMove(move);
+});
+
+// ---- 起動 ----
+if (location.hash.indexOf('dev') >= 0) {
+  const errs = validateLessons();
+  errs.forEach(e => console.error('[将棋道場] ' + e));
+  console.log('[将棋道場] レッスン検証: ' + (errs.length ? 'NG ' + errs.length + '件' : 'OK 全' + LESSONS.length + '件'));
+}
+renderHome();
+</script>
+</body>
+</html>
