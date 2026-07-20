@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>かばかば</title>
+  <link rel="stylesheet" href="common.css">
+  <script src="common.js" defer></script>
+  <style>
+    body {
+      overflow-x: hidden;
+      overscroll-behavior: none;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .game-wrap {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stats {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .stat {
+      background: #e8e0f0;
+      border-radius: 8px;
+      color: #6b5b7a;
+      padding: 8px 6px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(107, 91, 122, 0.12);
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.72rem;
+      color: #9b8ab8;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 1.08rem;
+      font-weight: bold;
+      line-height: 1.2;
+      min-height: 1.3em;
+    }
+
+    .play-area {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 300px) 150px;
+      justify-content: center;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .board-panel {
+      position: relative;
+      width: min(300px, calc(100vw - 32px));
+      aspect-ratio: 1 / 2;
+      border-radius: 10px;
+      padding: 8px;
+      background: linear-gradient(135deg, #7a6b8a, #5f516f);
+      box-shadow: 0 8px 20px rgba(80, 60, 100, 0.25);
+    }
+
+    #board {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      background: #211a2c;
+      touch-action: none;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .next-box,
+    .message-box {
+      background: #e8e0f0;
+      border-radius: 8px;
+      color: #6b5b7a;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .next-label {
+      font-size: 0.82rem;
+      font-weight: bold;
+      color: #8b7aa0;
+      margin-bottom: 6px;
+    }
+
+    #next {
+      display: block;
+      width: 110px;
+      height: 110px;
+      margin: 0 auto;
+      border-radius: 8px;
+      background: #f8f3ff;
+    }
+
+    .message-box {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      font-weight: bold;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn,
+    .mobile-btn {
+      border: none;
+      border-radius: 8px;
+      background: #7a6b8a;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(107, 91, 122, 0.18);
+      transition: transform 0.1s, background 0.15s;
+    }
+
+    .action-btn {
+      padding: 9px 16px;
+      font-size: 0.92rem;
+    }
+
+    .action-btn:hover,
+    .mobile-btn:hover {
+      background: #6b5b7a;
+    }
+
+    .action-btn:active,
+    .mobile-btn:active {
+      transform: scale(0.95);
+    }
+
+    .how-to-play {
+      margin-bottom: 0;
+      max-width: 560px;
+    }
+
+    .mobile-controls {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: auto auto;
+      grid-template-areas:
+        "left down right rotate"
+        ".    .    drop  drop";
+      gap: 8px;
+      max-width: 480px;
+      padding-bottom: env(safe-area-inset-bottom);
+      touch-action: none;
+    }
+
+    .mobile-btn {
+      min-height: 48px;
+      font-size: 1.1rem;
+      padding: 8px 4px;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .mobile-btn.drop {
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 12px;
+        padding-bottom: calc(72px + env(safe-area-inset-bottom));
+      }
+
+      h1 {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .game-wrap {
+        gap: 6px;
+        max-width: 390px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        order: -2;
+      }
+
+      .stat {
+        border-radius: 7px;
+        padding: 5px 3px;
+      }
+
+      .stat-label {
+        font-size: 0.62rem;
+        margin-bottom: 0;
+      }
+
+      .stat-value {
+        font-size: 0.88rem;
+        min-height: 1.15em;
+      }
+
+      .play-area {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        gap: 6px;
+      }
+
+      .board-panel {
+        width: min(61vw, 232px);
+        max-height: calc(100dvh - 370px);
+        padding: 7px;
+        grid-row: 2;
+      }
+
+      .side-panel {
+        width: min(100%, 330px);
+        display: grid;
+        grid-template-columns: 82px minmax(0, 1fr);
+        align-items: stretch;
+        gap: 6px;
+        grid-row: 1;
+      }
+
+      #next {
+        width: 54px;
+        height: 54px;
+      }
+
+      .next-box,
+      .message-box {
+        padding: 6px;
+      }
+
+      .next-label {
+        font-size: 0.7rem;
+        margin-bottom: 2px;
+      }
+
+      .message-box {
+        min-height: 66px;
+        font-size: 0.72rem;
+        line-height: 1.4;
+      }
+
+      .actions {
+        align-self: stretch;
+        justify-content: flex-end;
+        gap: 6px;
+        order: -1;
+      }
+
+      .action-btn {
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.76rem;
+        box-shadow: none;
+      }
+
+      .how-to-play {
+        margin-top: 2px;
+      }
+
+      .mobile-controls {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        z-index: 130;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-rows: auto auto;
+        grid-template-areas:
+          "left down right rotate"
+          ".    .    drop  drop";
+        gap: 7px;
+        max-width: 360px;
+        margin: 0 auto;
+        padding: 8px;
+        border-radius: 14px;
+        background: rgba(245, 240, 250, 0.94);
+        box-shadow: 0 -6px 20px rgba(80, 60, 100, 0.16);
+        backdrop-filter: blur(8px);
+      }
+
+      .mobile-btn {
+        min-height: 52px;
+        font-size: 1rem;
+      }
+
+      .mobile-btn[data-action="left"]   { grid-area: left; }
+      .mobile-btn[data-action="down"]   { grid-area: down; }
+      .mobile-btn[data-action="right"]  { grid-area: right; }
+      .mobile-btn[data-action="rotate"] { grid-area: rotate; }
+      .mobile-btn[data-action="drop"]   { grid-area: drop; }
+
+      .mobile-btn[data-action="rotate"] {
+        background: #8b5fbf;
+        font-size: 1.05rem;
+      }
+
+      .mobile-btn.drop {
+        background: #5f516f;
+        font-size: 0.92rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .board-panel {
+        width: min(60vw, 216px);
+        padding: 6px;
+      }
+
+      .mobile-btn {
+        min-height: 46px;
+        font-size: 0.95rem;
+      }
+
+      .mobile-btn.drop {
+        font-size: 0.88rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>かばかば</h1>
+
+  <main class="game-wrap">
+    <section class="stats" aria-label="スコア">
+      <div class="stat"><span class="stat-label">スコア</span><span id="score" class="stat-value">0</span></div>
+      <div class="stat"><span class="stat-label">ベスト</span><span id="best" class="stat-value">0</span></div>
+      <div class="stat"><span class="stat-label">さいだいれんさ</span><span id="maxchain" class="stat-value">0</span></div>
+      <div class="stat"><span class="stat-label">レベル</span><span id="level" class="stat-value">1</span></div>
+    </section>
+
+    <section class="play-area" aria-label="ゲームエリア">
+      <div class="board-panel">
+        <canvas id="board" width="216" height="432" aria-label="6列12行のかばかば盤面"></canvas>
+      </div>
+
+      <aside class="side-panel">
+        <div class="next-box">
+          <div class="next-label">つぎ</div>
+          <canvas id="next" width="110" height="110" aria-label="次のかばペア"></canvas>
+        </div>
+        <div id="message" class="message-box" aria-live="polite">4つ以上つなげて消そう！</div>
+      </aside>
+    </section>
+
+    <div class="actions">
+      <button id="retryBtn" class="action-btn" type="button">リトライ</button>
+      <button id="pauseBtn" class="action-btn" type="button">一時停止</button>
+    </div>
+
+    <details class="how-to-play">
+      <summary>あそびかた</summary>
+      <ul>
+        <li>おなじ色の「かば」を4つ以上つなげると消えます。</li>
+        <li>消えたあとに、また上から玉が落ちてつながると「れんさ」になって高得点！</li>
+        <li>うすく見える「かば」は、いまのペアが落ちる場所の目印です。</li>
+        <li>キーボードは、左右で移動、上・Z・Enterで回転、下で少し速く落とします。</li>
+        <li>Spaceで一気に落とし、Pで一時停止できます。</li>
+      </ul>
+    </details>
+
+    <section class="mobile-controls" aria-label="スマホ操作">
+      <button class="mobile-btn" type="button" data-action="left" aria-label="左へ移動">←</button>
+      <button class="mobile-btn" type="button" data-action="down" aria-label="下へ移動">↓</button>
+      <button class="mobile-btn" type="button" data-action="right" aria-label="右へ移動">→</button>
+      <button class="mobile-btn" type="button" data-action="rotate" aria-label="回転">回転</button>
+      <button class="mobile-btn drop" type="button" data-action="drop" aria-label="一気に落とす">落とす</button>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const COLS = 6;
+      const HIDDEN_ROWS = 2;
+      const VISIBLE_ROWS = 12;
+      const ROWS = HIDDEN_ROWS + VISIBLE_ROWS; // 14
+      const CELL = 36;
+      const BEST_KEY = 'kabakaba-best';
+
+      const PALETTE = {
+        matcha:   { base: '#a9d98c', dark: '#7fb95e', light: '#d8f0c4', muzzle: '#eef8e2', eye: '#4a5c3a' },
+        sakura:   { base: '#f5b8c8', dark: '#e389a3', light: '#fbdfe7', muzzle: '#fff0f4', eye: '#7a4a56' },
+        kinako:   { base: '#e8c98a', dark: '#cda355', light: '#f6e6bf', muzzle: '#fbf3de', eye: '#6b5636' },
+        mitsu:    { base: '#c9a07a', dark: '#a97c53', light: '#e3c9ad', muzzle: '#f2e2cf', eye: '#5c4530' },
+        lavender: { base: '#c9a8e0', dark: '#a97fc9', light: '#e6d5f2', muzzle: '#f5eefc', eye: '#5c4a70' }
+      };
+      const NUM_COLORS = 4;
+      const COLOR_KEYS = Object.keys(PALETTE).slice(0, NUM_COLORS);
+
+      const DIR_OFFSETS = [
+        { dx: 0, dy: -1 }, // 0: 上
+        { dx: 1, dy: 0 },  // 1: 右
+        { dx: 0, dy: 1 },  // 2: 下
+        { dx: -1, dy: 0 }  // 3: 左
+      ];
+
+      const CHAIN_MULTIPLIER = [1, 2, 3, 4, 5, 6, 7, 8];
+
+      const boardCanvas = document.getElementById('board');
+      const boardCtx = boardCanvas.getContext('2d');
+      const nextCanvas = document.getElementById('next');
+      const nextCtx = nextCanvas.getContext('2d');
+      const scoreEl = document.getElementById('score');
+      const bestEl = document.getElementById('best');
+      const maxChainEl = document.getElementById('maxchain');
+      const levelEl = document.getElementById('level');
+      const messageEl = document.getElementById('message');
+      const pauseBtn = document.getElementById('pauseBtn');
+
+      let board;
+      let current;
+      let nextPair;
+      let score;
+      let best = Number(localStorage.getItem(BEST_KEY) || 0);
+      let level;
+      let maxChain;
+      let totalPopped;
+      let dropTimer;
+      let lastTime;
+      let paused;
+      let gameOver;
+      let audioCtx;
+      let soundReady = false;
+      let holdDelayId = null;
+      let holdRepeatId = null;
+      const REPEATABLE_ACTIONS = new Set(['left', 'right', 'down']);
+
+      function makeBoard() {
+        return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+      }
+
+      function randomColor() {
+        return COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+      }
+
+      function makePair() {
+        return {
+          axis: { x: Math.floor(COLS / 2) - 1, y: HIDDEN_ROWS - 1 },
+          axisColor: randomColor(),
+          satColor: randomColor(),
+          dir: 0
+        };
+      }
+
+      function formatNumber(value) {
+        return value.toLocaleString('ja-JP');
+      }
+
+      function updateStats() {
+        scoreEl.textContent = formatNumber(score);
+        bestEl.textContent = formatNumber(best);
+        maxChainEl.textContent = String(maxChain);
+        levelEl.textContent = String(level);
+      }
+
+      function pairCells(pair, dx = 0, dy = 0, dir = pair.dir) {
+        const axisX = pair.axis.x + dx;
+        const axisY = pair.axis.y + dy;
+        const off = DIR_OFFSETS[dir];
+        return [
+          { x: axisX, y: axisY, color: pair.axisColor },
+          { x: axisX + off.dx, y: axisY + off.dy, color: pair.satColor }
+        ];
+      }
+
+      function collides(pair, dx = 0, dy = 0, dir = pair.dir) {
+        return pairCells(pair, dx, dy, dir).some(({ x, y }) => {
+          return x < 0 || x >= COLS || y < 0 || y >= ROWS || board[y][x];
+        });
+      }
+
+      function drawHippoAt(ctx, cx, cy, r, colorKey, alpha = 1) {
+        const c = PALETTE[colorKey];
+        if (!c) return;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        // 影の輪郭
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + r * 0.18, r * 0.95, r * 0.85, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+        ctx.fill();
+
+        // 本体
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * 0.9, r * 0.8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = c.base;
+        ctx.fill();
+
+        // 耳（外側は本体色、内耳は濃色）
+        const earR = r * 0.3;
+        const earOffsetX = r * 0.58;
+        const earOffsetY = -r * 0.5;
+        [-1, 1].forEach(sign => {
+          ctx.beginPath();
+          ctx.arc(cx + sign * earOffsetX, cy + earOffsetY, earR, 0, Math.PI * 2);
+          ctx.fillStyle = c.base;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(cx + sign * earOffsetX, cy + earOffsetY, earR * 0.52, 0, Math.PI * 2);
+          ctx.fillStyle = c.dark;
+          ctx.fill();
+        });
+
+        // マズル
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + r * 0.38, r * 0.55, r * 0.4, 0, 0, Math.PI * 2);
+        ctx.fillStyle = c.muzzle;
+        ctx.fill();
+
+        // 鼻穴
+        ctx.fillStyle = c.eye;
+        ctx.beginPath();
+        ctx.ellipse(cx - r * 0.18, cy + r * 0.32, r * 0.06, r * 0.09, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx + r * 0.18, cy + r * 0.32, r * 0.06, r * 0.09, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 目
+        ctx.beginPath();
+        ctx.arc(cx - r * 0.32, cy - r * 0.05, r * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + r * 0.32, cy - r * 0.05, r * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 光沢ハイライト
+        ctx.beginPath();
+        ctx.ellipse(cx - r * 0.35, cy - r * 0.42, r * 0.22, r * 0.14, -0.4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawHippoCell(ctx, gx, gy, size, colorKey, alpha = 1) {
+        const cx = gx * size + size / 2;
+        const cy = gy * size + size / 2;
+        const r = size / 2 - 2;
+        drawHippoAt(ctx, cx, cy, r, colorKey, alpha);
+      }
+
+      function drawGrid() {
+        boardCtx.fillStyle = '#211a2c';
+        boardCtx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+        boardCtx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+        boardCtx.lineWidth = 1;
+        for (let x = 1; x < COLS; x++) {
+          boardCtx.beginPath();
+          boardCtx.moveTo(x * CELL + 0.5, 0);
+          boardCtx.lineTo(x * CELL + 0.5, boardCanvas.height);
+          boardCtx.stroke();
+        }
+        for (let y = 1; y < VISIBLE_ROWS; y++) {
+          boardCtx.beginPath();
+          boardCtx.moveTo(0, y * CELL + 0.5);
+          boardCtx.lineTo(boardCanvas.width, y * CELL + 0.5);
+          boardCtx.stroke();
+        }
+      }
+
+      function getGhostPair() {
+        const ghost = {
+          axis: { x: current.axis.x, y: current.axis.y },
+          axisColor: current.axisColor,
+          satColor: current.satColor,
+          dir: current.dir
+        };
+        while (!collides(ghost, 0, 1)) {
+          ghost.axis.y += 1;
+        }
+        return ghost;
+      }
+
+      function draw() {
+        drawGrid();
+        for (let y = HIDDEN_ROWS; y < ROWS; y++) {
+          for (let x = 0; x < COLS; x++) {
+            if (board[y][x]) {
+              drawHippoCell(boardCtx, x, y - HIDDEN_ROWS, CELL, board[y][x]);
+            }
+          }
+        }
+
+        if (current) {
+          const ghost = getGhostPair();
+          pairCells(ghost).forEach(({ x, y, color }) => {
+            if (y >= HIDDEN_ROWS) {
+              drawHippoCell(boardCtx, x, y - HIDDEN_ROWS, CELL, color, 0.25);
+            }
+          });
+          pairCells(current).forEach(({ x, y, color }) => {
+            if (y >= HIDDEN_ROWS) {
+              drawHippoCell(boardCtx, x, y - HIDDEN_ROWS, CELL, color);
+            }
+          });
+        }
+
+        if (paused || gameOver) {
+          boardCtx.fillStyle = 'rgba(33, 26, 44, 0.72)';
+          boardCtx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+          boardCtx.fillStyle = '#fff';
+          boardCtx.font = 'bold 22px sans-serif';
+          boardCtx.textAlign = 'center';
+          boardCtx.textBaseline = 'middle';
+          boardCtx.fillText(gameOver ? 'ゲームおわり' : '一時停止', boardCanvas.width / 2, boardCanvas.height / 2);
+        }
+      }
+
+      function drawNext() {
+        nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+        nextCtx.fillStyle = '#f8f3ff';
+        nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+        const r = 24;
+        const cx = nextCanvas.width / 2;
+        const gap = r * 1.9;
+        const centerY = nextCanvas.height / 2;
+        drawHippoAt(nextCtx, cx, centerY - gap / 2, r, nextPair.satColor);
+        drawHippoAt(nextCtx, cx, centerY + gap / 2, r, nextPair.axisColor);
+      }
+
+      function rotatePair() {
+        if (!current || paused || gameOver) return;
+        const newDir = (current.dir + 1) % 4;
+        const kicks = [0, -1, 1, -2, 2];
+        for (const kx of kicks) {
+          if (!collides(current, kx, 0, newDir)) {
+            current.axis.x += kx;
+            current.dir = newDir;
+            playSound('rotate');
+            draw();
+            return;
+          }
+        }
+        // 天井蹴り／床蹴りフォールバック
+        for (const ky of [-1, 1]) {
+          if (!collides(current, 0, ky, newDir)) {
+            current.axis.y += ky;
+            current.dir = newDir;
+            playSound('rotate');
+            draw();
+            return;
+          }
+        }
+      }
+
+      function move(dx) {
+        if (!current || paused || gameOver) return false;
+        if (!collides(current, dx, 0)) {
+          current.axis.x += dx;
+          playSound('move');
+          draw();
+          return true;
+        }
+        return false;
+      }
+
+      function softDrop() {
+        if (!current || paused || gameOver) return false;
+        if (!collides(current, 0, 1)) {
+          current.axis.y += 1;
+          score += 1;
+          playSound('move');
+          updateStats();
+          draw();
+          return true;
+        }
+        lockPair();
+        return false;
+      }
+
+      function hardDrop() {
+        if (!current || paused || gameOver) return;
+        let distance = 0;
+        while (!collides(current, 0, 1)) {
+          current.axis.y += 1;
+          distance += 1;
+        }
+        score += distance * 2;
+        lockPair();
+      }
+
+      function applyGravity() {
+        for (let x = 0; x < COLS; x++) {
+          const colVals = [];
+          for (let y = 0; y < ROWS; y++) {
+            if (board[y][x]) colVals.push(board[y][x]);
+          }
+          const newCol = Array(ROWS).fill(null);
+          for (let i = 0; i < colVals.length; i++) {
+            newCol[ROWS - colVals.length + i] = colVals[i];
+          }
+          for (let y = 0; y < ROWS; y++) {
+            board[y][x] = newCol[y];
+          }
+        }
+      }
+
+      function findGroups() {
+        const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+        const groups = [];
+        for (let y = 0; y < ROWS; y++) {
+          for (let x = 0; x < COLS; x++) {
+            if (!board[y][x] || visited[y][x]) continue;
+            const color = board[y][x];
+            const stack = [{ x, y }];
+            visited[y][x] = true;
+            const cells = [];
+            while (stack.length) {
+              const cur = stack.pop();
+              cells.push(cur);
+              const neighbors = [
+                { x: cur.x + 1, y: cur.y },
+                { x: cur.x - 1, y: cur.y },
+                { x: cur.x, y: cur.y + 1 },
+                { x: cur.x, y: cur.y - 1 }
+              ];
+              neighbors.forEach(n => {
+                if (n.x < 0 || n.x >= COLS || n.y < 0 || n.y >= ROWS) return;
+                if (visited[n.y][n.x]) return;
+                if (board[n.y][n.x] === color) {
+                  visited[n.y][n.x] = true;
+                  stack.push(n);
+                }
+              });
+            }
+            groups.push({ color, cells });
+          }
+        }
+        return groups;
+      }
+
+      function groupSizeBonus(size) {
+        if (size >= 7) return 3;
+        if (size === 6) return 2;
+        if (size === 5) return 1.5;
+        return 1;
+      }
+
+      function resolveBoard() {
+        let chainStep = 0;
+        let anyCleared = false;
+        while (true) {
+          applyGravity();
+          const groups = findGroups().filter(g => g.cells.length >= 4);
+          if (groups.length === 0) break;
+          chainStep += 1;
+          anyCleared = true;
+          let totalSize = 0;
+          const multiplier = CHAIN_MULTIPLIER[Math.min(chainStep - 1, CHAIN_MULTIPLIER.length - 1)];
+          groups.forEach(g => {
+            const size = g.cells.length;
+            totalSize += size;
+            totalPopped += size;
+            score += Math.round(size * 10 * groupSizeBonus(size) * multiplier);
+            g.cells.forEach(({ x, y }) => {
+              board[y][x] = null;
+            });
+          });
+          if (chainStep > maxChain) maxChain = chainStep;
+          messageEl.textContent = chainStep >= 2
+            ? `${chainStep} れんさ！`
+            : (groups.length > 1 ? 'いっしょに たくさん そろった！' : `${totalSize}こ そろった！`);
+          playSound(chainStep >= 2 ? 'chain' : 'pop', chainStep);
+        }
+        if (anyCleared) {
+          level = 1 + Math.floor(totalPopped / 16);
+        }
+        if (score > best) {
+          best = score;
+          localStorage.setItem(BEST_KEY, String(best));
+        }
+      }
+
+      function lockPair() {
+        pairCells(current).forEach(({ x, y, color }) => {
+          board[y][x] = color;
+        });
+        playSound('lock');
+        resolveBoard();
+        spawnNextPair();
+        updateStats();
+        draw();
+      }
+
+      function spawnNextPair() {
+        current = nextPair;
+        current.axis.x = Math.floor(COLS / 2) - 1;
+        current.axis.y = HIDDEN_ROWS - 1;
+        current.dir = 0;
+        nextPair = makePair();
+        drawNext();
+        if (collides(current, 0, 0, current.dir)) {
+          endGame();
+        }
+      }
+
+      function endGame() {
+        gameOver = true;
+        paused = false;
+        pauseBtn.textContent = '一時停止';
+        messageEl.textContent = 'リトライで、もう一度あそべるよ。';
+        if (score > best) {
+          best = score;
+          localStorage.setItem(BEST_KEY, String(best));
+        }
+        playSound('over');
+        updateStats();
+        draw();
+      }
+
+      function dropInterval() {
+        return Math.max(300, 900 - (level - 1) * 45);
+      }
+
+      function loop(time = 0) {
+        if (!lastTime) {
+          lastTime = time;
+        }
+        const delta = time - lastTime;
+        lastTime = time;
+        if (!paused && !gameOver) {
+          dropTimer += delta;
+          if (dropTimer >= dropInterval()) {
+            dropTimer = 0;
+            if (!collides(current, 0, 1)) {
+              current.axis.y += 1;
+            } else {
+              lockPair();
+            }
+            draw();
+          }
+        }
+        requestAnimationFrame(loop);
+      }
+
+      function togglePause() {
+        if (gameOver) return;
+        paused = !paused;
+        pauseBtn.textContent = paused ? '再開' : '一時停止';
+        messageEl.textContent = paused ? 'Pキーか再開ボタンでつづきから！' : '4つ以上つなげて消そう！';
+        playSound(paused ? 'pause' : 'move');
+        draw();
+      }
+
+      function resetGame() {
+        board = makeBoard();
+        score = 0;
+        level = 1;
+        maxChain = 0;
+        totalPopped = 0;
+        dropTimer = 0;
+        lastTime = 0;
+        paused = false;
+        gameOver = false;
+        nextPair = makePair();
+        pauseBtn.textContent = '一時停止';
+        messageEl.textContent = '4つ以上つなげて消そう！';
+        spawnNextPair();
+        updateStats();
+        draw();
+      }
+
+      function unlockSound() {
+        soundReady = true;
+        if (!audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            audioCtx = new AudioContext();
+          }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+
+      function playSound(kind, chain = 1) {
+        if (!soundReady || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        let freq = 420;
+        let dur = 0.04;
+        let vol = 0.04;
+        let type = 'sine';
+        let rampTo = null;
+
+        if (kind === 'move') { freq = 340; dur = 0.03; vol = 0.03; }
+        else if (kind === 'rotate') { freq = 480; dur = 0.04; vol = 0.04; }
+        else if (kind === 'lock') { freq = 220; dur = 0.05; vol = 0.05; }
+        else if (kind === 'pop') { freq = 660; dur = 0.09; vol = 0.07; type = 'triangle'; rampTo = 880; }
+        else if (kind === 'chain') {
+          freq = 480 + (chain - 1) * 70;
+          dur = 0.12;
+          vol = 0.08;
+          type = 'triangle';
+          rampTo = freq * 1.4;
+        } else if (kind === 'pause') { freq = 300; dur = 0.06; vol = 0.04; }
+        else if (kind === 'over') { freq = 130; dur = 0.18; vol = 0.07; }
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (rampTo) {
+          osc.frequency.exponentialRampToValueAtTime(rampTo, now + dur);
+        }
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + dur);
+      }
+
+      function handleAction(action) {
+        unlockSound();
+        if (action === 'left') move(-1);
+        if (action === 'right') move(1);
+        if (action === 'rotate') rotatePair();
+        if (action === 'down') softDrop();
+        if (action === 'drop') hardDrop();
+      }
+
+      function stopHoldAction() {
+        clearTimeout(holdDelayId);
+        clearInterval(holdRepeatId);
+        holdDelayId = null;
+        holdRepeatId = null;
+      }
+
+      function startHoldAction(action) {
+        stopHoldAction();
+        if (!REPEATABLE_ACTIONS.has(action)) return;
+        holdDelayId = setTimeout(() => {
+          holdRepeatId = setInterval(() => {
+            handleAction(action);
+          }, action === 'down' ? 70 : 95);
+        }, 180);
+      }
+
+      document.addEventListener('keydown', event => {
+        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Enter'].includes(event.key)) {
+          event.preventDefault();
+        }
+        unlockSound();
+        if (event.key === 'ArrowLeft') move(-1);
+        if (event.key === 'ArrowRight') move(1);
+        if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'z' || event.key === 'Enter') rotatePair();
+        if (event.key === 'ArrowDown') softDrop();
+        if (event.key === ' ') hardDrop();
+        if (event.key.toLowerCase() === 'p') togglePause();
+      });
+
+      document.getElementById('retryBtn').addEventListener('click', () => {
+        unlockSound();
+        resetGame();
+        playSound('move');
+      });
+      pauseBtn.addEventListener('click', () => {
+        unlockSound();
+        togglePause();
+      });
+      document.querySelectorAll('.mobile-btn').forEach(button => {
+        button.addEventListener('pointerdown', event => {
+          event.preventDefault();
+          const action = button.dataset.action;
+          button.setPointerCapture?.(event.pointerId);
+          handleAction(action);
+          startHoldAction(action);
+        });
+        button.addEventListener('pointerup', stopHoldAction);
+        button.addEventListener('pointercancel', stopHoldAction);
+        button.addEventListener('pointerleave', stopHoldAction);
+        button.addEventListener('lostpointercapture', stopHoldAction);
+      });
+
+      bestEl.textContent = formatNumber(best);
+      resetGame();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>

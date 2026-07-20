@@ -123,7 +123,14 @@
         const link = document.createElement('a');
         link.className = 'drawer-game' + (isCurrent ? ' current' : '');
         link.href = g.file;
-        link.textContent = g.icon + ' ' + g.name;
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'drawer-game-icon';
+        iconSpan.innerHTML = g.icon;
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'drawer-game-label';
+        labelSpan.textContent = g.name;
+        link.appendChild(iconSpan);
+        link.appendChild(labelSpan);
         if (isCurrent) {
           // 現在地はクリックで閉じるだけ
           link.addEventListener('click', function(e) {

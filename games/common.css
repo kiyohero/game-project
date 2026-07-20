@@ -278,6 +278,19 @@ h1 {
   background: #efe9f7;
 }
 
+.drawer-game-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.drawer-game-icon svg { display: block; }
+
+.drawer-game-label {
+  flex: 1;
+  min-width: 0;
+}
+
 .drawer-game.current {
   background: #e8e0f0;
   font-weight: bold;
