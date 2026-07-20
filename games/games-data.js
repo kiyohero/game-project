@@ -14,6 +14,7 @@ window.GAME_PROJECT_GAMES = [
   { name: '神経衰弱',           icon: '🧠', category: 'puzzle',  file: 'memory-game.html' },
   { name: 'クロスワード',        icon: '🔤', category: 'puzzle',  file: 'crossword.html' },
   { name: 'ブロックパズル',      icon: '🧱', category: 'puzzle',  file: 'block-puzzle.html', isNew: true },
+  { name: 'かばかば',           icon: '<svg viewBox="0 0 24 24" width="1em" height="1em" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="6" cy="7" r="3" fill="#c9a8e0"/><circle cx="18" cy="7" r="3" fill="#c9a8e0"/><circle cx="6" cy="7" r="1.4" fill="#efe0f7"/><circle cx="18" cy="7" r="1.4" fill="#efe0f7"/><rect x="3" y="8" width="18" height="13" rx="6.5" fill="#dcc2ef"/><ellipse cx="12" cy="16.5" rx="6" ry="4" fill="#efe0f7"/><circle cx="9" cy="14" r="1.1" fill="#5c4a70"/><circle cx="15" cy="14" r="1.1" fill="#5c4a70"/><circle cx="8" cy="10.5" r="1.6" fill="#f5eefc" opacity="0.85"/></svg>', category: 'puzzle', file: 'kabakaba.html', isNew: true },
   { name: 'マルバツ',           icon: '⭕', category: 'battle',  file: 'tic-tac-toe.html' },
   { name: 'リバーシ',           icon: '⚫', category: 'battle',  file: 'reversi.html' },
   { name: '将棋',              icon: '🏯', category: 'battle',  file: 'shogi.html' },
